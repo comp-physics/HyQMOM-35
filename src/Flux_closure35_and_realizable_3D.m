@@ -140,7 +140,7 @@ R011 = 1-S011^2;
 %
 if R110 <= 0 || R101 <= 0 || R011 <= 0
     % treat cases where one or more 2D 2nd-order moments is non-realizable (corners and edges)
-    disp('treat edges')
+    fprintf('Treating edge/corner case: R110=%g, R101=%g, R011=%g\n', R110, R101, R011);
     edge_corner_correction
     % recheck 2D cross moments
     [S210,S120,S310,S220,S130] = realizable_2D(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040);

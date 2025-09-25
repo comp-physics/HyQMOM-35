@@ -29,8 +29,7 @@ switch upper(type)
         S011r = xr*S011;
         S2r = 1 + 2*S110r*S101r*S011r - (S110r^2+S101r^2+S011r^2);
         if S2r < 0
-            warning('S2 < 0 after correction in realizability_S2')
-            disp([S2,S2r])
+            warning('S2 < 0 after correction in realizability_S2: S2=%g, S2r=%g', S2, S2r);
         end
         varargout = {S110r, S101r, S011r, S2r};
         
