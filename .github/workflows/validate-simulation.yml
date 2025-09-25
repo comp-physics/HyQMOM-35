@@ -22,5 +22,12 @@ jobs:
       - name: Run tests
         uses: matlab-actions/run-tests@v2
         with:
-          test-results-junit: test-results.xml
-          code-coverage-cobertura: code-coverage.xml
+          test-results-junit: test-results/results.xml
+          source-folder: .
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results
