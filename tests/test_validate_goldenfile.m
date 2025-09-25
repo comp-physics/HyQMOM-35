@@ -11,11 +11,14 @@ function test_simulation_against_goldenfile(testCase)
 fprintf('=== MATLAB Test Runner Validation ===\n');
 fprintf('MATLAB version: %s\n', version);
 
+% Add parent directory to path so we can find the main simulation function
+addpath('..');
+
 % Set tolerance for CI environment
 tolerance = 1e-10;
 
-% Check if golden file exists
-goldenfiles_dir = 'goldenfiles';
+% Check if golden file exists (relative to project root)
+goldenfiles_dir = '../goldenfiles';
 golden_filename = fullfile(goldenfiles_dir, 'goldenfile_Np6_tmax020.mat');
 
 if ~exist(golden_filename, 'file')
