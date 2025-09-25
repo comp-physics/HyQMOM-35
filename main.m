@@ -47,8 +47,12 @@ end
 % Get the directory where this script is located
 script_dir = fileparts(mfilename('fullpath'));
 src_dir = fullfile(script_dir, 'src');
+autogen_dir = fullfile(src_dir, 'autogen');
 if exist(src_dir, 'dir')
     addpath(src_dir);
+end
+if exist(autogen_dir, 'dir')
+    addpath(autogen_dir);
 end
 
 % Create configuration struct with all simulation parameters
