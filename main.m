@@ -54,13 +54,7 @@ end
 % Create configuration struct with all simulation parameters
 cfg = create_config(Np, tmax, 1.0, 0.0, 0);  % Kn=1, Ma=0, flag2D=0
 
-% Extract commonly used values for backward compatibility
-Kn = cfg.Kn;
-Ma = cfg.Ma;
-flag2D = cfg.flag2D;
-CFL = cfg.CFL;
-nnmax = cfg.nnmax;
-dtmax = cfg.dtmax;
+% Configuration struct contains all parameters - use cfg.* directly
 
 %% 2-D space discretization: square domain
 x = cfg.xmin + (cfg.xmax-cfg.xmin)*linspace(0,1,Np+1)';
@@ -70,61 +64,49 @@ xm = x(1:Np)+dx/2;
 dy = (cfg.ymax-cfg.ymin)/Np;
 ym = y(1:Np)+dy/2;
 
-% Extract moment parameters
-N = cfg.N;
-Nmom = cfg.Nmom;
-Nmom5 = cfg.Nmom5;
+% Use cfg.N, cfg.Nmom, cfg.Nmom5 directly
 
 % moment index map to avoid magic numbers
 idx = moment_indices();
 
 %% shock problem %%%%%%%%%%%%
-% Extract initial condition parameters from config
-rhol = cfg.rhol;
-rhor = cfg.rhor;
-U0 = cfg.U0;
-V0 = cfg.V0;
-W0 = cfg.W0;
-T = cfg.T;
-r110 = cfg.r110;
-r101 = cfg.r101;
-r011 = cfg.r011;
+% Use cfg initial condition parameters directly
 
 % set initial conditions to joint Gaussian with covariance
-C200 = T;
-C020 = T;
-C002 = T;
-C110 = r110*sqrt(C200*C020);
-C101 = r101*sqrt(C200*C002);
-C011 = r011*sqrt(C020*C002);
+C200 = cfg.T;
+C020 = cfg.T;
+C002 = cfg.T;
+C110 = cfg.r110*sqrt(C200*C020);
+C101 = cfg.r101*sqrt(C200*C002);
+C011 = cfg.r011*sqrt(C020*C002);
 
 % initialize moments on "left" and "right"
-Ml = InitializeM4_35(rhol,U0,V0,W0,C200,C110,C101,C020,C011,C002);
-Mr = InitializeM4_35(rhor,U0,V0,W0,C200,C110,C101,C020,C011,C002);
+Ml = InitializeM4_35(cfg.rhol,cfg.U0,cfg.V0,cfg.W0,C200,C110,C101,C020,C011,C002);
+Mr = InitializeM4_35(cfg.rhor,cfg.U0,cfg.V0,cfg.W0,C200,C110,C101,C020,C011,C002);
 
 %%
-C200c = T;
-C020c = T;
-C002c = T;
-C110c = r110*sqrt(C200*C020);
-C101c = r101*sqrt(C200*C002);
-C011c = r011*sqrt(C020*C002);
+C200c = cfg.T;
+C020c = cfg.T;
+C002c = cfg.T;
+C110c = cfg.r110*sqrt(C200*C020);
+C101c = cfg.r101*sqrt(C200*C002);
+C011c = cfg.r011*sqrt(C020*C002);
 % magnitude of 3-D velocity = Ma
-Uc = Ma/sqrt(2);
+Uc = cfg.Ma/sqrt(2);
 % initialize moments on "top" and "bottom" for crossing
-Mt = InitializeM4_35(rhol,-Uc,-Uc,W0,C200c,C110c,C101c,C020c,C011c,C002c);
-Mb = InitializeM4_35(rhol, Uc, Uc,W0,C200c,C110c,C101c,C020c,C011c,C002c);
+Mt = InitializeM4_35(cfg.rhol,-Uc,-Uc,cfg.W0,C200c,C110c,C101c,C020c,C011c,C002c);
+Mb = InitializeM4_35(cfg.rhol, Uc, Uc,cfg.W0,C200c,C110c,C101c,C020c,C011c,C002c);
 %%
 
-M = zeros(Np,Np,Nmom);
+M = zeros(Np,Np,cfg.Nmom);
 Mnp = M;
 Mnpx = M;
 Mnpy = M;
-S = zeros(Np,Np,Nmom);
-C = zeros(Np,Np,Nmom);
-M5 = zeros(Np,Np,Nmom5);
-S5 = zeros(Np,Np,Nmom5);
-C5 = zeros(Np,Np,Nmom5);
+S = zeros(Np,Np,cfg.Nmom);
+C = zeros(Np,Np,cfg.Nmom);
+M5 = zeros(Np,Np,cfg.Nmom5);
+S5 = zeros(Np,Np,cfg.Nmom5);
+C5 = zeros(Np,Np,cfg.Nmom5);
 
 %% initialize 35 3-D moments on 2-D spatial domain
 % low-pressure background
@@ -153,13 +135,13 @@ simulation_plots('initial', xm, ym, M, C, S, M5, C5, S5, Np, enable_plots);
 %%
 
 % name saved file
-txt = ['riemann_3D_hyqmom35_crossing','_Np',num2str(Np),'_Kn',num2str(Kn),'_Ma',num2str(Ma),'.mat'];
+txt = ['riemann_3D_hyqmom35_crossing','_Np',num2str(Np),'_Kn',num2str(cfg.Kn),'_Ma',num2str(cfg.Ma),'.mat'];
 
 %% time evolution begins here
 t = 0.;
-Fx = zeros(Np,Np,Nmom);
-Fy = zeros(Np,Np,Nmom);
-Mr = zeros(1,Nmom);  % realizable moments
+Fx = zeros(Np,Np,cfg.Nmom);
+Fy = zeros(Np,Np,cfg.Nmom);
+Mr = zeros(1,cfg.Nmom);  % realizable moments
 
 % Consolidated bounds storage using struct arrays
 bounds_grid = struct('hll', struct('xmin', zeros(Np,Np), 'xmax', zeros(Np,Np), ...
@@ -171,7 +153,7 @@ bounds_grid = struct('hll', struct('xmin', zeros(Np,Np), 'xmax', zeros(Np,Np), .
 nn = 0;
 
 tic
-while t<tmax && nn<nnmax
+while t<tmax && nn<cfg.nnmax
     nn = nn+1;
     
     % spatial fluxes, realizability checks, eigenvalues
@@ -194,7 +176,7 @@ while t<tmax && nn<nnmax
     parfor i = 1:Np
         for j = 1:Np
             MOM = squeeze(M(i,j,:));
-            [Mr, flux, bounds] = process_cell_timestep(MOM, flag2D, Ma, idx);
+            [Mr, flux, bounds] = process_cell_timestep(MOM, cfg.flag2D, cfg.Ma, idx);
             
             % Store results using structured format
             Fx(i,j,:) = flux.x;
@@ -234,12 +216,12 @@ while t<tmax && nn<nnmax
     M = Mnp;
 
     % fix time step based on largest eigenvalues in computational domain
-    dt = CFL*dx/max([abs(bounds_grid.hll.xmax(:)); abs(bounds_grid.hll.xmin(:)); ...
+    dt = cfg.CFL*dx/max([abs(bounds_grid.hll.xmax(:)); abs(bounds_grid.hll.xmin(:)); ...
                      abs(bounds_grid.hll.ymax(:)); abs(bounds_grid.hll.ymin(:))]);
     if t+dt>tmax
         dt=tmax-t;
     end
-    dt = min(dt,dtmax);
+    dt = min(dt,cfg.dtmax);
     t = t+dt;
     
     %% Euler for flux starts here
@@ -260,10 +242,10 @@ while t<tmax && nn<nnmax
     parfor i = 1:Np
         for j = 1:Np
             MOM = squeeze(M(i,j,:));
-            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM,flag2D,Ma);
-            [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr,'x',flag2D,Ma);
-            [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr,'y',flag2D,Ma);
-            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr,flag2D,Ma);
+            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM,cfg.flag2D,cfg.Ma);
+            [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr,'x',cfg.flag2D,cfg.Ma);
+            [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr,'y',cfg.flag2D,cfg.Ma);
+            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr,cfg.flag2D,cfg.Ma);
             % realizable moments
             Mnp(i,j,:)= Mr;
         end
@@ -281,7 +263,7 @@ while t<tmax && nn<nnmax
     parfor i = 1:Np
         for j = 1:Np
             MM = squeeze(M(i,j,:));
-            MMC = collision35(MM,dt,Kn);
+            MMC = collision35(MM,dt,cfg.Kn);
             Mnp(i,j,:) = MMC;
         end
     end
@@ -357,11 +339,11 @@ if nargout > 0
     results.parameters.tmax = tmax;
     results.parameters.enable_plots = enable_plots;
     results.parameters.save_output = save_output;
-    results.parameters.Kn = Kn;
-    results.parameters.Ma = Ma;
-    results.parameters.CFL = CFL;
-    results.parameters.Nmom = Nmom;
-    results.parameters.N = N;
+    results.parameters.Kn = cfg.Kn;
+    results.parameters.Ma = cfg.Ma;
+    results.parameters.CFL = cfg.CFL;
+    results.parameters.Nmom = cfg.Nmom;
+    results.parameters.N = cfg.N;
     results.parameters.final_time = t;
     results.parameters.time_steps = nn;
     

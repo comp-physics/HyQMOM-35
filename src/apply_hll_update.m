@@ -13,46 +13,39 @@ function Mnp = apply_hll_update(M, F, vmin, vmax, dt, ds, direction)
 %   Mnp - updated moments (Np x Np x Nmom)
 
 [Np, ~, Nmom] = size(M);
+
+% For y-direction, transpose to normalize to x-direction processing
+flip = strcmp(direction, 'y');
+if flip
+    M = permute(M, [2 1 3]);
+    F = permute(F, [2 1 3]);
+    vmin = vmin.';
+    vmax = vmax.';
+end
+
 Mnp = M;
 
-if strcmp(direction, 'x')
-    % Update along x-direction (loop over j, process i-slices)
-    parfor j = 1:Np
-        VMIN = zeros(Np,1);
-        VMAX = zeros(Np,1);
-        MOM = zeros(Np,Nmom);
-        FLUX = zeros(Np,Nmom);
-        for i = 1:Np
-            MOM(i,:) = squeeze(M(i,j,:));
-            FLUX(i,:) = squeeze(F(i,j,:));
-            VMIN(i,1) = vmin(i,j);
-            VMAX(i,1) = vmax(i,j);
-        end
-        MNP = pas_HLL(MOM,FLUX,dt,ds,VMIN,VMAX);
-        for i = 1:Np
-            Mnp(i,j,:) = MNP(i,:);
-        end
+% Process along first dimension (normalized to x-direction)
+parfor j = 1:Np
+    VMIN = zeros(Np,1);
+    VMAX = zeros(Np,1);
+    MOM = zeros(Np,Nmom);
+    FLUX = zeros(Np,Nmom);
+    for i = 1:Np
+        MOM(i,:) = squeeze(M(i,j,:));
+        FLUX(i,:) = squeeze(F(i,j,:));
+        VMIN(i,1) = vmin(i,j);
+        VMAX(i,1) = vmax(i,j);
     end
-elseif strcmp(direction, 'y')
-    % Update along y-direction (loop over i, process j-slices)
-    parfor i = 1:Np
-        VMIN = zeros(Np,1);
-        VMAX = zeros(Np,1);
-        MOM = zeros(Np,Nmom);
-        FLUX = zeros(Np,Nmom);
-        for j = 1:Np
-            MOM(j,:) = squeeze(M(i,j,:));
-            FLUX(j,:) = squeeze(F(i,j,:));
-            VMIN(j,1) = vmin(i,j);
-            VMAX(j,1) = vmax(i,j);
-        end
-        MNP = pas_HLL(MOM,FLUX,dt,ds,VMIN,VMAX);
-        for j = 1:Np
-            Mnp(i,j,:) = MNP(j,:);
-        end
+    MNP = pas_HLL(MOM, FLUX, dt, ds, VMIN, VMAX);
+    for i = 1:Np
+        Mnp(i,j,:) = MNP(i,:);
     end
-else
-    error('Direction must be ''x'' or ''y''');
+end
+
+% Transpose back if we processed y-direction
+if flip
+    Mnp = ipermute(Mnp, [2 1 3]);
 end
 
 end
