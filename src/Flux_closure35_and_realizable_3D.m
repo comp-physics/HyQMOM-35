@@ -23,9 +23,11 @@ function [Fx,Fy,Fz,M4r] = Flux_closure35_and_realizable_3D(M4,flag2D,Ma)
 %             M032,M013,M113,M014,M023]
 %       M4r= realizable moments
 
-s3max = 4.0 + abs(Ma)/2.0;
-h2min = 1d-8;
-itrealmax = 6;
+% Get centralized constants
+constants = get_constants(Ma);
+s3max = constants.s3max;
+h2min = constants.h2min;
+itrealmax = constants.itrealmax;
 
 %% compute mean velocities
 M000 = M4(1);
@@ -75,43 +77,14 @@ S013=S4(34);
 S022=S4(35);
 %
 %% check univariate moments
-H200 = S400 - S300^2 - 1;
-H020 = S040 - S030^2 - 1;
-H002 = S004 - S003^2 - 1;
-% check and correct realizability of S400, S040, S004
-if H200 <= h2min
-    H200 = h2min;
-    S400 = H200 + S300^2 + 1;
-end
-if H020 <= h2min
-    H020 = h2min;
-    S040 = H020 + S030^2 + 1;
-end
-if H002 <= h2min
-    H002 = h2min;
-    S004 = H002 + S003^2 + 1;
-end
-% set limits on S300, S030, and S003
-if S300 < -s3max || S300 > s3max
-    S300 = max(min(S300, s3max), -s3max);
-    S400 = H200 + S300^2 + 1;
-end
-if S030 < -s3max || S030 > s3max
-    S030 = max(min(S030, s3max), -s3max);
-    S040 = H020 + S030^2 + 1;
-end
-if S003 < -s3max || S003 > s3max
-    S003 = max(min(S003, s3max), -s3max);
-    S004 = H002 + S003^2 + 1;
-end
+[S300, S400, H200] = enforce_univariate(S300, S400, h2min, s3max);
+[S030, S040, H020] = enforce_univariate(S030, S040, h2min, s3max);
+[S003, S004, H002] = enforce_univariate(S003, S004, h2min, s3max);
 %
 %% 4-order moments: check maximum bounds on S220, S202, S022
-A220 = sqrt((H200+S300^2)*(H020+S030^2));
-S220 = realizability_engine('S220', S110, S220, A220);
-A202 = sqrt((H200+S300^2)*(H002+S003^2));
-S202 = realizability_engine('S220', S101, S202, A202);
-A022 = sqrt((H020+S030^2)*(H002+S003^2));
-S022 = realizability_engine('S220', S011, S022, A022);
+S220 = cap_S220(S110, S220, H200, H020, S300, S030);
+S202 = cap_S220(S101, S202, H200, H002, S300, S003);
+S022 = cap_S220(S011, S022, H020, H002, S030, S003);
 %
 %% check and correct realizability of 2D moments
 [S300r1,S400r1,S110r,S210r,S310r,S120r,S220r,S030r1,S130r,S040r1] = ...
