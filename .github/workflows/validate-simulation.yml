@@ -19,15 +19,8 @@ jobs:
       - name: Setup MATLAB
         uses: matlab-actions/setup-matlab@v2
 
-      - name: Run validation
-        uses: matlab-actions/run-command@v2
+      - name: Run tests
+        uses: matlab-actions/run-tests@v2
         with:
-          command: |
-            fprintf('=== MATLAB CI Validation ===\n');
-            fprintf('MATLAB version: %s\n', version);
-            
-            % Set tolerance for CI environment
-            tolerance = 1e-10;
-            
-            % Run validation against golden file
-            validate_against_goldenfile(tolerance);
+          test-results-junit: test-results.xml
+          code-coverage-cobertura: code-coverage.xml
