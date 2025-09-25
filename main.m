@@ -21,10 +21,25 @@ function [results] = main(varargin)
 % This version limits the energy fluxes and checks realizability and
 % hyperbolicity
 
+% Parse input arguments with defaults (before any clearing)
+p = inputParser;
+addOptional(p, 'Np', 6, @(x) isnumeric(x) && isscalar(x) && x > 0);
+addOptional(p, 'tmax', 0.05, @(x) isnumeric(x) && isscalar(x) && x > 0);
+addOptional(p, 'enable_plots', false, @(x) islogical(x) || isnumeric(x));
+addOptional(p, 'save_output', false, @(x) islogical(x) || isnumeric(x));
+parse(p, varargin{:});
+
+% Extract parsed parameters
+Np = p.Results.Np;
+tmax = p.Results.tmax;
+enable_plots = logical(p.Results.enable_plots);
+save_output = logical(p.Results.save_output);
+
 % Clear and initialize (only if running as script)
 if nargin == 0
     clc
-    clear 
+    % Clear all variables except the parsed parameters
+    clearvars('-except', 'Np', 'tmax', 'enable_plots', 'save_output')
     close all
 end
 
@@ -34,35 +49,6 @@ script_dir = fileparts(mfilename('fullpath'));
 src_dir = fullfile(script_dir, 'src');
 if exist(src_dir, 'dir')
     addpath(src_dir);
-end
-
-% Handle input arguments for parameter overrides
-if nargin == 0
-    % Default parameters (original script behavior)
-    enable_plots = true;
-    save_output = false;  % Don't save by default
-    Np = 6;
-    tmax = 0.05;
-elseif nargin == 2
-    % Override Np and tmax, keep plotting enabled, no saving
-    Np = varargin{1};
-    tmax = varargin{2};
-    enable_plots = true;
-    save_output = false;
-elseif nargin == 3
-    % Override all three main parameters, no saving
-    Np = varargin{1};
-    tmax = varargin{2};
-    enable_plots = varargin{3};
-    save_output = false;
-elseif nargin == 4
-    % Override all parameters including save option
-    Np = varargin{1};
-    tmax = varargin{2};
-    enable_plots = varargin{3};
-    save_output = varargin{4};
-else
-    error('Invalid number of arguments. Usage: main() or main(Np, tmax) or main(Np, tmax, enable_plots) or main(Np, tmax, enable_plots, save_output)');
 end
 
 % Fixed simulation parameters
