@@ -91,26 +91,17 @@ if H002 <= h2min
     H002 = h2min;
     S004 = H002 + S003^2 + 1;
 end
-% set limits on S300 and S030
-if S300 < -s3max
-    S300 = -s3max;
-    S400 = H200 + S300^2 + 1;
-elseif S300 > s3max
-    S300 = s3max;
+% set limits on S300, S030, and S003
+if S300 < -s3max || S300 > s3max
+    S300 = max(min(S300, s3max), -s3max);
     S400 = H200 + S300^2 + 1;
 end
-if S030 < -s3max
-    S030 = -s3max;
-    S040 = H020 + S030^2 + 1;
-elseif S030 > s3max
-    S030 = s3max;
+if S030 < -s3max || S030 > s3max
+    S030 = max(min(S030, s3max), -s3max);
     S040 = H020 + S030^2 + 1;
 end
-if S003 < -s3max
-    S003 = -s3max;
-    S004 = H002 + S003^2 + 1;
-elseif S003 > s3max
-    S003 = s3max;
+if S003 < -s3max || S003 > s3max
+    S003 = max(min(S003, s3max), -s3max);
     S004 = H002 + S003^2 + 1;
 end
 %
