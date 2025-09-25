@@ -217,31 +217,24 @@ while t<tmax && nn<nnmax
     parfor i = 1:Np
         for j = 1:Np
             MOM = squeeze(M(i,j,:));
-            % eigenvalues with hyperbolicity
-            [Mx,My,~,Mr] = Flux_closure35_and_realizable_3D(MOM,flag2D,Ma);
-            [v6xmin(i,j),v6xmax(i,j),Mr] = eigenvalues6_hyperbolic_3D(Mr,'x',flag2D,Ma);
-            [v6ymin(i,j),v6ymax(i,j),Mr] = eigenvalues6_hyperbolic_3D(Mr,'y',flag2D,Ma);
-            % fluxes in the x direction
+            [Mr, Mx, My, v6xmin_val, v6xmax_val, v5xmin_val, v5xmax_val, v6ymin_val, v6ymax_val, v5ymin_val, v5ymax_val, vpxmin_val, vpxmax_val, vpymin_val, vpymax_val] = process_cell_timestep(MOM, flag2D, Ma, idx);
+            
+            % Store results
             Fx(i,j,:) = Mx;
-            % fluxes in the y direction
             Fy(i,j,:) = My;
-            % realizable moments
-            Mnp(i,j,:)= Mr;
-            %
-            % compute eigenvalues for HLL
-            % 1-D hyqmom for m500 eigenvalues in x direction
-            MOM5 = Mr(idx.x_moments); % m000 m100 m200 m300 m400
-            [~,v5xmin(i,j),v5xmax(i,j)] = closure_and_eigenvalues(MOM5);
-            %
-            vpxmin(i,j)=min(v5xmin(i,j),v6xmin(i,j));
-            vpxmax(i,j)=max(v5xmax(i,j),v6xmax(i,j));
-            % 1-D hyqmom for m050 eigenvalues in y direction
-            MOM5 = Mr(idx.y_moments); % m000 m010 m020 m030 m040
-            [~,v5ymin(i,j),v5ymax(i,j)] = closure_and_eigenvalues(MOM5);
-            %
-            vpymin(i,j)=min(v5ymin(i,j),v6ymin(i,j));
-            vpymax(i,j)=max(v5ymax(i,j),v6ymax(i,j));
-            % 
+            Mnp(i,j,:) = Mr;
+            v6xmin(i,j) = v6xmin_val;
+            v6xmax(i,j) = v6xmax_val;
+            v6ymin(i,j) = v6ymin_val;
+            v6ymax(i,j) = v6ymax_val;
+            v5xmin(i,j) = v5xmin_val;
+            v5xmax(i,j) = v5xmax_val;
+            v5ymin(i,j) = v5ymin_val;
+            v5ymax(i,j) = v5ymax_val;
+            vpxmin(i,j) = vpxmin_val;
+            vpxmax(i,j) = vpxmax_val;
+            vpymin(i,j) = vpymin_val;
+            vpymax(i,j) = vpymax_val;
         end
     end
     M = Mnp;
