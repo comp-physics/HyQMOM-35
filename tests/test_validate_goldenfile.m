@@ -40,7 +40,7 @@ fprintf('Golden file parameters: Np=%d, tmax=%.3f, final_time=%f, steps=%d\n', .
 % Run simulation with same parameters as golden file
 fprintf('\nRunning validation simulation...\n');
 tic;
-results = main_2Dcrossing_3DHyQMOM35(golden_data.parameters.Np, golden_data.parameters.tmax, false);
+results = main(golden_data.parameters.Np, golden_data.parameters.tmax, false);
 elapsed_time = toc;
 fprintf('Simulation completed in %.2f seconds\n', elapsed_time);
 

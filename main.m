@@ -1,4 +1,4 @@
-function [results] = main_2Dcrossing_3DHyQMOM35(varargin)
+function [results] = main(varargin)
 % 2-D Riemann solver for 3-D HyQMOM using HLL and explicit Euler
 % code restricted to N=4 in 3-D with 35 moments
 %
@@ -7,14 +7,16 @@ function [results] = main_2Dcrossing_3DHyQMOM35(varargin)
 %      M031,M012,M112,M013,M022]
 %
 % Usage:
-%   main_2Dcrossing_3DHyQMOM35()                    % Run with default parameters
-%   main_2Dcrossing_3DHyQMOM35(Np, tmax)           % Override Np and tmax
-%   main_2Dcrossing_3DHyQMOM35(Np, tmax, enable_plots) % Override all three main parameters
+%   main()                    % Run with default parameters
+%   main(Np, tmax)           % Override Np and tmax
+%   main(Np, tmax, enable_plots) % Override plotting
+%   main(Np, tmax, enable_plots, save_output) % Override all parameters
 %
 % Examples:
-%   main_2Dcrossing_3DHyQMOM35()           % Default: Np=100, tmax=0.1, enable_plots=true
-%   main_2Dcrossing_3DHyQMOM35(6, 0.02)    % Golden file parameters with plotting enabled
-%   main_2Dcrossing_3DHyQMOM35(6, 0.02, false) % Golden file parameters without plotting
+%   main()           % Default: Np=6, tmax=0.05, enable_plots=true, save_output=false
+%   main(6, 0.02)    % Golden file parameters with plotting enabled, no saving
+%   main(6, 0.02, false) % Golden file parameters without plotting, no saving
+%   main(6, 0.02, false, true) % Golden file creation with saving enabled
 %
 % This version limits the energy fluxes and checks realizability and
 % hyperbolicity
@@ -38,20 +40,29 @@ end
 if nargin == 0
     % Default parameters (original script behavior)
     enable_plots = true;
+    save_output = false;  % Don't save by default
     Np = 6;
     tmax = 0.05;
 elseif nargin == 2
-    % Override Np and tmax, keep plotting enabled
+    % Override Np and tmax, keep plotting enabled, no saving
     Np = varargin{1};
     tmax = varargin{2};
     enable_plots = true;
+    save_output = false;
 elseif nargin == 3
-    % Override all three main parameters
+    % Override all three main parameters, no saving
     Np = varargin{1};
     tmax = varargin{2};
     enable_plots = varargin{3};
+    save_output = false;
+elseif nargin == 4
+    % Override all parameters including save option
+    Np = varargin{1};
+    tmax = varargin{2};
+    enable_plots = varargin{3};
+    save_output = varargin{4};
 else
-    error('Invalid number of arguments. Usage: main_2Dcrossing_3DHyQMOM35() or main_2Dcrossing_3DHyQMOM35(Np, tmax) or main_2Dcrossing_3DHyQMOM35(Np, tmax, enable_plots)');
+    error('Invalid number of arguments. Usage: main() or main(Np, tmax) or main(Np, tmax, enable_plots) or main(Np, tmax, enable_plots, save_output)');
 end
 
 % Fixed simulation parameters
@@ -487,8 +498,11 @@ for i = 1:Np
     end
 end
 
-% save date
-save(txt)
+% save simulation data (only if requested)
+if save_output
+    save(txt)
+    fprintf('Simulation data saved to: %s\n', txt);
+end
 %%
 
 %% plots
@@ -508,6 +522,7 @@ if nargout > 0
     results.parameters.Np = Np;
     results.parameters.tmax = tmax;
     results.parameters.enable_plots = enable_plots;
+    results.parameters.save_output = save_output;
     results.parameters.Kn = Kn;
     results.parameters.Ma = Ma;
     results.parameters.CFL = CFL;

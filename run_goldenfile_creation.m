@@ -11,7 +11,7 @@ fprintf('  - enable_plots = false (no plotting)\n\n');
 addpath('src');
 
 % Check if we're in the right directory
-required_files = {'main_2Dcrossing_3DHyQMOM35.m', 'simulation_plots.m'};
+required_files = {'main.m', 'simulation_plots.m'};
 for i = 1:length(required_files)
     if ~exist(required_files{i}, 'file')
         error('%s not found in current directory', required_files{i});
@@ -40,6 +40,7 @@ end
 GOLDEN_NP = 6;
 GOLDEN_TMAX = 0.02;
 GOLDEN_ENABLE_PLOTS = false;
+GOLDEN_SAVE_OUTPUT = true;  % Enable saving for golden file creation
 
 % Run the golden file creation
 try
@@ -49,7 +50,7 @@ try
     tic;
     
     % Execute the main simulation with parameter overrides
-    results = main_2Dcrossing_3DHyQMOM35(GOLDEN_NP, GOLDEN_TMAX, GOLDEN_ENABLE_PLOTS);
+    results = main(GOLDEN_NP, GOLDEN_TMAX, GOLDEN_ENABLE_PLOTS, GOLDEN_SAVE_OUTPUT);
     
     elapsed_time = toc;
     fprintf('Simulation completed in %.2f seconds\n', elapsed_time);
@@ -63,7 +64,7 @@ try
     % Add metadata
     golden_data.metadata.creation_date = datestr(now);
     golden_data.metadata.matlab_version = version;
-    golden_data.metadata.description = sprintf('Golden file for main_2Dcrossing_3DHyQMOM35.m with Np=%d, tmax=%.3f', GOLDEN_NP, GOLDEN_TMAX);
+    golden_data.metadata.description = sprintf('Golden file for main.m with Np=%d, tmax=%.3f', GOLDEN_NP, GOLDEN_TMAX);
     
     % Save to file in goldenfiles directory
     golden_filename = fullfile(goldenfiles_dir, sprintf('goldenfile_Np%d_tmax%03d.mat', GOLDEN_NP, round(GOLDEN_TMAX*1000)));
