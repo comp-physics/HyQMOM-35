@@ -1,4 +1,4 @@
-function [Mr_final, Mx, My, v6xmin, v6xmax, v5xmin, v5xmax, v6ymin, v6ymax, v5ymin, v5ymax, vpxmin, vpxmax, vpymin, vpymax] = process_cell_timestep(MOM, flag2D, Ma, idx)
+function [Mr_final, flux, bounds] = process_cell_timestep(MOM, flag2D, Ma, idx)
 % process_cell_timestep Consolidated per-cell operations for timestep
 %
 % This function combines the per-cell operations for flux computation and
@@ -13,10 +13,8 @@ function [Mr_final, Mx, My, v6xmin, v6xmax, v5xmin, v5xmax, v6ymin, v6ymax, v5ym
 %
 % Outputs:
 %   Mr_final - realizable moments after initial flux computation
-%   Mx, My - flux moments
-%   v6xmin, v6xmax, v6ymin, v6ymax - 6th order eigenvalue bounds
-%   v5xmin, v5xmax, v5ymin, v5ymax - 5th order eigenvalue bounds  
-%   vpxmin, vpxmax, vpymin, vpymax - combined eigenvalue bounds for HLL
+%   flux - struct with fields 'x' and 'y' containing flux moments
+%   bounds - struct with eigenvalue bounds for different orders and HLL
 
 %% Step 1: Initial flux computation and realizability
 [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma);
@@ -34,11 +32,15 @@ MOM5 = Mr(idx.x_moments); % m000 m100 m200 m300 m400
 MOM5 = Mr(idx.y_moments); % m000 m010 m020 m030 m040
 [~, v5ymin, v5ymax] = closure_and_eigenvalues(MOM5);
 
-% Combined eigenvalue bounds for HLL
-vpxmin = min(v5xmin, v6xmin);
-vpxmax = max(v5xmax, v6xmax);
-vpymin = min(v5ymin, v6ymin);
-vpymax = max(v5ymax, v6ymax);
+%% Step 4: Package outputs into structured format
+flux = struct('x', Mx, 'y', My);
+
+bounds = struct( ...
+    'x', struct('v6min', v6xmin, 'v6max', v6xmax, 'v5min', v5xmin, 'v5max', v5xmax), ...
+    'y', struct('v6min', v6ymin, 'v6max', v6ymax, 'v5min', v5ymin, 'v5max', v5ymax), ...
+    'hll', struct('xmin', min(v5xmin, v6xmin), 'xmax', max(v5xmax, v6xmax), ...
+                  'ymin', min(v5ymin, v6ymin), 'ymax', max(v5ymax, v6ymax)) ...
+);
 
 Mr_final = Mr;
 

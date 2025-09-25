@@ -51,62 +51,44 @@ if exist(src_dir, 'dir')
     addpath(src_dir);
 end
 
-% Fixed simulation parameters
-% Knudsen number (>= 0.001 to avoid long simulations)
-Kn = 1/1;
+% Create configuration struct with all simulation parameters
+cfg = create_config(Np, tmax, 1.0, 0.0, 0);  % Kn=1, Ma=0, flag2D=0
 
-% Mach number (for impinging jets with velocity u and temperature Theta)
-Ma = 0;  % (= u/sqrt(Theta))
-
-% flag for 2-D case (use only if S101=S011=0) if flag2D == 1
-flag2D = 0;
+% Extract commonly used values for backward compatibility
+Kn = cfg.Kn;
+Ma = cfg.Ma;
+flag2D = cfg.flag2D;
+CFL = cfg.CFL;
+nnmax = cfg.nnmax;
+dtmax = cfg.dtmax;
 
 %% 2-D space discretization: square domain
-CFL = 0.5;
-xmin = -0.5;
-xmax = 0.5;
-ymin = -0.5;
-ymax = 0.5;
-x = xmin + (xmax-xmin)*linspace(0,1,Np+1)';
-y = ymin + (ymax-ymin)*linspace(0,1,Np+1)';
-dx = (xmax-xmin)/Np;
+x = cfg.xmin + (cfg.xmax-cfg.xmin)*linspace(0,1,Np+1)';
+y = cfg.ymin + (cfg.ymax-cfg.ymin)*linspace(0,1,Np+1)';
+dx = (cfg.xmax-cfg.xmin)/Np;
 xm = x(1:Np)+dx/2;
-dy = (ymax-ymin)/Np;
+dy = (cfg.ymax-cfg.ymin)/Np;
 ym = y(1:Np)+dy/2;
-%%
 
-% order and number of moments (fixed)
-N = 4;
-Nmom = 35;
-Nmom5 = 21;
+% Extract moment parameters
+N = cfg.N;
+Nmom = cfg.Nmom;
+Nmom5 = cfg.Nmom5;
 
 % moment index map to avoid magic numbers
 idx = moment_indices();
 
-% maximum number of time steps
-nnmax = 20000000;
-%nnmax = 5;
-
-% initial correlation coefficients for joint Gaussian
-r110 = 0.;
-r101 = 0.;
-r011 = 0.;
-
-% largest dt to resolve collisions
-dtmax = Kn;
-
 %% shock problem %%%%%%%%%%%%
-% initial densities
-rhol = 1;
-rhor = 0.01;
-
-% initial mean velocities
-U0 = 0;
-V0 = 0;
-W0 = 0;
-
-% dimensionless temperature: used for scaling velocity so T=1 (do not change)
-T = 1;
+% Extract initial condition parameters from config
+rhol = cfg.rhol;
+rhor = cfg.rhor;
+U0 = cfg.U0;
+V0 = cfg.V0;
+W0 = cfg.W0;
+T = cfg.T;
+r110 = cfg.r110;
+r101 = cfg.r101;
+r011 = cfg.r011;
 
 % set initial conditions to joint Gaussian with covariance
 C200 = T;
@@ -149,7 +131,7 @@ C5 = zeros(Np,Np,Nmom5);
 M = repmat(reshape(Mr,1,1,[]), Np, Np, 1);
 
 % high-pressure center (Csize = size of center region)
-Csize = floor(0.1*Np) ;
+Csize = cfg.Csize;
 Mint = Np/2 + 1;
 Maxt = Np/2 + 1 + Csize;
 Minb = Np/2 - Csize;
@@ -177,21 +159,15 @@ txt = ['riemann_3D_hyqmom35_crossing','_Np',num2str(Np),'_Kn',num2str(Kn),'_Ma',
 t = 0.;
 Fx = zeros(Np,Np,Nmom);
 Fy = zeros(Np,Np,Nmom);
-Mx = zeros(1,Nmom);  % closures for x flux
-My = zeros(1,Nmom);  % closures for y flux
 Mr = zeros(1,Nmom);  % realizable moments
-vpxmin = zeros(Np,Np,1);
-vpxmax = zeros(Np,Np,1);
-vpymin = zeros(Np,Np,1);
-vpymax = zeros(Np,Np,1);
-v5xmin = zeros(Np,Np,1);
-v5xmax = zeros(Np,Np,1);
-v5ymin = zeros(Np,Np,1);
-v5ymax = zeros(Np,Np,1);
-v6xmin = zeros(Np,Np,1);
-v6xmax = zeros(Np,Np,1);
-v6ymin = zeros(Np,Np,1);
-v6ymax = zeros(Np,Np,1);
+
+% Consolidated bounds storage using struct arrays
+bounds_grid = struct('hll', struct('xmin', zeros(Np,Np), 'xmax', zeros(Np,Np), ...
+                                   'ymin', zeros(Np,Np), 'ymax', zeros(Np,Np)), ...
+                     'x', struct('v6min', zeros(Np,Np), 'v6max', zeros(Np,Np), ...
+                                 'v5min', zeros(Np,Np), 'v5max', zeros(Np,Np)), ...
+                     'y', struct('v6min', zeros(Np,Np), 'v6max', zeros(Np,Np), ...
+                                 'v5min', zeros(Np,Np), 'v5max', zeros(Np,Np)));
 nn = 0;
 
 tic
@@ -200,33 +176,66 @@ while t<tmax && nn<nnmax
     
     % spatial fluxes, realizability checks, eigenvalues
     Mnp = M;
+    
+    % Extract bounds arrays for parfor compatibility
+    v6xmin = bounds_grid.x.v6min;
+    v6xmax = bounds_grid.x.v6max;
+    v5xmin = bounds_grid.x.v5min;
+    v5xmax = bounds_grid.x.v5max;
+    v6ymin = bounds_grid.y.v6min;
+    v6ymax = bounds_grid.y.v6max;
+    v5ymin = bounds_grid.y.v5min;
+    v5ymax = bounds_grid.y.v5max;
+    vpxmin = bounds_grid.hll.xmin;
+    vpxmax = bounds_grid.hll.xmax;
+    vpymin = bounds_grid.hll.ymin;
+    vpymax = bounds_grid.hll.ymax;
+    
     parfor i = 1:Np
         for j = 1:Np
             MOM = squeeze(M(i,j,:));
-            [Mr, Mx, My, v6xmin_val, v6xmax_val, v5xmin_val, v5xmax_val, v6ymin_val, v6ymax_val, v5ymin_val, v5ymax_val, vpxmin_val, vpxmax_val, vpymin_val, vpymax_val] = process_cell_timestep(MOM, flag2D, Ma, idx);
+            [Mr, flux, bounds] = process_cell_timestep(MOM, flag2D, Ma, idx);
             
-            % Store results
-            Fx(i,j,:) = Mx;
-            Fy(i,j,:) = My;
+            % Store results using structured format
+            Fx(i,j,:) = flux.x;
+            Fy(i,j,:) = flux.y;
             Mnp(i,j,:) = Mr;
-            v6xmin(i,j) = v6xmin_val;
-            v6xmax(i,j) = v6xmax_val;
-            v6ymin(i,j) = v6ymin_val;
-            v6ymax(i,j) = v6ymax_val;
-            v5xmin(i,j) = v5xmin_val;
-            v5xmax(i,j) = v5xmax_val;
-            v5ymin(i,j) = v5ymin_val;
-            v5ymax(i,j) = v5ymax_val;
-            vpxmin(i,j) = vpxmin_val;
-            vpxmax(i,j) = vpxmax_val;
-            vpymin(i,j) = vpymin_val;
-            vpymax(i,j) = vpymax_val;
+            
+            % Store bounds in temporary arrays
+            v6xmin(i,j) = bounds.x.v6min;
+            v6xmax(i,j) = bounds.x.v6max;
+            v5xmin(i,j) = bounds.x.v5min;
+            v5xmax(i,j) = bounds.x.v5max;
+            v6ymin(i,j) = bounds.y.v6min;
+            v6ymax(i,j) = bounds.y.v6max;
+            v5ymin(i,j) = bounds.y.v5min;
+            v5ymax(i,j) = bounds.y.v5max;
+            vpxmin(i,j) = bounds.hll.xmin;
+            vpxmax(i,j) = bounds.hll.xmax;
+            vpymin(i,j) = bounds.hll.ymin;
+            vpymax(i,j) = bounds.hll.ymax;
         end
     end
+    
+    % Update bounds_grid structure after parfor
+    bounds_grid.x.v6min = v6xmin;
+    bounds_grid.x.v6max = v6xmax;
+    bounds_grid.x.v5min = v5xmin;
+    bounds_grid.x.v5max = v5xmax;
+    bounds_grid.y.v6min = v6ymin;
+    bounds_grid.y.v6max = v6ymax;
+    bounds_grid.y.v5min = v5ymin;
+    bounds_grid.y.v5max = v5ymax;
+    bounds_grid.hll.xmin = vpxmin;
+    bounds_grid.hll.xmax = vpxmax;
+    bounds_grid.hll.ymin = vpymin;
+    bounds_grid.hll.ymax = vpymax;
+    
     M = Mnp;
 
     % fix time step based on largest eigenvalues in computational domain
-    dt = CFL*dx/max([abs(vpxmax);abs(vpxmin);abs(vpymax);abs(vpymin)],[],'all');
+    dt = CFL*dx/max([abs(bounds_grid.hll.xmax(:)); abs(bounds_grid.hll.xmin(:)); ...
+                     abs(bounds_grid.hll.ymax(:)); abs(bounds_grid.hll.ymin(:))]);
     if t+dt>tmax
         dt=tmax-t;
     end
@@ -235,25 +244,37 @@ while t<tmax && nn<nnmax
     
     %% Euler for flux starts here
     % update moments due to spatial fluxes using method of lines and HLL
-    Mnpx = apply_hll_update(M, Fx, vpxmin, vpxmax, dt, dx, 'x');
-    Mnpy = apply_hll_update(M, Fy, vpymin, vpymax, dt, dy, 'y');
+    Mnpx = apply_hll_update(M, Fx, bounds_grid.hll.xmin, bounds_grid.hll.xmax, dt, dx, 'x');
+    Mnpy = apply_hll_update(M, Fy, bounds_grid.hll.ymin, bounds_grid.hll.ymax, dt, dy, 'y');
     % end of Euler (NB: Mnp can have unrealizable moments)
     Mnp = Mnpx + Mnpy - M;
     %%
     M = Mnp;
     %
     % enforce realizability and hyperbolicity
+    v6xmin = bounds_grid.x.v6min;
+    v6xmax = bounds_grid.x.v6max;
+    v6ymin = bounds_grid.y.v6min;
+    v6ymax = bounds_grid.y.v6max;
+    
     parfor i = 1:Np
         for j = 1:Np
             MOM = squeeze(M(i,j,:));
             [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM,flag2D,Ma);
-            [v6xmin(i,j),v6xmax(i,j),Mr] = eigenvalues6_hyperbolic_3D(Mr,'x',flag2D,Ma);
-            [v6ymin(i,j),v6ymax(i,j),Mr] = eigenvalues6_hyperbolic_3D(Mr,'y',flag2D,Ma);
+            [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr,'x',flag2D,Ma);
+            [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr,'y',flag2D,Ma);
             [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr,flag2D,Ma);
             % realizable moments
             Mnp(i,j,:)= Mr;
         end
     end
+    
+    % Update bounds_grid structure after parfor
+    bounds_grid.x.v6min = v6xmin;
+    bounds_grid.x.v6max = v6xmax;
+    bounds_grid.y.v6min = v6ymin;
+    bounds_grid.y.v6max = v6ymax;
+    
     M = Mnp;
     %
     % collision step using BGK
@@ -270,28 +291,28 @@ while t<tmax && nn<nnmax
     [C, S] = compute_CS_grid(M);
     %
     if any(C(:,:,idx.C200) < 0,'all') 
-        disp('pb C200 realizabilite apres pas temps')
+        warning('C200 < 0 after timestep %d at t=%.6f; aborting simulation', nn, t);
         break
     end
     if any(C(:,:,idx.C020) < 0,'all')
-        disp('pb C020 realizabilite apres pas temps')
+        warning('C020 < 0 after timestep %d at t=%.6f; aborting simulation', nn, t);
         break
     end
     if any(C(:,:,idx.C002) < 0,'all')
-        disp('pb C002 realizabilite apres pas temps')
+        warning('C002 < 0 after timestep %d at t=%.6f; aborting simulation', nn, t);
         break
     end
     %
     if any(S(:,:,5)-1-S(:,:,4).^2 < 0,'all') 
-        disp('pb H200 realizabilite apres pas temps')
+        warning('H200 realizability violation after timestep %d at t=%.6f', nn, t);
         %break
     end
     if any(S(:,:,15)-1-S(:,:,13).^2 < 0,'all') 
-        disp('pb H020 realizabilite apres pas temps')
+        warning('H020 realizability violation after timestep %d at t=%.6f', nn, t);
         %break
     end
     if any(S(:,:,25)-1-S(:,:,23).^2 < 0,'all') 
-        disp('pb H002 realizabilite apres pas temps')
+        warning('H002 realizability violation after timestep %d at t=%.6f', nn, t);
         %break
     end
 
@@ -322,7 +343,10 @@ nmax = Np;
 cc = 'r';
 
 % Plot final results
-simulation_plots('final', xm, ym, M, C, S, M5, C5, S5, Np, v5xmin, v5xmax, v6xmin, v6xmax, v5ymin, v5ymax, v6ymin, v6ymax, lam6xa, lam6xb, lam6ya, lam6yb, enable_plots);
+simulation_plots('final', xm, ym, M, C, S, M5, C5, S5, Np, ...
+                 bounds_grid.x.v5min, bounds_grid.x.v5max, bounds_grid.x.v6min, bounds_grid.x.v6max, ...
+                 bounds_grid.y.v5min, bounds_grid.y.v5max, bounds_grid.y.v6min, bounds_grid.y.v6max, ...
+                 lam6xa, lam6xb, lam6ya, lam6yb, enable_plots);
 
 % Return results structure (only if output is requested)
 if nargout > 0
@@ -365,21 +389,8 @@ if nargout > 0
         results.eigenvalues.lam6yb = lam6yb;
     end
     
-    % Velocity bounds
-    if exist('v5xmin', 'var')
-        results.velocities.v5xmin = v5xmin;
-        results.velocities.v5xmax = v5xmax;
-        results.velocities.v5ymin = v5ymin;
-        results.velocities.v5ymax = v5ymax;
-        results.velocities.v6xmin = v6xmin;
-        results.velocities.v6xmax = v6xmax;
-        results.velocities.v6ymin = v6ymin;
-        results.velocities.v6ymax = v6ymax;
-        results.velocities.vpxmin = vpxmin;
-        results.velocities.vpxmax = vpxmax;
-        results.velocities.vpymin = vpymin;
-        results.velocities.vpymax = vpymax;
-    end
+    % Velocity bounds (consolidated structure)
+    results.bounds = bounds_grid;
     
     % Filename for saving
     results.filename = txt;
