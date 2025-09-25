@@ -1,5 +1,5 @@
-% Simple wrapper script to create the golden file
-% This script runs create_goldenfile.m and handles any setup needed
+% Script to create golden files for regression testing
+% This script runs the simulation with fixed parameters and saves the results
 
 fprintf('=== GOLDEN FILE CREATION WRAPPER ===\n');
 fprintf('This script will create a golden file by running the simulation with:\n');

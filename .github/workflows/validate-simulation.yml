@@ -1,0 +1,94 @@
+name: Validate Simulation Against Golden File
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:  
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up MATLAB
+      uses: matlab-actions/setup-matlab@v2
+      with:
+        release: R2025b  # Adjust to your preferred MATLAB version
+        
+    - name: Check for required files
+      run: |
+        echo "Checking for required simulation files..."
+        ls -la
+        if [ ! -f "main_2Dcrossing_3DHyQMOM35.m" ]; then
+          echo "ERROR: main_2Dcrossing_3DHyQMOM35.m not found"
+          exit 1
+        fi
+        if [ ! -f "simulation_plots.m" ]; then
+          echo "ERROR: simulation_plots.m not found"
+          exit 1
+        fi
+        if [ ! -f "validate_against_goldenfile.m" ]; then
+          echo "ERROR: validate_against_goldenfile.m not found"
+          exit 1
+        fi
+        echo "SUCCESS: All required files found"
+        
+    - name: Check for golden file
+      run: |
+        echo "Checking for golden file..."
+        if [ ! -d "goldenfiles" ]; then
+          echo "ERROR: goldenfiles directory not found"
+          echo "Please run 'run_goldenfile_creation' locally and commit the golden file"
+          exit 1
+        fi
+        if [ ! -f "goldenfiles/goldenfile_Np6_tmax020.mat" ]; then
+          echo "ERROR: Golden file not found: goldenfiles/goldenfile_Np6_tmax020.mat"
+          echo "Please run 'run_goldenfile_creation' locally and commit the golden file"
+          exit 1
+        fi
+        echo "SUCCESS: Golden file found"
+        ls -la goldenfiles/
+        
+    - name: Run simulation validation
+      uses: matlab-actions/run-command@v2
+      with:
+        command: |
+          fprintf('=== GitHub Actions MATLAB Validation ===\n');
+          fprintf('MATLAB version: %s\n', version);
+          fprintf('Current directory: %s\n', pwd);
+          fprintf('Available files:\n');
+          dir
+          fprintf('\n=== Starting Validation ===\n');
+          
+          % Set appropriate tolerance for CI environment
+          % Slightly more lenient than default due to potential numerical differences
+          % across different systems/MATLAB versions
+          tolerance = 1e-10;
+          
+          % Run validation with specified tolerance
+          validate_against_goldenfile(tolerance);
+          
+    - name: Upload artifacts on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: simulation-failure-logs
+        path: |
+          *.log
+          *.mat
+          goldenfiles/
+        retention-days: 7
+        
+    - name: Summary
+      if: always()
+      run: |
+        if [ $? -eq 0 ]; then
+          echo "Simulation validation passed"
+        else
+          echo "Simulation validation failed"
+        fi
