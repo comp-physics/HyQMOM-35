@@ -1,3 +1,4 @@
+function [results] = main_2Dcrossing_3DHyQMOM35(varargin)
 % 2-D Riemann solver for 3-D HyQMOM using HLL and explicit Euler
 % code restricted to N=4 in 3-D with 35 moments
 %
@@ -5,29 +6,57 @@
 %      M001,M101,M201,M301,M002,M102,M202,M003,M103,M004,M011,M111,M211,M021,M121,...
 %      M031,M012,M112,M013,M022]
 %
-% initial conditions can be changed to test different scenario
+% Usage:
+%   main_2Dcrossing_3DHyQMOM35()                    % Run with default parameters
+%   main_2Dcrossing_3DHyQMOM35(Np, tmax)           % Override Np and tmax
+%   main_2Dcrossing_3DHyQMOM35(Np, tmax, enable_plots) % Override all three main parameters
+%
+% Examples:
+%   main_2Dcrossing_3DHyQMOM35()           % Default: Np=100, tmax=0.1, enable_plots=true
+%   main_2Dcrossing_3DHyQMOM35(6, 0.02)    % Golden file parameters with plotting enabled
+%   main_2Dcrossing_3DHyQMOM35(6, 0.02, false) % Golden file parameters without plotting
 %
 % This version limits the energy fluxes and checks realizability and
 % hyperbolicity
-%
-clc
-clear 
-close all
 
+% Clear and initialize (only if running as script)
+if nargin == 0
+    clc
+    clear 
+    close all
+end
+
+% Handle input arguments for parameter overrides
+if nargin == 0
+    % Default parameters (original script behavior)
+    enable_plots = true;
+    Np = 6;
+    tmax = 0.05;
+elseif nargin == 2
+    % Override Np and tmax, keep plotting enabled
+    Np = varargin{1};
+    tmax = varargin{2};
+    enable_plots = true;
+elseif nargin == 3
+    % Override all three main parameters
+    Np = varargin{1};
+    tmax = varargin{2};
+    enable_plots = varargin{3};
+else
+    error('Invalid number of arguments. Usage: main_2Dcrossing_3DHyQMOM35() or main_2Dcrossing_3DHyQMOM35(Np, tmax) or main_2Dcrossing_3DHyQMOM35(Np, tmax, enable_plots)');
+end
+
+% Fixed simulation parameters
 % Knudsen number (>= 0.001 to avoid long simulations)
 Kn = 1/1;
 
 % Mach number (for impinging jets with velocity u and temperature Theta)
 Ma = 0;  % (= u/sqrt(Theta))
 
-% final time (<= 0.075 to keep waves in 2-D box - smaller for large Ma)
-tmax = 0.1 ;
-
 % flag for 2-D case (use only if S101=S011=0) if flag2D == 1
 flag2D = 0;
 
 %% 2-D space discretization: square domain
-Np = 100;
 CFL = 0.5;
 xmin = -0.5;
 xmax = 0.5;
@@ -172,20 +201,8 @@ nmax = Np;
 
 cc = 'k';
 
-figure(1)
-contour3D_plots
-colormap sky
-
-figure(2)
-plot3Dsym_mom
-
-figure(3)
-plot3Dsym_C
-
-figure(4)
-plot3Dsym_S
-
-pause(4)
+% Plot initial conditions
+simulation_plots('initial', xm, ym, M, C, S, M5, C5, S5, Np, enable_plots);
 %%
 
 % name saved file
@@ -385,11 +402,8 @@ while t<tmax && nn<nnmax
         %break
     end
 
-    figure(10)
-    Cmoment3D_plots
-    colormap sky
-    pause(2)
-    hold off
+    % Plot time evolution
+    simulation_plots('time_evolution', S, C, xm, ym, Np, enable_plots);
 
     [Diff,MaxDiff] = test_symmetry_2D(M,Np);
     MaxDiff 
@@ -475,76 +489,67 @@ nmax = Np;
 
 cc = 'r';
 
-figure(2)
-%nc = 5; nl = 4;
-plot3Dsym_mom
+% Plot final results
+simulation_plots('final', xm, ym, M, C, S, M5, C5, S5, Np, v5xmin, v5xmax, v6xmin, v6xmax, v5ymin, v5ymax, v6ymin, v6ymax, lam6xa, lam6xb, lam6ya, lam6yb, enable_plots);
 
-figure(3)
-plot3Dsym_C
-
-figure(4)
-plot3Dsym_S
-
-figure(5)
-Y1 = 0*xm;
-Y2 = 0*xm;
-Y3 = 0*xm;
-Y4 = 0*xm;
-for i=1:Np
-    Y1(i) = v5xmin(i,i);
-    Y2(i) = v6xmin(i,i);
-    Y3(i) = v5xmax(i,i);
-    Y4(i) = v6xmax(i,i);
-end
-plot(xm,Y1,'k',xm,Y2,'r',xm,Y3,'k',xm,Y4,'r')
-
-figure(6)
-LAMXa = zeros(Np,6);
-LAMXb = zeros(Np,6);
-for i = 1:Np
-    for kk = 1:6
-        LAMXa(i,kk) = real(lam6xa(i,i,kk));
-        LAMXb(i,kk) = real(lam6xb(i,i,kk));
+% Return results structure (only if output is requested)
+if nargout > 0
+    results = struct();
+    
+    % Simulation parameters
+    results.parameters.Np = Np;
+    results.parameters.tmax = tmax;
+    results.parameters.enable_plots = enable_plots;
+    results.parameters.Kn = Kn;
+    results.parameters.Ma = Ma;
+    results.parameters.CFL = CFL;
+    results.parameters.Nmom = Nmom;
+    results.parameters.N = N;
+    results.parameters.final_time = t;
+    results.parameters.time_steps = nn;
+    
+    % Spatial grid
+    results.grid.x = x;
+    results.grid.y = y;
+    results.grid.xm = xm;
+    results.grid.ym = ym;
+    results.grid.dx = dx;
+    results.grid.dy = dy;
+    
+    % Final moment data
+    results.moments.M = M;
+    results.moments.C = C;
+    results.moments.S = S;
+    results.moments.M5 = M5;
+    results.moments.C5 = C5;
+    results.moments.S5 = S5;
+    
+    % Eigenvalue data
+    if exist('lam6xa', 'var')
+        results.eigenvalues.lam6xa = lam6xa;
+        results.eigenvalues.lam6xb = lam6xb;
+        results.eigenvalues.lam6ya = lam6ya;
+        results.eigenvalues.lam6yb = lam6yb;
     end
-end
-plot(xm,LAMXa,'o',xm,LAMXb,'p')
-
-figure(7)
-Y1 = 0*xm;
-Y2 = 0*xm;
-Y3 = 0*xm;
-Y4 = 0*xm;
-for i=1:Np
-    Y1(i) = v5ymin(i,i);
-    Y2(i) = v6ymin(i,i);
-    Y3(i) = v5ymax(i,i);
-    Y4(i) = v6ymax(i,i);
-end
-plot(xm,Y1,'k',xm,Y2,'r',xm,Y3,'k',xm,Y4,'r')
-
-figure(8)
-LAMYa = zeros(Np,6);
-LAMYb = zeros(Np,6);
-for j = 1:Np
-    for kk = 1:6
-        LAMYa(j,kk) = real(lam6ya(j,j,kk));
-        LAMYb(j,kk) = real(lam6yb(j,j,kk));
+    
+    % Velocity bounds
+    if exist('v5xmin', 'var')
+        results.velocities.v5xmin = v5xmin;
+        results.velocities.v5xmax = v5xmax;
+        results.velocities.v5ymin = v5ymin;
+        results.velocities.v5ymax = v5ymax;
+        results.velocities.v6xmin = v6xmin;
+        results.velocities.v6xmax = v6xmax;
+        results.velocities.v6ymin = v6ymin;
+        results.velocities.v6ymax = v6ymax;
+        results.velocities.vpxmin = vpxmin;
+        results.velocities.vpxmax = vpxmax;
+        results.velocities.vpymin = vpymin;
+        results.velocities.vpymax = vpymax;
     end
+    
+    % Filename for saving
+    results.filename = txt;
 end
-plot(ym,LAMYa,'o',ym,LAMYb,'p')
 
-figure(9)
-contour3D_plots
-colormap sky
-
-figure(10)
-Cmoment3D_plots
-colormap sky
-
-figure(11)
-Smoment3D_plots
-colormap sky
-
-figure(12)
-hyperbolic3D_plots
-colormap sky
+end
