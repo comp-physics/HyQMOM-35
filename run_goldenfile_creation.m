@@ -7,6 +7,9 @@ fprintf('  - Np = 6 (grid points)\n');
 fprintf('  - tmax = 0.02 (final time)\n');
 fprintf('  - enable_plots = false (no plotting)\n\n');
 
+% Add src directory to path for function dependencies
+addpath('src');
+
 % Check if we're in the right directory
 required_files = {'main_2Dcrossing_3DHyQMOM35.m', 'simulation_plots.m'};
 for i = 1:length(required_files)

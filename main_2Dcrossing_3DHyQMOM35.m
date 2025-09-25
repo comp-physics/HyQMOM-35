@@ -26,6 +26,14 @@ if nargin == 0
     close all
 end
 
+% Add src directory to path for function dependencies
+% Get the directory where this script is located
+script_dir = fileparts(mfilename('fullpath'));
+src_dir = fullfile(script_dir, 'src');
+if exist(src_dir, 'dir')
+    addpath(src_dir);
+end
+
 % Handle input arguments for parameter overrides
 if nargin == 0
     % Default parameters (original script behavior)

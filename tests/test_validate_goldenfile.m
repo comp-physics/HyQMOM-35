@@ -13,6 +13,8 @@ fprintf('MATLAB version: %s\n', version);
 
 % Add parent directory to path so we can find the main simulation function
 addpath('..');
+% Add src directory to path for function dependencies
+addpath('../src');
 
 % Set tolerance for CI environment
 tolerance = 1e-10;
@@ -29,7 +31,7 @@ end
 fprintf('Loading golden file: %s\n', golden_filename);
 golden = load(golden_filename);
 golden_data = golden.golden_data;
-
+  
 fprintf('Golden file created: %s\n', golden_data.metadata.creation_date);
 fprintf('Golden file parameters: Np=%d, tmax=%.3f, final_time=%f, steps=%d\n', ...
     golden_data.parameters.Np, golden_data.parameters.tmax, ...
