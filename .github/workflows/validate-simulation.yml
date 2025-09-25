@@ -24,6 +24,7 @@ jobs:
         with:
           test-results-junit: test-results/results.xml
           source-folder: .
+          select-tests: test_validate_goldenfile.m
 
       - name: Upload test results
         if: always()
