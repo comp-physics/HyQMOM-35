@@ -262,8 +262,8 @@ while t<tmax && nn<nnmax
             end
             % eigenvalues with hyperbolicity
             [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM,flag2D,Ma);
-            [v6xmin(i,j),v6xmax(i,j),Mr] = eigenvalues6x_hyperbolic_3D(Mr,flag2D,Ma);
-            [v6ymin(i,j),v6ymax(i,j),Mr] = eigenvalues6y_hyperbolic_3D(Mr,flag2D,Ma);
+            [v6xmin(i,j),v6xmax(i,j),Mr] = eigenvalues6_hyperbolic_3D(Mr,'x',flag2D,Ma);
+            [v6ymin(i,j),v6ymax(i,j),Mr] = eigenvalues6_hyperbolic_3D(Mr,'y',flag2D,Ma);
             [Mx,My,~,Mr] = Flux_closure35_and_realizable_3D(Mr,flag2D,Ma);
             % fluxes in the x direction
             Fx(i,j,:) = Mx;
@@ -356,8 +356,8 @@ while t<tmax && nn<nnmax
                 MOM(kk) = M(i,j,kk) ;
             end
             [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM,flag2D,Ma);
-            [v6xmin(i,j),v6xmax(i,j),Mr] = eigenvalues6x_hyperbolic_3D(Mr,flag2D,Ma);
-            [v6ymin(i,j),v6ymax(i,j),Mr] = eigenvalues6y_hyperbolic_3D(Mr,flag2D,Ma);
+            [v6xmin(i,j),v6xmax(i,j),Mr] = eigenvalues6_hyperbolic_3D(Mr,'x',flag2D,Ma);
+            [v6ymin(i,j),v6ymax(i,j),Mr] = eigenvalues6_hyperbolic_3D(Mr,'y',flag2D,Ma);
             [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr,flag2D,Ma);
             % realizable moments
             Mnp(i,j,:)= Mr;
