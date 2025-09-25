@@ -7,7 +7,7 @@ if R110 <= 0 && R101 > 0 && R011 > 0 % treat edge with S110 = \pm 1
     S011r = sign(S011r)*Smean;
     S101r = sign(S101r)*Smean;
     % check and correct realizability of S110, S101, S011
-    [S110r,S101r,S011r,S2] = realizability_S2(S110r,S101r,S011r);
+    [S110r,S101r,S011r,S2] = realizability_engine('S2', S110r, S101r, S011r);
     %
     S300r = S300r1;
     S030r = S030r1;
@@ -116,7 +116,7 @@ elseif R101 <= 0 && R110 > 0 && R011 > 0 % treat edge with S101 = \pm 1
     S011r = sign(S011r)*Smean;
     S110r = sign(S110r)*Smean;
     % check and correct realizability of S110, S101, S011
-    [S110r,S101r,S011r,S2] = realizability_S2(S110r,S101r,S011r);
+    [S110r,S101r,S011r,S2] = realizability_engine('S2', S110r, S101r, S011r);
     %
     S300r = S300r2;
     S003r = S003r2;
@@ -225,7 +225,7 @@ elseif R011 <= 0 && R101 > 0 && R110 > 0 % treat edge with S011 = \pm 1
     S101r = sign(S101r)*Smean;
     S110r = sign(S110r)*Smean;
     % check and correct realizability of S110, S101, S011
-    [S110r,S101r,S011r,S2] = realizability_S2(S110r,S101r,S011r);
+    [S110r,S101r,S011r,S2] = realizability_engine('S2', S110r, S101r, S011r);
     %
     S030r = S030r3;
     S003r = S003r3;
@@ -335,7 +335,7 @@ else % treat corner
         warning('S011r*S101r*S110r ~= 1 at corner')
     end
     % check and correct realizability of S110, S101, S011
-    [S110r,S101r,S011r,S2] = realizability_S2(S110r,S101r,S011r);
+    [S110r,S101r,S011r,S2] = realizability_engine('S2', S110r, S101r, S011r);
     %
     S300a = S030r1;
     S300b = S030r2;

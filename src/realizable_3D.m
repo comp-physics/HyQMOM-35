@@ -17,17 +17,17 @@ H002 = max([eps S004-S003^2-1]);
 %
 % 4-order moments: check maximum bounds on S220, S202, S022
 A220 = sqrt((H200+S300^2)*(H020+S030^2));
-S220max = realizablity_S220(S110,S220,A220);
+S220max = realizability_engine('S220', S110, S220, A220);
 A202 = sqrt((H200+S300^2)*(H002+S003^2));
-S202max = realizablity_S220(S101,S202,A202);
+S202max = realizability_engine('S220', S101, S202, A202);
 A022 = sqrt((H020+S030^2)*(H002+S003^2));
-S022max = realizablity_S220(S011,S022,A022);
+S022max = realizability_engine('S220', S011, S022, A022);
 S220 = min(S220,S220max);
 S202 = min(S202,S202max);
 S022 = min(S022,S022max);
 %
 % check and correct realizability of S110, S101, S011
-[S110,S101,S011,S2] = realizability_S2(S110,S101,S011);
+[S110,S101,S011,S2] = realizability_engine('S2', S110, S101, S011);
 % S2 = max(0,S2);
 % these R should all be positive!
 R110 = max(0,1-S110^2);
@@ -122,30 +122,30 @@ else % treat interior of 2nd-order moment space
     % 3-order moments: first check and correct realizability of S210, etc.
     flagE11 = 0;
     if E1(1,1) < 0
-        [S210,S201] = realizability_S210(S110,S101,S011,S300,S210,S201,H200,beta);
+        [S210,S201] = realizability_engine('S210', S110, S101, S011, S300, S210, S201, H200, beta);
         flagE11 = 1;
     end
     % check and correct realizability of S120, S021
     flagE44 = 0;
     if E1(4,4) < 0
-        [S120,S021] = realizability_S210(S110,S011,S101,S030,S120,S021,H020,beta);
+        [S120,S021] = realizability_engine('S210', S110, S011, S101, S030, S120, S021, H020, beta);
         flagE44 = 1;
     end
     % check and correct realizability of S102, S012
     flagE66 = 0;
     if E1(6,6) < 0
-        [S012,S102] = realizability_S210(S011,S101,S110,S003,S012,S102,H002,beta);
+        [S012,S102] = realizability_engine('S210', S011, S101, S110, S003, S012, S102, H002, beta);
         flagE66 = 1;
     end
     % check and correct realizability of S111
-    [S111r] = realizability_S111(S110,S101,S011,S210,S201,S120,S021,S102,S012,S111);
+    [S111r] = realizability_engine('S111', S110, S101, S011, S210, S201, S120, S021, S102, S012, S111);
     if S111r ~= S111
         S111 = S111r;
     end
     % set minimum value based on S310
-    S220_310 = realizability_S310_220(S110,S101,S011,S210,S120,S111,S220);
-    S202_310 = realizability_S310_220(S101,S110,S011,S201,S102,S111,S202);
-    S022_310 = realizability_S310_220(S011,S110,S101,S021,S012,S111,S022);
+    S220_310 = realizability_engine('S310_220', S110, S101, S011, S210, S120, S111, S220);
+    S202_310 = realizability_engine('S310_220', S101, S110, S011, S201, S102, S111, S202);
+    S022_310 = realizability_engine('S310_220', S011, S110, S101, S021, S012, S111, S022);
     %
     % 4-order moments: lower bound for positive diagonal elements
     S220_diag = S220;
@@ -273,37 +273,37 @@ else % treat interior of 2nd-order moment space
     beta = 1-1000*eps;
     if flagE11 == 0 && flagE22 == 0
         if det(E1(1:2,1:2)) < h2min
-            [S310,S220a]= realizability_S310(S110,S101,S011,S300,S210,S201,S120,S111,S310,S220,H200,beta);
+            [S310,S220a]= realizability_engine('S310', S110, S101, S011, S300, S210, S201, S120, S111, S310, S220, H200, beta);
             flag310 = 1;
         end
     end
     if flagE22 == 0 && flagE44 == 0
         if det(E3(1:2,1:2)) < h2min
-            [S130,S220b]= realizability_S310(S110,S011,S101,S030,S120,S021,S210,S111,S130,S220,H020,beta);
+            [S130,S220b]= realizability_engine('S310', S110, S011, S101, S030, S120, S021, S210, S111, S130, S220, H020, beta);
             flag310 = 1;
         end
     end
     if flagE11 == 0 && flagE33 == 0
         if det(E2(1:2,1:2)) < h2min
-            [S301,S202a]= realizability_S310(S101,S110,S011,S300,S201,S210,S102,S111,S301,S202,H200,beta);
+            [S301,S202a]= realizability_engine('S310', S101, S110, S011, S300, S201, S210, S102, S111, S301, S202, H200, beta);
             flag310 = 1;
         end
     end
     if flagE33 == 0 && flagE66 == 0
         if det(E4(1:2,1:2)) < h2min
-            [S103,S202b]= realizability_S310(S101,S011,S110,S003,S102,S012,S201,S111,S103,S202,H002,beta);
+            [S103,S202b]= realizability_engine('S310', S101, S011, S110, S003, S102, S012, S201, S111, S103, S202, H002, beta);
             flag310 = 1;
         end
     end
     if flagE44 == 0 && flagE55 == 0
         if det(E5(1:2,1:2)) < h2min
-            [S031,S022a]= realizability_S310(S011,S110,S101,S030,S021,S120,S012,S111,S031,S022,H020,beta);
+            [S031,S022a]= realizability_engine('S310', S011, S110, S101, S030, S021, S120, S012, S111, S031, S022, H020, beta);
             flag310 = 1;
         end
     end
     if flagE55 == 0 && flagE66 == 0
         if det(E6(1:2,1:2)) < h2min
-            [S013,S022b]= realizability_S310(S011,S101,S110,S003,S012,S102,S021,S111,S013,S022,H002,beta);
+            [S013,S022b]= realizability_engine('S310', S011, S101, S110, S003, S012, S102, S021, S111, S013, S022, H002, beta);
             flag310 = 1;
         end
     end
@@ -358,7 +358,7 @@ else % treat interior of 2nd-order moment space
                 S220a = d22a+e13a^2/e11a;
                 S202a = d33a+e12a^2/e11a;
             end
-            S211 = realizability_S211(e11a,e22a,e33a,e12a,e13a,d23a,S211,beta);
+            S211 = realizability_engine('S211', e11a, e22a, e33a, e12a, e13a, d23a, S211, beta);
             flag220 = 1;
         end
     end
@@ -377,7 +377,7 @@ else % treat interior of 2nd-order moment space
                 S220b = d22b+e13b^2/e11b;
                 S022b = d33b+e12b^2/e11b;
             end
-            S121 = realizability_S211(e11b,e22b,e33b,e12b,e13b,d23b,S121,beta);
+            S121 = realizability_engine('S211', e11b, e22b, e33b, e12b, e13b, d23b, S121, beta);
             flag220 = 1;
         end
     end
@@ -398,7 +398,7 @@ else % treat interior of 2nd-order moment space
                 S022c = d33c+e12c^2/e11c;
             end
             %
-            S112 = realizability_S211(e11c,e22c,e33c,e12c,e13c,d23c,S112,beta);
+            S112 = realizability_engine('S211', e11c, e22c, e33c, e12c, e13c, d23c, S112, beta);
             %
             flag220 = 1;
         end

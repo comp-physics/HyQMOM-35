@@ -116,11 +116,11 @@ end
 %
 %% 4-order moments: check maximum bounds on S220, S202, S022
 A220 = sqrt((H200+S300^2)*(H020+S030^2));
-S220 = realizablity_S220(S110,S220,A220);
+S220 = realizability_engine('S220', S110, S220, A220);
 A202 = sqrt((H200+S300^2)*(H002+S003^2));
-S202 = realizablity_S220(S101,S202,A202);
+S202 = realizability_engine('S220', S101, S202, A202);
 A022 = sqrt((H020+S030^2)*(H002+S003^2));
-S022 = realizablity_S220(S011,S022,A022);
+S022 = realizability_engine('S220', S011, S022, A022);
 %
 %% check and correct realizability of 2D moments
 [S300r1,S400r1,S110r,S210r,S310r,S120r,S220r,S030r1,S130r,S040r1] = ...
