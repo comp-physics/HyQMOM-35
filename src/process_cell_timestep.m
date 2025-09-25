@@ -24,13 +24,7 @@ function [Mr_final, flux, bounds] = process_cell_timestep(MOM, flag2D, Ma, idx)
 [v6ymin, v6ymax, Mr] = eigenvalues6_hyperbolic_3D(Mr, 'y', flag2D, Ma);
 
 %% Step 3: Eigenvalues for HLL
-% 1-D hyqmom for m500 eigenvalues in x direction
-MOM5 = Mr(idx.x_moments); % m000 m100 m200 m300 m400
-[~, v5xmin, v5xmax] = closure_and_eigenvalues(MOM5);
-
-% 1-D hyqmom for m050 eigenvalues in y direction  
-MOM5 = Mr(idx.y_moments); % m000 m010 m020 m030 m040
-[~, v5ymin, v5ymax] = closure_and_eigenvalues(MOM5);
+[v5xmin, v5xmax, v5ymin, v5ymax] = hll_bounds_from_M(Mr, idx);
 
 %% Step 4: Package outputs into structured format
 flux = struct('x', Mx, 'y', My);

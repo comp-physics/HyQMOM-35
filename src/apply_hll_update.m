@@ -27,20 +27,14 @@ Mnp = M;
 
 % Process along first dimension (normalized to x-direction)
 parfor j = 1:Np
-    VMIN = zeros(Np,1);
-    VMAX = zeros(Np,1);
-    MOM = zeros(Np,Nmom);
-    FLUX = zeros(Np,Nmom);
-    for i = 1:Np
-        MOM(i,:) = squeeze(M(i,j,:));
-        FLUX(i,:) = squeeze(F(i,j,:));
-        VMIN(i,1) = vmin(i,j);
-        VMAX(i,1) = vmax(i,j);
-    end
+    % Vectorized extraction
+    MOM = squeeze(M(:,j,:));
+    FLUX = squeeze(F(:,j,:));
+    VMIN = vmin(:,j);
+    VMAX = vmax(:,j);
+    
     MNP = pas_HLL(MOM, FLUX, dt, ds, VMIN, VMAX);
-    for i = 1:Np
-        Mnp(i,j,:) = MNP(i,:);
-    end
+    Mnp(:,j,:) = reshape(MNP, [size(MNP,1), 1, size(MNP,2)]);
 end
 
 % Transpose back if we processed y-direction

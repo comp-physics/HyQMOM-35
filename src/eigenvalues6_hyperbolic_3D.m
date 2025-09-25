@@ -55,39 +55,18 @@ m112 = M(33);
 m013 = M(34);
 m022 = M(35);
 
-% Compute eigenvalues based on direction
-if strcmpi(direction, 'x')
-    % X-direction: UV moments
-    J6 = jacobian6(m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400);
-    lam6a = eig(J6);
-    lam6ar = sort(real(lam6a));
-    v6min = lam6ar(1);
-    v6max = lam6ar(6);
-    
-    % X-direction: UW moments
-    J6 = jacobian6(m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400);
-    lam6b = eig(J6);
-    lam6br = sort(real(lam6b));
-    v6min = min([v6min lam6br(1)]);
-    v6max = max([v6max lam6br(6)]);
-    
-elseif strcmpi(direction, 'y')
-    % Y-direction: VU moments
-    J6 = jacobian6(m000,m100,m200,m300,m400,m010,m110,m210,m310,m020,m120,m220,m030,m130,m040);
-    lam6a = eig(J6);
-    lam6ar = sort(real(lam6a));
-    v6min = lam6ar(1);
-    v6max = lam6ar(6);
-    
-    % Y-direction: VW moments
-    J6 = jacobian6(m000,m001,m002,m003,m004,m010,m011,m012,m013,m020,m021,m022,m030,m031,m040);
-    lam6b = eig(J6);
-    lam6br = sort(real(lam6b));
-    v6min = min([v6min lam6br(1)]);
-    v6max = max([v6max lam6br(6)]);
-else
-    error('eigenvalues6_hyperbolic_3D: direction must be ''x'' or ''y''');
-end
+% Compute eigenvalues using template-based helper
+templates = jacobian_templates(direction);
+[v6min, v6max] = jac6_minmax(M, templates);
+
+% Get individual eigenvalue arrays for complex check (needed later)
+args_a = num2cell(M(templates{1}));
+J6a = jacobian6(args_a{:});
+lam6a = eig(J6a);
+
+args_b = num2cell(M(templates{2}));
+J6b = jacobian6(args_b{:});
+lam6b = eig(J6b);
 
 % Check for complex eigenvalues and correct if needed
 if max(abs(imag(lam6a))) > 1000*eps || max(abs(imag(lam6b))) > 1000*eps
