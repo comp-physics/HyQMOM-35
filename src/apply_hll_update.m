@@ -34,7 +34,7 @@ parfor j = 1:Np
     VMAX = vmax(:,j);
     
     MNP = pas_HLL(MOM, FLUX, dt, ds, VMIN, VMAX);
-    Mnp(:,j,:) = reshape(MNP, [size(MNP,1), 1, size(MNP,2)]);
+    Mnp(:,j,:) = MNP;
 end
 
 % Transpose back if we processed y-direction
