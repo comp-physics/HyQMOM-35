@@ -258,11 +258,11 @@ spmd
     
     % Gather results to rank 1
     M_interior = M(halo+1:halo+nx, halo+1:halo+ny, :);
-    gathered = labSendReceive(1, 1, M_interior);
     
     if labindex == 1
+        % Rank 1: receive from all other workers and assemble
         M_final = zeros(Np, Np, Nmom);
-        M_final(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = gathered;
+        M_final(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = M_interior;
         
         for src = 2:numlabs
             blk = labReceive(src);
@@ -278,6 +278,7 @@ spmd
         final_time = t;
         time_steps = nn;
     else
+        % All other workers: send to rank 1
         labSend(M_interior, 1);
         M_final = [];
         final_time = [];

@@ -34,46 +34,53 @@ function A = halo_exchange_2d(A, decomp, bc)
         return;
     end
 
-    % X-direction exchange: left-right pairs exchange simultaneously
-    % Each worker sends right interior edge to right neighbor, receives from left neighbor
+    % X-direction exchange using non-blocking send/receive
+    % Post all sends first, then do receives
     left_neighbor = decomp.neighbors.left;
     right_neighbor = decomp.neighbors.right;
     
-    if right_neighbor ~= -1
-        % Send my right interior edge to right neighbor
-        sendbuf = A(h+nx+1-h:h+nx, h+1:h+ny, :);
-        recvbuf = labSendReceive(right_neighbor, right_neighbor, sendbuf);
-        % Receive from right neighbor into my right halo
-        A(h+nx+1:h+nx+h, h+1:h+ny, :) = recvbuf;
-    end
-    
+    % Send to left neighbor (my left interior edge)
     if left_neighbor ~= -1
-        % Send my left interior edge to left neighbor
-        sendbuf = A(h+1:h+h, h+1:h+ny, :);
-        recvbuf = labSendReceive(left_neighbor, left_neighbor, sendbuf);
-        % Receive from left neighbor into my left halo
-        A(1:h, h+1:h+ny, :) = recvbuf;
+        labSend(A(h+1:h+h, h+1:h+ny, :), left_neighbor);
     end
     
-    % Y-direction exchange: down-up pairs exchange simultaneously
-    % Each worker sends top interior edge to up neighbor, receives from down neighbor
+    % Send to right neighbor (my right interior edge)
+    if right_neighbor ~= -1
+        labSend(A(h+nx+1-h:h+nx, h+1:h+ny, :), right_neighbor);
+    end
+    
+    % Receive from left neighbor into my left halo
+    if left_neighbor ~= -1
+        A(1:h, h+1:h+ny, :) = labReceive(left_neighbor);
+    end
+    
+    % Receive from right neighbor into my right halo
+    if right_neighbor ~= -1
+        A(h+nx+1:h+nx+h, h+1:h+ny, :) = labReceive(right_neighbor);
+    end
+    
+    % Y-direction exchange using non-blocking send/receive
     down_neighbor = decomp.neighbors.down;
     up_neighbor = decomp.neighbors.up;
     
-    if up_neighbor ~= -1
-        % Send my top interior edge to up neighbor
-        sendbuf = A(h+1:h+nx, h+ny+1-h:h+ny, :);
-        recvbuf = labSendReceive(up_neighbor, up_neighbor, sendbuf);
-        % Receive from up neighbor into my top halo
-        A(h+1:h+nx, h+ny+1:h+ny+h, :) = recvbuf;
+    % Send to down neighbor (my bottom interior edge)
+    if down_neighbor ~= -1
+        labSend(A(h+1:h+nx, h+1:h+h, :), down_neighbor);
     end
     
+    % Send to up neighbor (my top interior edge)
+    if up_neighbor ~= -1
+        labSend(A(h+1:h+nx, h+ny+1-h:h+ny, :), up_neighbor);
+    end
+    
+    % Receive from down neighbor into my bottom halo
     if down_neighbor ~= -1
-        % Send my bottom interior edge to down neighbor
-        sendbuf = A(h+1:h+nx, h+1:h+h, :);
-        recvbuf = labSendReceive(down_neighbor, down_neighbor, sendbuf);
-        % Receive from down neighbor into my bottom halo
-        A(h+1:h+nx, 1:h, :) = recvbuf;
+        A(h+1:h+nx, 1:h, :) = labReceive(down_neighbor);
+    end
+    
+    % Receive from up neighbor into my top halo
+    if up_neighbor ~= -1
+        A(h+1:h+nx, h+ny+1:h+ny+h, :) = labReceive(up_neighbor);
     end
 end
 
