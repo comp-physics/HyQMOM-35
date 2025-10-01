@@ -9,3 +9,6 @@
 *.asv
 *.m~
 
+.cursor/
+.cursorrules
+.rubies

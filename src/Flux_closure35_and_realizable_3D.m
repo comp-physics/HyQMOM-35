@@ -23,56 +23,33 @@ function [Fx,Fy,Fz,M4r] = Flux_closure35_and_realizable_3D(M4,flag2D,Ma)
 %             M032,M013,M113,M014,M023]
 %       M4r= realizable moments
 
+% Constants
 s3max = 4.0 + abs(Ma)/2.0;
-h2min = 1d-8;
+h2min = 1e-8;
 itrealmax = 6;
 
-%% compute mean velocities
+% Extract basic quantities
 M000 = M4(1);
-M100 = M4(2);
-M010 = M4(6);
-M001 = M4(16);
-umean = M100/M000;
-vmean = M010/M000;
-wmean = M001/M000; 
-%
-%% compute central and standardized moments from 35 known moments
-[C4,S4] = M2CS4_35(M4);
-%
-C200 = max(eps,C4(3));
-C020 = max(eps,C4(10));
-C002 = max(eps,C4(20));
-%
-S300=S4(4);
-S400=S4(5);
-S110=S4(7);
-S210=S4(8);
-S310=S4(9);
-S120=S4(11);
-S220=S4(12);
-S030=S4(13);
-S130=S4(14);
-S040=S4(15);
-%
-S101=S4(17);
-S201=S4(18);
-S301=S4(19);
-S102=S4(21);
-S202=S4(22);
-S003=S4(23);
-S103=S4(24);
-S004=S4(25);
-S011=S4(26);
-S111=S4(27);
-S211=S4(28);
-S021=S4(29);
-S121=S4(30);
-%
-S031=S4(31);
-S012=S4(32);
-S112=S4(33);
-S013=S4(34);
-S022=S4(35);
+umean = M4(2) / M000;  % M100/M000
+vmean = M4(6) / M000;  % M010/M000
+wmean = M4(16) / M000; % M001/M000
+
+% Compute central and standardized moments
+[C4, S4] = M2CS4_35(M4);
+
+% Extract key central moments (variances)
+C200 = max(eps, C4(3));
+C020 = max(eps, C4(10));
+C002 = max(eps, C4(20));
+
+% Extract standardized moments (use more compact indexing)
+% S4 indices: [1:5]=x-dir, [6:15]=xy-plane, [16:25]=xz-plane, [26:35]=cross-terms
+S300=S4(4);  S400=S4(5);  S110=S4(7);  S210=S4(8);  S310=S4(9);
+S120=S4(11); S220=S4(12); S030=S4(13); S130=S4(14); S040=S4(15);
+S101=S4(17); S201=S4(18); S301=S4(19); S102=S4(21); S202=S4(22);
+S003=S4(23); S103=S4(24); S004=S4(25); S011=S4(26); S111=S4(27);
+S211=S4(28); S021=S4(29); S121=S4(30); S031=S4(31); S012=S4(32);
+S112=S4(33); S013=S4(34); S022=S4(35);
 %
 %% check univariate moments
 [S300, S400, H200] = enforce_univariate(S300, S400, h2min, s3max);

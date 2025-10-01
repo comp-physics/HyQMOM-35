@@ -1,48 +1,34 @@
-function Mout = collision35(M,dt,Kn)
-% collision35(Min,dt,Kn) elastic BGK collisions
+function Mout = collision35(M, dt, Kn)
+% COLLISION35 Applies elastic BGK collision operator to moments
+%
+%   Mout = collision35(M, dt, Kn) relaxes moments toward Maxwellian equilibrium
+%
 %   Input: 
-%       Mi = moments up to 4th order
-%       dt = time step
-%       Kn = Knudsen number
-M000 = M(1);
-M100 = M(2);
-M200 = M(3);
-M010 = M(6);
-M020 = M(10);
-M001 = M(16);
-M002 = M(20);
+%       M  - 35-element moment vector
+%       dt - Time step
+%       Kn - Knudsen number
+%   Output:
+%       Mout - Updated moments after collision
 
-rho = M000;
-umean = M100/rho;
-vmean = M010/rho;
-wmean = M001/rho;
-C200 = M200/rho - umean^2;
-C020 = M020/rho - vmean^2;
-C002 = M002/rho - wmean^2;
+% Extract conserved quantities and compute temperature
+rho = M(1);
+umean = M(2) / rho;
+vmean = M(6) / rho;
+wmean = M(16) / rho;
 
-% temperature (2-D)
-Theta = (C200 + C020 + C002)/3;
-sTheta = sqrt(Theta);
+% Compute temperature from trace of covariance matrix
+C200 = M(3)/rho - umean^2;
+C020 = M(10)/rho - vmean^2;
+C002 = M(20)/rho - wmean^2;
+Theta = (C200 + C020 + C002) / 3;
 
-% Maxwellian covariance matrix
-CG200 = Theta;
-CG020 = Theta;
-CG002 = Theta;
-CG110 = 0;
-CG101 = 0;
-CG011 = 0;
+% Collision time scale
+tc = Kn / (rho * sqrt(Theta) * 2); 
 
-% collision time scale
-tc = Kn/(rho*sTheta*2); 
+% Maxwellian equilibrium (isotropic covariance)
+MG = InitializeM4_35(rho, umean, vmean, wmean, Theta, 0, 0, Theta, 0, Theta);
 
-% Equilibrium distribution
-MG = InitializeM4_35(rho,umean,vmean,wmean,CG200,CG110,CG101,CG020,CG011,CG002);
-
-if size(M) ~= size(MG)
-    warning('size mismatch')
-end
-
-% BGK model (semi-analytical)
-Mout = MG - exp(-dt/tc)*(MG-M);
+% BGK relaxation: dM/dt = (MG - M)/tc
+Mout = MG - exp(-dt/tc) * (MG - M);
 
 end
