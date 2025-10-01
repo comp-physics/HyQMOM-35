@@ -18,10 +18,27 @@ function setupOnce(testCase)
     % Store paths in test case data
     testCase.TestData.goldenfiles_dir = '../goldenfiles';
     testCase.TestData.tolerance = 1e-12;  % Stricter tolerance for MPI tests
+    
+    % Check if Parallel Computing Toolbox is available
+    testCase.TestData.has_pct = license('test', 'Distrib_Computing_Toolbox') && ...
+                                 ~isempty(ver('parallel'));
+    
+    if ~testCase.TestData.has_pct
+        warning('MPI tests require Parallel Computing Toolbox - tests will be skipped');
+    end
 end
 
 function test_mpi_1_rank_vs_serial(testCase)
 % Test that MPI with 1 rank produces identical results to serial
+    
+    % Skip if Parallel Computing Toolbox not available
+    if ~testCase.TestData.has_pct
+        fprintf('\n=== TEST: MPI 1 Rank vs Serial ===\n');
+        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
+        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
+        return;
+    end
+    
     fprintf('\n=== TEST: MPI 1 Rank vs Serial ===\n');
     
     % Load serial golden file
@@ -45,6 +62,15 @@ end
 
 function test_mpi_2_ranks_vs_golden(testCase)
 % Test MPI with 2 ranks against golden file
+    
+    % Skip if Parallel Computing Toolbox not available
+    if ~testCase.TestData.has_pct
+        fprintf('\n=== TEST: MPI 2 Ranks vs Golden File ===\n');
+        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
+        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
+        return;
+    end
+    
     fprintf('\n=== TEST: MPI 2 Ranks vs Golden File ===\n');
     
     golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_2ranks_Np10_tmax100.mat');
@@ -72,6 +98,15 @@ end
 
 function test_mpi_4_ranks_vs_golden(testCase)
 % Test MPI with 4 ranks against golden file
+    
+    % Skip if Parallel Computing Toolbox not available
+    if ~testCase.TestData.has_pct
+        fprintf('\n=== TEST: MPI 4 Ranks vs Golden File ===\n');
+        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
+        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
+        return;
+    end
+    
     fprintf('\n=== TEST: MPI 4 Ranks vs Golden File ===\n');
     
     golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_4ranks_Np10_tmax100.mat');
@@ -99,6 +134,15 @@ end
 
 function test_mpi_consistency_across_ranks(testCase)
 % Test that different rank counts produce consistent results
+    
+    % Skip if Parallel Computing Toolbox not available
+    if ~testCase.TestData.has_pct
+        fprintf('\n=== TEST: MPI Consistency Across Ranks ===\n');
+        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
+        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
+        return;
+    end
+    
     fprintf('\n=== TEST: MPI Consistency Across Ranks ===\n');
     
     Np = 10;
