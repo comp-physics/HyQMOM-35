@@ -355,19 +355,7 @@ while t<tmax && nn<nnmax
     M = Mnp;
     %
     % compute central and standardized moments, check 1-D realizability
-    parfor i = 1:Np
-        for j = 1:Np
-            MOM = zeros(Nmom,1);
-            for kk=1:Nmom
-                MOM(kk,1) = M(i,j,kk);
-            end
-            [CC,SS] = M2CS4_35(MOM);
-            for kk=1:Nmom
-                C(i,j,kk) = CC(kk);
-                S(i,j,kk) = SS(kk);
-            end
-        end
-    end
+    [C, S] = compute_CS_grid(M);
     %
     if any(C(:,:,3) < 0,'all') 
         disp('pb C200 realizabilite apres pas temps')
