@@ -85,6 +85,20 @@ end
 
 % MPI parallel execution
 spmd
+    % Workers need src/ directory in their path
+    if labindex == 1
+        % Get the script directory on worker 1
+        script_dir_worker = fileparts(which('main_mpi'));
+    else
+        script_dir_worker = [];
+    end
+    % Broadcast to all workers
+    script_dir_worker = labBroadcast(1, script_dir_worker);
+    src_dir_worker = fullfile(script_dir_worker, 'src');
+    if exist(src_dir_worker, 'dir')
+        addpath(src_dir_worker);
+    end
+    
     % Define all constants directly inside spmd block
     % Workers cannot access client variables, so redefine everything
     halo = 1;
