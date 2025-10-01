@@ -40,6 +40,7 @@ jobs:
           test-results-junit: test-results/results.xml
           source-folder: .
           select-by-folder: tests
+          use-parallel: true
 
       - name: Upload test results
         if: always()
