@@ -85,27 +85,28 @@ end
 
 % MPI parallel execution
 spmd
-    % Define all constants inside spmd block (workers need their own copies)
+    % Define all constants directly inside spmd block
+    % Workers cannot access client variables, so redefine everything
     halo = 1;
     bc = struct('type', 'copy');
     
-    % Physical parameters (copy from client)
-    Kn_worker = Kn;
-    Ma_worker = Ma;
-    flag2D_worker = flag2D;
-    CFL_worker = CFL;
-    dx_worker = dx;
-    dy_worker = dy;
-    Nmom_worker = Nmom;
-    Nmom5_worker = Nmom5;
-    nnmax_worker = nnmax;
-    dtmax_worker = dtmax;
-    r110_worker = r110;
-    r101_worker = r101;
-    r011_worker = r011;
-    T_worker = T;
-    rhol_worker = rhol;
-    rhor_worker = rhor;
+    % Physical parameters (must match values outside spmd)
+    Kn_worker = 1.0;
+    Ma_worker = 0.0;
+    flag2D_worker = 0;
+    CFL_worker = 0.5;
+    dx_worker = 1.0 / Np;
+    dy_worker = 1.0 / Np;
+    Nmom_worker = 35;
+    Nmom5_worker = 21;
+    nnmax_worker = 2e7;
+    dtmax_worker = 1.0;  % Same as Kn
+    r110_worker = 0.0;
+    r101_worker = 0.0;
+    r011_worker = 0.0;
+    T_worker = 1.0;
+    rhol_worker = 1.0;
+    rhor_worker = 0.01;
     
     % Grid setup (each worker needs this)
     grid = setup_simulation_grid(Np, -0.5, 0.5, -0.5, 0.5);
