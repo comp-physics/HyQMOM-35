@@ -36,158 +36,54 @@ if exist(src_dir, 'dir')
     addpath(src_dir);
 end
 
-% Handle input arguments for parameter overrides
-if nargin == 0
-    % Default parameters (original script behavior)
-    enable_plots = true;
-    save_output = false;  % Don't save by default
-    Np = 6;
-    tmax = 0.05;
-elseif nargin == 2
-    % Override Np and tmax, keep plotting enabled, no saving
-    Np = varargin{1};
-    tmax = varargin{2};
-    enable_plots = true;
-    save_output = false;
-elseif nargin == 3
-    % Override all three main parameters, no saving
-    Np = varargin{1};
-    tmax = varargin{2};
-    enable_plots = varargin{3};
-    save_output = false;
-elseif nargin == 4
-    % Override all parameters including save option
-    Np = varargin{1};
-    tmax = varargin{2};
-    enable_plots = varargin{3};
-    save_output = varargin{4};
-else
-    error('Invalid number of arguments. Usage: main() or main(Np, tmax) or main(Np, tmax, enable_plots) or main(Np, tmax, enable_plots, save_output)');
-end
+% Parse input arguments with defaults
+defaults = struct('Np', 6, 'tmax', 0.05, 'enable_plots', true, 'save_output', false);
+[Np, tmax, enable_plots, save_output] = parse_input_args(nargin, varargin, defaults);
 
-% Fixed simulation parameters
-% Knudsen number (>= 0.001 to avoid long simulations)
-Kn = 1/1;
+% Physical parameters
+Kn = 1.0;      % Knudsen number
+Ma = 0.0;      % Mach number
+flag2D = 0;    % 2D mode flag (0 = full 3D)
 
-% Mach number (for impinging jets with velocity u and temperature Theta)
-Ma = 0;  % (= u/sqrt(Theta))
-
-% flag for 2-D case (use only if S101=S011=0) if flag2D == 1
-flag2D = 0;
-
-%% 2-D space discretization: square domain
+%% Spatial and temporal discretization
 CFL = 0.5;
-xmin = -0.5;
-xmax = 0.5;
-ymin = -0.5;
-ymax = 0.5;
-x = xmin + (xmax-xmin)*linspace(0,1,Np+1)';
-y = ymin + (ymax-ymin)*linspace(0,1,Np+1)';
-dx = (xmax-xmin)/Np;
-xm = x(1:Np)+dx/2;
-dy = (ymax-ymin)/Np;
-ym = y(1:Np)+dy/2;
-%%
+grid = setup_simulation_grid(Np, -0.5, 0.5, -0.5, 0.5);
+x = grid.x; y = grid.y; xm = grid.xm; ym = grid.ym; dx = grid.dx; dy = grid.dy;
 
-% order and number of moments (fixed)
-N = 4;
-Nmom = 35;
-Nmom5 = 21;
+N = 4;          % Moment order
+Nmom = 35;      % Number of 4th-order moments
+Nmom5 = 21;     % Number of 5th-order moments
+nnmax = 2e7;    % Maximum time steps
+dtmax = Kn;     % Maximum time step for collision resolution
 
-% maximum number of time steps
-nnmax = 20000000;
-%nnmax = 5;
+% Correlation coefficients for initial Gaussian
+r110 = 0.0;
+r101 = 0.0;
+r011 = 0.0;
 
-% initial correlation coefficients for joint Gaussian
-r110 = 0.;
-r101 = 0.;
-r011 = 0.;
+%% Initial conditions: Crossing jets problem
+T = 1.0;        % Dimensionless temperature
+rhol = 1.0;     % High density (jets)
+rhor = 0.01;    % Low density (background)
 
-% largest dt to resolve collisions
-dtmax = Kn;
+% Initialize moment arrays
+arrays = initialize_moment_arrays(Np, Nmom, Nmom5);
+M = setup_crossing_jets_IC(Np, Nmom, rhol, rhor, Ma, T, r110, r101, r011);
 
-%% shock problem %%%%%%%%%%%%
-% initial densities
-rhol = 1;
-rhor = 0.01;
-
-% initial mean velocities
-U0 = 0;
-V0 = 0;
-W0 = 0;
-
-% dimensionless temperature: used for scaling velocity so T=1 (do not change)
-T = 1;
-
-% set initial conditions to joint Gaussian with covariance
-C200 = T;
-C020 = T;
-C002 = T;
-C110 = r110*sqrt(C200*C020);
-C101 = r101*sqrt(C200*C002);
-C011 = r011*sqrt(C020*C002);
-
-% initialize moments on "left" and "right"
-Ml = InitializeM4_35(rhol,U0,V0,W0,C200,C110,C101,C020,C011,C002);
-Mr = InitializeM4_35(rhor,U0,V0,W0,C200,C110,C101,C020,C011,C002);
-
-%%
-C200c = T;
-C020c = T;
-C002c = T;
-C110c = r110*sqrt(C200*C020);
-C101c = r101*sqrt(C200*C002);
-C011c = r011*sqrt(C020*C002);
-% magnitude of 3-D velocity = Ma
-Uc = Ma/sqrt(2);
-% initialize moments on "top" and "bottom" for crossing
-Mt = InitializeM4_35(rhol,-Uc,-Uc,W0,C200c,C110c,C101c,C020c,C011c,C002c);
-Mb = InitializeM4_35(rhol, Uc, Uc,W0,C200c,C110c,C101c,C020c,C011c,C002c);
-%%
-
-M = zeros(Np,Np,Nmom);
-Mnp = M;
-Mnpx = M;
-Mnpy = M;
-S = zeros(Np,Np,Nmom);
-C = zeros(Np,Np,Nmom);
-M5 = zeros(Np,Np,Nmom5);
-S5 = zeros(Np,Np,Nmom5);
-C5 = zeros(Np,Np,Nmom5);
-
-%% initialize 35 3-D moments on 2-D spatial domain
-% low-pressure background
-for i = 1:Np
-    for j = 1:Np
-        for kk = 1:Nmom
-            M(i,j,kk) = Mr(kk);
-        end
-    end
-end
-% high-pressure center (Csize = size of center region)
-Csize = floor(0.1*Np) ;
-Mint = Np/2 + 1;
-Maxt = Np/2 + 1 + Csize;
-Minb = Np/2 - Csize;
-Maxb = Np/2;
-for i = Minb:Maxb
-    for j = Minb:Maxb
-        for kk = 1:Nmom
-            M(i,j,kk) = Mb(kk);
-        end
-    end
-end
-for i = Mint:Maxt
-    for j = Mint:Maxt
-        for kk = 1:Nmom
-            M(i,j,kk) = Mt(kk);
-        end
-    end
-end
-%
-% compute moments and plot initial conditions
+% Compute derived moments
 [C, S] = compute_CS_grid(M);
 [M5, C5, S5] = compute_M5_grid(M);
+
+% Extract pre-allocated arrays
+Mnp = arrays.Mnp; Mnpx = arrays.Mnpx; Mnpy = arrays.Mnpy;
+Fx = arrays.Fx; Fy = arrays.Fy;
+vpxmin = arrays.vpxmin; vpxmax = arrays.vpxmax;
+vpymin = arrays.vpymin; vpymax = arrays.vpymax;
+v5xmin = arrays.v5xmin; v5xmax = arrays.v5xmax;
+v5ymin = arrays.v5ymin; v5ymax = arrays.v5ymax;
+v6xmin = arrays.v6xmin; v6xmax = arrays.v6xmax;
+v6ymin = arrays.v6ymin; v6ymax = arrays.v6ymax;
+Mx = arrays.Mx; My = arrays.My; Mr = arrays.Mr;
 
 nmin = 1;
 nmax = Np;
@@ -198,189 +94,111 @@ cc = 'k';
 simulation_plots('initial', xm, ym, M, C, S, M5, C5, S5, Np, enable_plots);
 %%
 
-% name saved file
-txt = ['riemann_3D_hyqmom35_crossing','_Np',num2str(Np),'_Kn',num2str(Kn),'_Ma',num2str(Ma),'.mat'];
+% Output filename
+txt = sprintf('riemann_3D_hyqmom35_crossing_Np%d_Kn%g_Ma%g.mat', Np, Kn, Ma);
 
-%% time evolution begins here
-t = 0.;
-Fx = zeros(Np,Np,Nmom);
-Fy = zeros(Np,Np,Nmom);
-Mx = zeros(1,Nmom);  % closures for x flux
-My = zeros(1,Nmom);  % closures for y flux
-Mr = zeros(1,Nmom);  % realizable moments
-vpxmin = zeros(Np,Np,1);
-vpxmax = zeros(Np,Np,1);
-vpymin = zeros(Np,Np,1);
-vpymax = zeros(Np,Np,1);
-v5xmin = zeros(Np,Np,1);
-v5xmax = zeros(Np,Np,1);
-v5ymin = zeros(Np,Np,1);
-v5ymax = zeros(Np,Np,1);
-v6xmin = zeros(Np,Np,1);
-v6xmax = zeros(Np,Np,1);
-v6ymin = zeros(Np,Np,1);
-v6ymax = zeros(Np,Np,1);
+%% Time evolution
+t = 0.0;
 nn = 0;
 
 tic
 while t<tmax && nn<nnmax
     nn = nn+1;
     
-    % spatial fluxes, realizability checks, eigenvalues
+    % Compute fluxes, realizability, and eigenvalues for each grid point
     Mnp = M;
     parfor i = 1:Np
         for j = 1:Np
-            MOM = zeros(Nmom,1);
-            for kk = 1:Nmom
-                MOM(kk) = M(i,j,kk) ;
-            end
-            % eigenvalues with hyperbolicity
-            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM,flag2D,Ma);
-            [v6xmin(i,j),v6xmax(i,j),Mr] = eigenvalues6x_hyperbolic_3D(Mr,flag2D,Ma);
-            [v6ymin(i,j),v6ymax(i,j),Mr] = eigenvalues6y_hyperbolic_3D(Mr,flag2D,Ma);
-            [Mx,My,~,Mr] = Flux_closure35_and_realizable_3D(Mr,flag2D,Ma);
-            % fluxes in the x direction
+            MOM = squeeze(M(i,j,:));
+            
+            % Enforce realizability and compute fluxes
+            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma);
+            [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D, Ma);
+            [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D, Ma);
+            [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma);
+            
             Fx(i,j,:) = Mx;
-            % fluxes in the y direction
             Fy(i,j,:) = My;
-            % realizable moments
-            Mnp(i,j,:)= Mr;
-            %
-            % compute eigenvalues for HLL
-            % 1-D hyqmom for m500 eigenvalues in x direction
-            MOM5 = [Mr(1) Mr(2) Mr(3) Mr(4) Mr(5)]; % m000 m100 m200 m300 m400
-            [~,v5xmin(i,j),v5xmax(i,j)] = closure_and_eigenvalues(MOM5);
-            %
-            vpxmin(i,j)=min(v5xmin(i,j),v6xmin(i,j));
-            vpxmax(i,j)=max(v5xmax(i,j),v6xmax(i,j));
-            % 1-D hyqmom for m050 eigenvalues in y direction
-            MOM5 = [Mr(1) Mr(6) Mr(10) Mr(13) Mr(15)]; % m000 m010 m020 m030 m040
-            [~,v5ymin(i,j),v5ymax(i,j)] = closure_and_eigenvalues(MOM5);
-            %
-            vpymin(i,j)=min(v5ymin(i,j),v6ymin(i,j));
-            vpymax(i,j)=max(v5ymax(i,j),v6ymax(i,j));
-            % 
+            Mnp(i,j,:) = Mr;
+            
+            % Compute 1D eigenvalue bounds for HLL solver
+            [~, v5xmin(i,j), v5xmax(i,j)] = closure_and_eigenvalues(Mr([1,2,3,4,5]));
+            [~, v5ymin(i,j), v5ymax(i,j)] = closure_and_eigenvalues(Mr([1,6,10,13,15]));
+            
+            % Combined eigenvalue bounds
+            vpxmin(i,j) = min(v5xmin(i,j), v6xmin(i,j));
+            vpxmax(i,j) = max(v5xmax(i,j), v6xmax(i,j));
+            vpymin(i,j) = min(v5ymin(i,j), v6ymin(i,j));
+            vpymax(i,j) = max(v5ymax(i,j), v6ymax(i,j));
         end
     end
     M = Mnp;
 
-    % fix time step based on largest eigenvalues in computational domain
-    dt = CFL*dx/max([abs(vpxmax);abs(vpxmin);abs(vpymax);abs(vpymin)],[],'all');
-    if t+dt>tmax
-        dt=tmax-t;
-    end
-    dt = min(dt,dtmax);
-    t = t+dt
+    % Compute time step from CFL condition
+    vmax = max([abs(vpxmax(:)); abs(vpxmin(:)); abs(vpymax(:)); abs(vpymin(:))]);
+    dt = min(CFL*dx/vmax, dtmax);
+    dt = min(dt, tmax-t);  % Don't overshoot tmax
+    t = t + dt
     
-    %% Euler for flux starts here
-    % update moments due to spatial fluxes using method of lines and HLL
+    % X-direction flux update using dimensional splitting
     Mnpx = M;
     parfor j = 1:Np
-        VxMIN = zeros(Np,1);
-        VxMAX = zeros(Np,1);
-        MOM = zeros(Np,Nmom);
-        FX = zeros(Np,Nmom);
-        for i = 1:Np
-            for kk = 1:Nmom
-                MOM(i,kk)= M(i,j,kk);
-                FX(i,kk) = Fx(i,j,kk);
-            end
-            VxMIN(i,1) = vpxmin(i,j);
-            VxMAX(i,1) = vpxmax(i,j);
-        end
-        MNP = pas_HLL(MOM,FX,dt,dx,VxMIN,VxMAX);
-        for i = 1:Np
-            for kk = 1:Nmom
-                Mnpx(i,j,kk) = MNP(i,kk);
-            end
-        end
+        MOM = squeeze(M(:,j,:));
+        FX = squeeze(Fx(:,j,:));
+        MNP = pas_HLL(MOM, FX, dt, dx, vpxmin(:,j), vpxmax(:,j));
+        Mnpx(:,j,:) = MNP;
     end
-    %
+    
+    % Y-direction flux update
     Mnpy = M;
     parfor i = 1:Np
-        VyMIN = zeros(Np,1);
-        VyMAX = zeros(Np,1);
-        MOM = zeros(Np,Nmom);
-        FY = zeros(Np,Nmom);
-        for j = 1:Np
-            for kk = 1:Nmom
-                MOM(j,kk)= M(i,j,kk);
-                FY(j,kk) = Fy(i,j,kk);
-            end
-            VyMIN(j,1) = vpymin(i,j);
-            VyMAX(j,1) = vpymax(i,j);
-        end
-        MNP = pas_HLL(MOM,FY,dt,dy,VyMIN,VyMAX);
-        for j = 1:Np
-            for kk = 1:Nmom
-                Mnpy(i,j,kk) = MNP(j,kk);
-            end
-        end
+        MOM = squeeze(M(i,:,:));
+        FY = squeeze(Fy(i,:,:));
+        MNP = pas_HLL(MOM, FY, dt, dy, vpymin(i,:)', vpymax(i,:)');
+        Mnpy(i,:,:) = MNP;
     end
-    % end of Euler (NB: Mnp can have unrealizable moments)
-    Mnp = Mnpx + Mnpy - M;
-    %%
-    M = Mnp;
-    %
-    % enforce realizability and hyperbolicity
+    
+    % Combine updates (Strang splitting: Mnp = Lx(Ly(M)))
+    M = Mnpx + Mnpy - M;
+    % Enforce realizability and hyperbolicity after advection
     parfor i = 1:Np
         for j = 1:Np
-            MOM = zeros(Nmom,1);
-            for kk = 1:Nmom
-                MOM(kk) = M(i,j,kk) ;
-            end
-            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM,flag2D,Ma);
-            [v6xmin(i,j),v6xmax(i,j),Mr] = eigenvalues6x_hyperbolic_3D(Mr,flag2D,Ma);
-            [v6ymin(i,j),v6ymax(i,j),Mr] = eigenvalues6y_hyperbolic_3D(Mr,flag2D,Ma);
-            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr,flag2D,Ma);
-            % realizable moments
-            Mnp(i,j,:)= Mr;
+            MOM = squeeze(M(i,j,:));
+            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma);
+            [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D, Ma);
+            [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D, Ma);
+            [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma);
+            Mnp(i,j,:) = Mr;
         end
     end
     M = Mnp;
-    %
-    % collision step using BGK
+    
+    % Apply BGK collision operator
     parfor i = 1:Np
         for j = 1:Np
-            MM = zeros(Nmom,1);
-            for kk = 1:Nmom
-                MM(kk,1) = M(i,j,kk);
-            end
-            MMC = collision35(MM,dt,Kn);
-            for kk = 1:Nmom
-                Mnp(i,j,kk) = MMC(kk,1);
-            end
+            MOM = squeeze(M(i,j,:));
+            MMC = collision35(MOM, dt, Kn);
+            Mnp(i,j,:) = MMC;
         end
     end
     M = Mnp;
-    %
-    % compute central and standardized moments, check 1-D realizability
+    % Check realizability constraints
     [C, S] = compute_CS_grid(M);
-    %
-    if any(C(:,:,3) < 0,'all') 
-        disp('pb C200 realizabilite apres pas temps')
-        break
+    
+    % Check variances (must be positive)
+    if any(C(:,:,3) < 0, 'all'), error('C200 realizability violation'); end
+    if any(C(:,:,10) < 0, 'all'), error('C020 realizability violation'); end
+    if any(C(:,:,20) < 0, 'all'), error('C002 realizability violation'); end
+    
+    % Check hyperbolic realizability constraints (kurtosis bounds)
+    if any(S(:,:,5) - 1 - S(:,:,4).^2 < 0, 'all')
+        warning('H200 realizability constraint violated');
     end
-    if any(C(:,:,10) < 0,'all')
-        disp('pb C020 realizabilite apres pas temps')
-        break
+    if any(S(:,:,15) - 1 - S(:,:,13).^2 < 0, 'all')
+        warning('H020 realizability constraint violated');
     end
-    if any(C(:,:,20) < 0,'all')
-        disp('pb C002 realizabilite apres pas temps')
-        break
-    end
-    %
-    if any(S(:,:,5)-1-S(:,:,4).^2 < 0,'all') 
-        disp('pb H200 realizabilite apres pas temps')
-        %break
-    end
-    if any(S(:,:,15)-1-S(:,:,13).^2 < 0,'all') 
-        disp('pb H020 realizabilite apres pas temps')
-        %break
-    end
-    if any(S(:,:,25)-1-S(:,:,23).^2 < 0,'all') 
-        disp('pb H002 realizabilite apres pas temps')
-        %break
+    if any(S(:,:,25) - 1 - S(:,:,23).^2 < 0, 'all')
+        warning('H002 realizability constraint violated');
     end
 
     % Plot time evolution
