@@ -75,44 +75,9 @@ S013=S4(34);
 S022=S4(35);
 %
 %% check univariate moments
-H200 = S400 - S300^2 - 1;
-H020 = S040 - S030^2 - 1;
-H002 = S004 - S003^2 - 1;
-% check and correct realizability of S400, S040, S004
-if H200 <= h2min
-    H200 = h2min;
-    S400 = H200 + S300^2 + 1;
-end
-if H020 <= h2min
-    H020 = h2min;
-    S040 = H020 + S030^2 + 1;
-end
-if H002 <= h2min
-    H002 = h2min;
-    S004 = H002 + S003^2 + 1;
-end
-% set limits on S300 and S030
-if S300 < -s3max
-    S300 = -s3max;
-    S400 = H200 + S300^2 + 1;
-elseif S300 > s3max
-    S300 = s3max;
-    S400 = H200 + S300^2 + 1;
-end
-if S030 < -s3max
-    S030 = -s3max;
-    S040 = H020 + S030^2 + 1;
-elseif S030 > s3max
-    S030 = s3max;
-    S040 = H020 + S030^2 + 1;
-end
-if S003 < -s3max
-    S003 = -s3max;
-    S004 = H002 + S003^2 + 1;
-elseif S003 > s3max
-    S003 = s3max;
-    S004 = H002 + S003^2 + 1;
-end
+[S300, S400, H200] = enforce_univariate(S300, S400, h2min, s3max);
+[S030, S040, H020] = enforce_univariate(S030, S040, h2min, s3max);
+[S003, S004, H002] = enforce_univariate(S003, S004, h2min, s3max);
 %
 %% 4-order moments: check maximum bounds on S220, S202, S022
 A220 = sqrt((H200+S300^2)*(H020+S030^2));
