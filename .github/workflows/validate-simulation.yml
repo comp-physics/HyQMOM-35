@@ -16,8 +16,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache MATLAB
+        id: cache-matlab
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/MATLAB
+            ~/.matlab
+          key: ${{ runner.os }}-matlab-r2025b-${{ hashFiles('.github/workflows/validate-simulation.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-matlab-r2025b-
+            ${{ runner.os }}-matlab-
+
       - name: Setup MATLAB
         uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
 
       - name: Run tests
         uses: matlab-actions/run-tests@v2
