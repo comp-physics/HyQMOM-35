@@ -186,34 +186,8 @@ for i = Mint:Maxt
 end
 %
 % compute moments and plot initial conditions
-for i = 1:Np
-    for j = 1:Np
-        MOM = zeros(Nmom,1);
-        for kk=1:Nmom
-            MOM(kk,1) = M(i,j,kk);
-        end
-        [CC,SS] = M2CS4_35(MOM);
-        for kk=1:Nmom
-            C(i,j,kk) = CC(kk);
-            S(i,j,kk) = SS(kk);
-        end
-    end
-end
-
-for i = 1:Np
-    for j = 1:Np
-        MOM = zeros(Nmom,1);
-        for kk=1:Nmom
-            MOM(kk,1) = M(i,j,kk);
-        end
-        [MM5,CC5,SS5] = Moments5_3D(MOM);
-        for kk=1:Nmom5
-            M5(i,j,kk) = MM5(kk);
-            C5(i,j,kk) = CC5(kk);
-            S5(i,j,kk) = SS5(kk);
-        end
-    end
-end
+[C, S] = compute_CS_grid(M);
+[M5, C5, S5] = compute_M5_grid(M);
 
 nmin = 1;
 nmax = Np;
@@ -430,71 +404,28 @@ end
 toc
 
 %% postprocessing for plots
-for i = 1:Np
-    for j = 1:Np
-        MOM = zeros(Nmom,1);
-        for kk=1:Nmom
-            MOM(kk,1) = M(i,j,kk);
-        end
-        [MM5,CC5,SS5] = Moments5_3D(MOM);
-        for kk=1:Nmom5
-            M5(i,j,kk) = MM5(kk);
-            C5(i,j,kk) = CC5(kk);
-            S5(i,j,kk) = SS5(kk);
-        end
-    end
-end
+[M5, C5, S5] = compute_M5_grid(M);
 
+% Compute Jacobian eigenvalues for postprocessing plots
 lam6xa = zeros(Np,Np,6);
 lam6xb = zeros(Np,Np,6);
 lam6ya = zeros(Np,Np,6);
 lam6yb = zeros(Np,Np,6);
 for i = 1:Np
     for j = 1:Np
-        M1 = zeros(Nmom,1);
-        for kk=1:Nmom
-            M1(kk,1) = M(i,j,kk);
-        end
-        %
-        m000 = M1(1);
-        m100 = M1(2);
-        m200 = M1(3);
-        m300 = M1(4);
-        m400 = M1(5);
-        m010 = M1(6);
-        m110 = M1(7);
-        m210 = M1(8);
-        m310 = M1(9);
-        m020 = M1(10);
-        m120 = M1(11);
-        m220 = M1(12);
-        m030 = M1(13);
-        m130 = M1(14);
-        m040 = M1(15);
-        m001 = M1(16);
-        m101 = M1(17);
-        m201 = M1(18);
-        m301 = M1(19);
-        m002 = M1(20);
-        m102 = M1(21);
-        m202 = M1(22);
-        m003 = M1(23);
-        m103 = M1(24);
-        m004 = M1(25);
-        m011 = M1(26);
-        m021 = M1(29);
-        m031 = M1(31);
-        m012 = M1(32);
-        m013 = M1(34);
-        m022 = M1(35);
-        J6 = jacobian6(m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400);
-        lam6xa(i,j,:) = eig(J6);
-        J6 = jacobian6(m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400);
-        lam6xb(i,j,:) = eig(J6);
-        J6 = jacobian6(m000,m100,m200,m300,m400,m010,m110,m210,m310,m020,m120,m220,m030,m130,m040);
-        lam6ya(i,j,:) = eig(J6);
-        J6 = jacobian6(m000,m001,m002,m003,m004,m010,m011,m012,m013,m020,m021,m022,m030,m031,m040);
-        lam6yb(i,j,:) = eig(J6);
+        M1 = squeeze(M(i,j,:));
+        % X-direction eigenvalues (UV and UW planes)
+        moments_uv = [M1(1),M1(6),M1(10),M1(13),M1(15),M1(2),M1(7),M1(11),M1(14),M1(3),M1(8),M1(12),M1(4),M1(9),M1(5)];
+        moments_uw = [M1(1),M1(16),M1(20),M1(23),M1(25),M1(2),M1(17),M1(21),M1(24),M1(3),M1(18),M1(22),M1(4),M1(19),M1(5)];
+        [~, ~, lam6xa_temp, lam6xb_temp] = compute_jacobian_eigenvalues(moments_uv, moments_uw);
+        lam6xa(i,j,:) = lam6xa_temp;
+        lam6xb(i,j,:) = lam6xb_temp;
+        % Y-direction eigenvalues (VU and VW planes)
+        moments_vu = [M1(1),M1(2),M1(3),M1(4),M1(5),M1(6),M1(7),M1(8),M1(9),M1(10),M1(11),M1(12),M1(13),M1(14),M1(15)];
+        moments_vw = [M1(1),M1(16),M1(20),M1(23),M1(25),M1(6),M1(26),M1(32),M1(34),M1(10),M1(29),M1(35),M1(13),M1(31),M1(15)];
+        [~, ~, lam6ya_temp, lam6yb_temp] = compute_jacobian_eigenvalues(moments_vu, moments_vw);
+        lam6ya(i,j,:) = lam6ya_temp;
+        lam6yb(i,j,:) = lam6yb_temp;
     end
 end
 
