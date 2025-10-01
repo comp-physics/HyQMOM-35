@@ -32,18 +32,10 @@ m202 = M(22);
 m003 = M(23);
 m103 = M(24);
 m004 = M(25);
-% UV  moments
-J6 = jacobian6(m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400);
-lam6a = eig(J6);
-lam6ar = sort(real(lam6a));
-v6min = lam6ar(1);
-v6max = lam6ar(6);
-% UW  moments
-J6 = jacobian6(m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400);
-lam6b = eig(J6);
-lam6br = sort(real(lam6b));
-v6min = min([v6min lam6br(1)]);
-v6max = max([v6max lam6br(6)]);
+% UV and UW moments - compute Jacobian eigenvalues
+moments_uv = [m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400];
+moments_uw = [m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400];
+[v6min, v6max, lam6a, lam6b] = compute_jacobian_eigenvalues(moments_uv, moments_uw);
 %
 % return
 %
@@ -226,17 +218,9 @@ if max(abs(imag(lam6a))) > 1000*eps || max(abs(imag(lam6b))) > 1000*eps % any(im
     m003 = Mr(23);
     m103 = Mr(24);
     m004 = Mr(25);
-    % UV  moments
-    J6 = jacobian6(m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400);
-    lam6a = eig(J6);
-    lam6ar = sort(real(lam6a));
-    v6min = lam6ar(1);
-    v6max = lam6ar(6);
-    % UW  moments
-    J6 = jacobian6(m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400);
-    lam6b = eig(J6);
-    lam6br = sort(real(lam6b));
-    v6min = min([v6min lam6br(1)]);
-    v6max = max([v6max lam6br(6)]);
+    % UV and UW moments - recompute Jacobian eigenvalues after correction
+    moments_uv = [m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400];
+    moments_uw = [m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400];
+    [v6min, v6max, ~, ~] = compute_jacobian_eigenvalues(moments_uv, moments_uw);
 end
 end
