@@ -201,28 +201,22 @@ spmd
         Mnpx = M;
         for j = 1:ny
             jh = j + halo;
-            % Extract column with halos
-            MOM = squeeze(M(:, jh, :));
-            FX = squeeze(Fx(:, jh, :));
-            vpxmin_col = [vpxmin(1,j); vpxmin(:,j)];  % Pad for boundaries
-            vpxmax_col = [vpxmax(1,j); vpxmax(:,j)];
-            
-            % HLL update returns interior + boundary treatment
-            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpxmin_col, vpxmax_col);
-            Mnpx(:, jh, :) = MNP;
+            % Extract interior only (pas_HLL expects N×Nmom, not (N+2*halo)×Nmom)
+            MOM = squeeze(M(halo+1:halo+nx, jh, :));
+            FX  = squeeze(Fx(halo+1:halo+nx, jh, :));
+            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpxmin(:,j), vpxmax(:,j));
+            Mnpx(halo+1:halo+nx, jh, :) = MNP;
         end
         
         % Y-direction flux update
         Mnpy = M;
         for i = 1:nx
             ih = i + halo;
-            MOM = squeeze(M(ih, :, :));
-            FY = squeeze(Fy(ih, :, :));
-            vpymin_row = [vpymin(i,1); vpymin(i,:)'];
-            vpymax_row = [vpymax(i,1); vpymax(i,:)'];
-            
-            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpymin_row, vpymax_row);
-            Mnpy(ih, :, :) = MNP;
+            % Extract interior only (pas_HLL expects N×Nmom, not (N+2*halo)×Nmom)
+            MOM = squeeze(M(ih, halo+1:halo+ny, :));
+            FY  = squeeze(Fy(ih, halo+1:halo+ny, :));
+            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpymin(i,:)', vpymax(i,:)');
+            Mnpy(ih, halo+1:halo+ny, :) = MNP;
         end
         
         % Combine updates (Strang splitting)
