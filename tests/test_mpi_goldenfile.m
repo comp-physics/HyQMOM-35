@@ -107,6 +107,19 @@ function test_mpi_4_ranks_vs_golden(testCase)
         return;
     end
     
+    % Check maximum workers available (CI typically limits to 2)
+    max_workers = feature('numcores');
+    pool = gcp('nocreate');
+    if ~isempty(pool)
+        max_workers = pool.NumWorkers;
+    end
+    if max_workers < 4
+        fprintf('\n=== TEST: MPI 4 Ranks vs Golden File ===\n');
+        fprintf('SKIPPED: Requires 4 workers but only %d available (CI limitation)\n', max_workers);
+        assumeFail(testCase, sprintf('Need 4 workers, only %d available', max_workers));
+        return;
+    end
+    
     fprintf('\n=== TEST: MPI 4 Ranks vs Golden File ===\n');
     
     golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_4ranks_Np10_tmax100.mat');
@@ -143,32 +156,52 @@ function test_mpi_consistency_across_ranks(testCase)
         return;
     end
     
+    % Check maximum workers available
+    max_workers = feature('numcores');
+    pool = gcp('nocreate');
+    if ~isempty(pool)
+        max_workers = min(max_workers, pool.NumWorkers);
+    end
+    
     fprintf('\n=== TEST: MPI Consistency Across Ranks ===\n');
     
     Np = 10;
     tmax = 0.1;
     
-    fprintf('Running simulations with 1, 2, and 4 ranks...\n');
+    % Adapt to available workers
+    if max_workers >= 4
+        fprintf('Running simulations with 1, 2, and 4 ranks...\n');
+        rank_counts = [1, 2, 4];
+    else
+        fprintf('Running simulations with 1 and 2 ranks (limited to %d workers)...\n', max_workers);
+        rank_counts = [1, 2];
+    end
     
     % Run with different rank counts
     data_1rank = run_mpi_simulation(Np, tmax, 1);
     data_2ranks = run_mpi_simulation(Np, tmax, 2);
-    data_4ranks = run_mpi_simulation(Np, tmax, 4);
+    if max_workers >= 4
+        data_4ranks = run_mpi_simulation(Np, tmax, 4);
+    end
     
     % Compare 1 vs 2 ranks
     fprintf('\nComparing 1 rank vs 2 ranks:\n');
     compare_results(testCase, data_2ranks, data_1rank, ...
                    testCase.TestData.tolerance, '2-rank vs 1-rank');
     
-    % Compare 1 vs 4 ranks
-    fprintf('\nComparing 1 rank vs 4 ranks:\n');
-    compare_results(testCase, data_4ranks, data_1rank, ...
-                   testCase.TestData.tolerance, '4-rank vs 1-rank');
-    
-    % Compare 2 vs 4 ranks
-    fprintf('\nComparing 2 ranks vs 4 ranks:\n');
-    compare_results(testCase, data_4ranks, data_2ranks, ...
-                   testCase.TestData.tolerance, '4-rank vs 2-rank');
+    if max_workers >= 4
+        % Compare 1 vs 4 ranks
+        fprintf('\nComparing 1 rank vs 4 ranks:\n');
+        compare_results(testCase, data_4ranks, data_1rank, ...
+                       testCase.TestData.tolerance, '4-rank vs 1-rank');
+        
+        % Compare 2 vs 4 ranks
+        fprintf('\nComparing 2 ranks vs 4 ranks:\n');
+        compare_results(testCase, data_4ranks, data_2ranks, ...
+                       testCase.TestData.tolerance, '4-rank vs 2-rank');
+    else
+        fprintf('\n4-rank comparisons skipped (only %d workers available)\n', max_workers);
+    end
 end
 
 %% Helper Functions

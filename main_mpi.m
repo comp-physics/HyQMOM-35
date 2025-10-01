@@ -83,14 +83,14 @@ elseif pool.NumWorkers ~= num_workers
     parpool('local', num_workers);
 end
 
-% Global grid setup (on all workers for IC setup)
-grid = setup_simulation_grid(Np, -0.5, 0.5, -0.5, 0.5);
-M_global = setup_crossing_jets_IC(Np, Nmom, rhol, rhor, Ma, T, r110, r101, r011);
-
 % MPI parallel execution
 spmd
     halo = 1;
     bc = struct('type', 'copy');
+    
+    % Grid setup (each worker needs this)
+    grid = setup_simulation_grid(Np, -0.5, 0.5, -0.5, 0.5);
+    M_global = setup_crossing_jets_IC(Np, Nmom, rhol, rhor, Ma, T, r110, r101, r011);
     
     % Setup domain decomposition
     decomp = setup_mpi_cartesian_2d(Np, halo);
@@ -266,6 +266,9 @@ if isa(M_final, 'Composite')
     M_final = M_final{1};
     final_time = final_time{1};
     time_steps = time_steps{1};
+    grid_worker = grid{1};  % Extract grid from first worker
+else
+    grid_worker = grid;
 end
 
 % Compute derived quantities on gathered result
@@ -287,12 +290,12 @@ if nargout > 0
     results.parameters.final_time = final_time;
     results.parameters.time_steps = time_steps;
     
-    results.grid.x = grid.x;
-    results.grid.y = grid.y;
-    results.grid.xm = grid.xm;
-    results.grid.ym = grid.ym;
-    results.grid.dx = grid.dx;
-    results.grid.dy = grid.dy;
+    results.grid.x = grid_worker.x;
+    results.grid.y = grid_worker.y;
+    results.grid.xm = grid_worker.xm;
+    results.grid.ym = grid_worker.ym;
+    results.grid.dx = grid_worker.dx;
+    results.grid.dy = grid_worker.dy;
     
     results.moments.M = M_final;
     results.moments.C = C;
