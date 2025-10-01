@@ -83,18 +83,14 @@ elseif pool.NumWorkers ~= num_workers
     parpool('local', num_workers);
 end
 
+% Pass script directory to workers (determine before spmd)
+script_dir_for_workers = script_dir;
+
 % MPI parallel execution
 spmd
     % Workers need src/ directory in their path
-    if labindex == 1
-        % Get the script directory on worker 1
-        script_dir_worker = fileparts(which('main_mpi'));
-    else
-        script_dir_worker = [];
-    end
-    % Broadcast to all workers
-    script_dir_worker = labBroadcast(1, script_dir_worker);
-    src_dir_worker = fullfile(script_dir_worker, 'src');
+    % Use the script directory passed from client
+    src_dir_worker = fullfile(script_dir_for_workers, 'src');
     if exist(src_dir_worker, 'dir')
         addpath(src_dir_worker);
     end
