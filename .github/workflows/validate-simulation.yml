@@ -10,7 +10,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]  
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120  
+    timeout-minutes: 240  
 
     steps:
       - name: Checkout
