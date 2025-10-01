@@ -114,7 +114,7 @@ while t<tmax && nn<nnmax
     
     % Compute fluxes, realizability, and eigenvalues for each grid point
     Mnp = M;
-    parfor i = 1:Np
+    for i = 1:Np  % Changed from parfor: MPI will handle parallelism
         for j = 1:Np
             MOM = squeeze(M(i,j,:));
             
@@ -149,7 +149,7 @@ while t<tmax && nn<nnmax
     
     % X-direction flux update using dimensional splitting
     Mnpx = M;
-    parfor j = 1:Np
+    for j = 1:Np  % Changed from parfor: MPI will handle parallelism
         MOM = squeeze(M(:,j,:));
         FX = squeeze(Fx(:,j,:));
         MNP = pas_HLL(MOM, FX, dt, dx, vpxmin(:,j), vpxmax(:,j));
@@ -158,7 +158,7 @@ while t<tmax && nn<nnmax
     
     % Y-direction flux update
     Mnpy = M;
-    parfor i = 1:Np
+    for i = 1:Np  % Changed from parfor: MPI will handle parallelism
         MOM = squeeze(M(i,:,:));
         FY = squeeze(Fy(i,:,:));
         MNP = pas_HLL(MOM, FY, dt, dy, vpymin(i,:)', vpymax(i,:)');
@@ -168,7 +168,7 @@ while t<tmax && nn<nnmax
     % Combine updates (Strang splitting: Mnp = Lx(Ly(M)))
     M = Mnpx + Mnpy - M;
     % Enforce realizability and hyperbolicity after advection
-    parfor i = 1:Np
+    for i = 1:Np  % Changed from parfor: MPI will handle parallelism
         for j = 1:Np
             MOM = squeeze(M(i,j,:));
             [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma);
@@ -181,7 +181,7 @@ while t<tmax && nn<nnmax
     M = Mnp;
     
     % Apply BGK collision operator
-    parfor i = 1:Np
+    for i = 1:Np  % Changed from parfor: MPI will handle parallelism
         for j = 1:Np
             MOM = squeeze(M(i,j,:));
             MMC = collision35(MOM, dt, Kn);
