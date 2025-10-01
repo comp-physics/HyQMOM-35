@@ -38,7 +38,14 @@ end
 
 % Parse input arguments with defaults
 defaults = struct('Np', 6, 'tmax', 0.05, 'enable_plots', true, 'save_output', false);
-[Np, tmax, enable_plots, save_output] = parse_input_args(nargin, varargin, defaults);
+if nargin == 0
+    Np = defaults.Np;
+    tmax = defaults.tmax;
+    enable_plots = defaults.enable_plots;
+    save_output = defaults.save_output;
+else
+    [Np, tmax, enable_plots, save_output] = parse_input_args(nargin, varargin, defaults);
+end
 
 % Physical parameters
 Kn = 1.0;      % Knudsen number
