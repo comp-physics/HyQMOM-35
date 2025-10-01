@@ -20,7 +20,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments
-defaults = struct('Np', 10, 'tmax', 0.1, 'enable_plots', false, 'num_workers', 4);
+defaults = struct('Np', 20, 'tmax', 0.1, 'enable_plots', false, 'num_workers', 4);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
@@ -73,6 +73,19 @@ r011 = 0.0;
 T = 1.0;
 rhol = 1.0;
 rhor = 0.01;
+
+% Validate grid size for MPI decomposition
+% Requirement: minimum ~10 points per rank in each direction
+[Px, Py] = choose_process_grid_for_validation(num_workers);
+min_points_x = floor(Np / Px);
+min_points_y = floor(Np / Py);
+min_points = min(min_points_x, min_points_y);
+
+if min_points < 10
+    error(['Grid too small for %d workers. With Np=%d, process grid %dx%d gives ' ...
+           'only %d points/rank (minimum 10 required). Use fewer workers or larger Np.'], ...
+           num_workers, Np, Px, Py, min_points);
+end
 
 % Start parallel pool
 pool = gcp('nocreate');
@@ -256,14 +269,15 @@ spmd
         M = halo_exchange_2d(M, decomp, bc);
     end
     
-    % Gather results to rank 1
+    % Gather results to rank 1 using asynchronous send/receive
     M_interior = M(halo+1:halo+nx, halo+1:halo+ny, :);
-    gathered = labSendReceive(1, 1, M_interior);
     
     if labindex == 1
+        % Rank 1: collect from all workers (including self)
         M_final = zeros(Np, Np, Nmom);
-        M_final(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = gathered;
+        M_final(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = M_interior;
         
+        % Receive from all other ranks
         for src = 2:numlabs
             blk = labReceive(src);
             Px = decomp.dims(1);
@@ -278,6 +292,7 @@ spmd
         final_time = t;
         time_steps = nn;
     else
+        % All other ranks: send to rank 1
         labSend(M_interior, 1);
         M_final = [];
         final_time = [];
@@ -331,6 +346,23 @@ if nargout > 0
     results.filename = sprintf('mpi_%dranks_Np%d_tmax%g.mat', num_workers, Np, tmax);
 end
 
+end
+
+function [Px, Py] = choose_process_grid_for_validation(nl)
+% Choose nearly-square factorization Px*Py=nl (same as in setup_mpi_cartesian_2d)
+    bestDiff = inf;
+    Px = 1; Py = nl;
+    for p = 1:nl
+        if mod(nl, p) == 0
+            q = nl / p;
+            d = abs(p - q);
+            if d < bestDiff
+                bestDiff = d;
+                Px = p;
+                Py = q;
+            end
+        end
+    end
 end
 
 function [n_local, i0, i1] = block_partition_1d(n, P, r)

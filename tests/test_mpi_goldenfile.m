@@ -41,10 +41,10 @@ function test_mpi_1_rank_vs_serial(testCase)
     
     fprintf('\n=== TEST: MPI 1 Rank vs Serial ===\n');
     
-    % Load serial golden file
-    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_Np10_tmax100.mat');
+    % Load serial golden file (using Np=20 to meet minimum points/rank requirement)
+    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_Np20_tmax100.mat');
     if ~exist(golden_file, 'file')
-        error('Serial golden file not found. Run run_goldenfile_creation.m first.');
+        error('Serial golden file not found. Run run_goldenfile_creation.m first with Np=20.');
     end
     
     golden = load(golden_file);
@@ -73,11 +73,11 @@ function test_mpi_2_ranks_vs_golden(testCase)
     
     fprintf('\n=== TEST: MPI 2 Ranks vs Golden File ===\n');
     
-    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_2ranks_Np10_tmax100.mat');
+    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_2ranks_Np20_tmax100.mat');
     
     if ~exist(golden_file, 'file')
         warning('Golden file for 2 ranks not found. Creating it now...');
-        create_mpi_goldenfile(10, 0.1, 2, testCase.TestData.goldenfiles_dir);
+        create_mpi_goldenfile(20, 0.1, 2, testCase.TestData.goldenfiles_dir);
         if ~exist(golden_file, 'file')
             error('Failed to create golden file for 2 ranks');
         end
@@ -122,11 +122,11 @@ function test_mpi_4_ranks_vs_golden(testCase)
     
     fprintf('\n=== TEST: MPI 4 Ranks vs Golden File ===\n');
     
-    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_4ranks_Np10_tmax100.mat');
+    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_4ranks_Np20_tmax100.mat');
     
     if ~exist(golden_file, 'file')
         warning('Golden file for 4 ranks not found. Creating it now...');
-        create_mpi_goldenfile(10, 0.1, 4, testCase.TestData.goldenfiles_dir);
+        create_mpi_goldenfile(20, 0.1, 4, testCase.TestData.goldenfiles_dir);
         if ~exist(golden_file, 'file')
             error('Failed to create golden file for 4 ranks');
         end
@@ -165,7 +165,7 @@ function test_mpi_consistency_across_ranks(testCase)
     
     fprintf('\n=== TEST: MPI Consistency Across Ranks ===\n');
     
-    Np = 10;
+    Np = 20;  % Minimum grid size to support multiple ranks (≥10 points/rank)
     tmax = 0.1;
     
     % Adapt to available workers
