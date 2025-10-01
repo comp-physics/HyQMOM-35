@@ -85,12 +85,31 @@ end
 
 % MPI parallel execution
 spmd
+    % Define all constants inside spmd block (workers need their own copies)
     halo = 1;
     bc = struct('type', 'copy');
     
+    % Physical parameters (copy from client)
+    Kn_worker = Kn;
+    Ma_worker = Ma;
+    flag2D_worker = flag2D;
+    CFL_worker = CFL;
+    dx_worker = dx;
+    dy_worker = dy;
+    Nmom_worker = Nmom;
+    Nmom5_worker = Nmom5;
+    nnmax_worker = nnmax;
+    dtmax_worker = dtmax;
+    r110_worker = r110;
+    r101_worker = r101;
+    r011_worker = r011;
+    T_worker = T;
+    rhol_worker = rhol;
+    rhor_worker = rhor;
+    
     % Grid setup (each worker needs this)
     grid = setup_simulation_grid(Np, -0.5, 0.5, -0.5, 0.5);
-    M_global = setup_crossing_jets_IC(Np, Nmom, rhol, rhor, Ma, T, r110, r101, r011);
+    M_global = setup_crossing_jets_IC(Np, Nmom_worker, rhol_worker, rhor_worker, Ma_worker, T_worker, r110_worker, r101_worker, r011_worker);
     
     % Setup domain decomposition
     decomp = setup_mpi_cartesian_2d(Np, halo);
@@ -98,10 +117,10 @@ spmd
     ny = decomp.local_size(2);
     
     % Allocate local arrays with halos
-    M = zeros(nx+2*halo, ny+2*halo, Nmom);
+    M = zeros(nx+2*halo, ny+2*halo, Nmom_worker);
     Mnp = M;
-    Fx = zeros(nx+2*halo, ny+2*halo, Nmom);
-    Fy = zeros(nx+2*halo, ny+2*halo, Nmom);
+    Fx = zeros(nx+2*halo, ny+2*halo, Nmom_worker);
+    Fy = zeros(nx+2*halo, ny+2*halo, Nmom_worker);
     
     % Wave speed arrays (interior only, no halos needed)
     vpxmin = zeros(nx, ny);
@@ -129,7 +148,7 @@ spmd
     t = 0.0;
     nn = 0;
     
-    while t < tmax && nn < nnmax
+    while t < tmax && nn < nnmax_worker
         nn = nn + 1;
         
         % Compute fluxes for interior cells
@@ -140,10 +159,10 @@ spmd
                 jh = j + halo;
                 MOM = squeeze(M(ih, jh, :));
                 
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma);
-                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D, Ma);
-                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D, Ma);
-                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma);
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
+                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
                 
                 Fx(ih, jh, :) = Mx;
                 Fy(ih, jh, :) = My;
@@ -163,7 +182,7 @@ spmd
         % Global reduction for time step (all ranks need same dt)
         vmax_local = max([abs(vpxmax(:)); abs(vpxmin(:)); abs(vpymax(:)); abs(vpymin(:))]);
         vmax = max(gcat(vmax_local, 1));  % Global max across all ranks
-        dt = min(CFL*dx/vmax, dtmax);
+        dt = min(CFL_worker*dx_worker/vmax, dtmax_worker);
         dt = min(dt, tmax-t);
         t = t + dt;
         
@@ -178,7 +197,7 @@ spmd
             vpxmax_col = [vpxmax(1,j); vpxmax(:,j)];
             
             % HLL update returns interior + boundary treatment
-            MNP = pas_HLL(MOM, FX, dt, dx, vpxmin_col, vpxmax_col);
+            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpxmin_col, vpxmax_col);
             Mnpx(:, jh, :) = MNP;
         end
         
@@ -191,7 +210,7 @@ spmd
             vpymin_row = [vpymin(i,1); vpymin(i,:)'];
             vpymax_row = [vpymax(i,1); vpymax(i,:)'];
             
-            MNP = pas_HLL(MOM, FY, dt, dy, vpymin_row, vpymax_row);
+            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpymin_row, vpymax_row);
             Mnpy(ih, :, :) = MNP;
         end
         
@@ -207,10 +226,10 @@ spmd
                 ih = i + halo;
                 jh = j + halo;
                 MOM = squeeze(M(ih, jh, :));
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma);
-                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D, Ma);
-                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D, Ma);
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma);
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
+                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
                 Mnp(ih, jh, :) = Mr;
             end
         end
@@ -222,7 +241,7 @@ spmd
                 ih = i + halo;
                 jh = j + halo;
                 MOM = squeeze(M(ih, jh, :));
-                MMC = collision35(MOM, dt, Kn);
+                MMC = collision35(MOM, dt, Kn_worker);
                 Mnp(ih, jh, :) = MMC;
             end
         end
