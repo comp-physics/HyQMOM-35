@@ -1,11 +1,12 @@
-% Script to create golden files for regression testing
-% This script runs the simulation with fixed parameters and saves the results
+% Script to create golden file for regression testing
+% This creates the rigorous test with Np=10, tmax=0.1
 
-fprintf('=== GOLDEN FILE CREATION WRAPPER ===\n');
+fprintf('=== GOLDEN FILE CREATION ===\n');
 fprintf('This script will create a golden file by running the simulation with:\n');
-fprintf('  - Np = 6 (grid points)\n');
-fprintf('  - tmax = 0.02 (final time)\n');
+fprintf('  - Np = 10 (grid points)\n');
+fprintf('  - tmax = 0.1 (final time)\n');
 fprintf('  - enable_plots = false (no plotting)\n\n');
+fprintf('This is a rigorous test that validates longer time integration.\n\n');
 
 % Add src directory to path for function dependencies
 addpath('src');
@@ -25,69 +26,54 @@ if ~exist(goldenfiles_dir, 'dir')
     fprintf('Created directory: %s\n', goldenfiles_dir);
 end
 
-% Check if golden file already exists
-golden_filename = fullfile(goldenfiles_dir, 'goldenfile_Np6_tmax020.mat');
-if exist(golden_filename, 'file')
-    response = input(sprintf('Golden file %s already exists. Overwrite? (y/n): ', golden_filename), 's');
-    if ~strcmpi(response, 'y')
-        fprintf('Aborted by user.\n');
-        return;
-    end
-    fprintf('Overwriting existing golden file...\n');
-end
-
-% Define golden file parameters (these will override the main script values)
-GOLDEN_NP = 6;
-GOLDEN_TMAX = 0.02;
+% Define golden file parameters
+GOLDEN_NP = 10;
+GOLDEN_TMAX = 0.1;
 GOLDEN_ENABLE_PLOTS = false;
-GOLDEN_SAVE_OUTPUT = true;  % Enable saving for golden file creation
+GOLDEN_SAVE_OUTPUT = false;  % We manually save the golden data structure
 
 % Run the golden file creation
 try
     fprintf('Golden file parameters: Np = %d, tmax = %.3f, enable_plots = %s\n', ...
         GOLDEN_NP, GOLDEN_TMAX, mat2str(GOLDEN_ENABLE_PLOTS));
-    fprintf('Running simulation with enforced parameters...\n');
+    fprintf('Running simulation...\n');
     tic;
     
-    % Execute the main simulation with parameter overrides
+    % Execute the main simulation
     results = main(GOLDEN_NP, GOLDEN_TMAX, GOLDEN_ENABLE_PLOTS, GOLDEN_SAVE_OUTPUT);
     
     elapsed_time = toc;
     fprintf('Simulation completed in %.2f seconds\n', elapsed_time);
     
-    % Create golden file structure from returned results
+    % Create golden file structure
     golden_data = results;
-    
-    % Add elapsed time to parameters
     golden_data.parameters.elapsed_time = elapsed_time;
     
     % Add metadata
     golden_data.metadata.creation_date = datestr(now);
     golden_data.metadata.matlab_version = version;
-    golden_data.metadata.description = sprintf('Golden file for main.m with Np=%d, tmax=%.3f', GOLDEN_NP, GOLDEN_TMAX);
+    golden_data.metadata.description = sprintf('Rigorous golden file: Np=%d, tmax=%.3f', GOLDEN_NP, GOLDEN_TMAX);
+    golden_data.metadata.git_branch = 'refac-clean-baseline';
     
-    % Save to file in goldenfiles directory
+    % Save golden file
     golden_filename = fullfile(goldenfiles_dir, sprintf('goldenfile_Np%d_tmax%03d.mat', GOLDEN_NP, round(GOLDEN_TMAX*1000)));
     save(golden_filename, 'golden_data');
     
-    fprintf('Golden file saved as: %s\n', golden_filename);
-    fprintf('File size: %.2f KB\n', dir(golden_filename).bytes / 1024);
-    
-    % Display summary of saved data
-    fprintf('\nSaved data summary:\n');
-    fprintf('  - Parameters: %d fields\n', length(fieldnames(golden_data.parameters)));
-    fprintf('  - Grid points: %dx%d\n', length(golden_data.grid.xm), length(golden_data.grid.ym));
-    fprintf('  - Moment arrays: %d fields\n', length(fieldnames(golden_data.moments)));
-    if isfield(golden_data, 'eigenvalues')
-        fprintf('  - Eigenvalue data: %d fields\n', length(fieldnames(golden_data.eigenvalues)));
-    end
-    if isfield(golden_data, 'velocities')
-        fprintf('  - Velocity bounds: %d fields\n', length(fieldnames(golden_data.velocities)));
-    end
-    
     fprintf('\n=== SUCCESS ===\n');
-    fprintf('Golden file created successfully!\n');
-    fprintf('You can now use validate_against_goldenfile.m to test future changes.\n');
+    fprintf('Golden file saved: %s\n', golden_filename);
+    fprintf('File size: %.2f KB\n', dir(golden_filename).bytes / 1024);
+    fprintf('Final time reached: %.4f\n', golden_data.parameters.final_time);
+    fprintf('Time steps: %d\n', golden_data.parameters.time_steps);
+    
+    % Verify symmetry
+    fprintf('\nVerifying symmetry in saved data:\n');
+    M = golden_data.moments.M;
+    for mom = 1:5
+        maxdiff = max(abs(M(:,:,mom) - flipud(M(:,:,mom))), [], 'all');
+        fprintf('  M%d max asymmetry: %.2e\n', mom-1, maxdiff);
+    end
+    
+    fprintf('\nUse tests/test_validate_goldenfile.m to validate future changes.\n');
     
 catch ME
     fprintf('\n=== ERROR ===\n');

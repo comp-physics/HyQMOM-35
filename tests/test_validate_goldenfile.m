@@ -1,6 +1,7 @@
 function tests = test_validate_goldenfile
 % Test function for validating simulation results against golden file
-% This is designed to work with matlab-actions/run-tests@v2 (no license required)
+% This is the rigorous test with Np=10, tmax=0.1
+% Designed to work with matlab-actions/run-tests@v2 (no license required)
 
 tests = functiontests(localfunctions);
 end
@@ -8,7 +9,8 @@ end
 function test_simulation_against_goldenfile(testCase)
 % Test that current simulation matches the golden file within tolerance
 
-fprintf('=== MATLAB Test Runner Validation ===\n');
+fprintf('=== RIGOROUS GOLDEN FILE VALIDATION ===\n');
+fprintf('Testing Np=10, tmax=0.1 (6 timesteps)\n');
 fprintf('MATLAB version: %s\n', version);
 
 % Add parent directory to path so we can find the main simulation function
@@ -21,7 +23,7 @@ tolerance = 1e-10;
 
 % Check if golden file exists (relative to project root)
 goldenfiles_dir = '../goldenfiles';
-golden_filename = fullfile(goldenfiles_dir, 'goldenfile_Np6_tmax020.mat');
+golden_filename = fullfile(goldenfiles_dir, 'goldenfile_Np10_tmax100.mat');
 
 if ~exist(golden_filename, 'file')
     error('Golden file not found: %s\nRun run_goldenfile_creation.m first.', golden_filename);
