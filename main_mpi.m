@@ -175,7 +175,7 @@ spmd
     while t < tmax && nn < nnmax_worker
         nn = nn + 1;
         
-        % Compute fluxes for interior cells
+        % Compute fluxes and wave speeds for interior cells
         for i = 1:nx
             for j = 1:ny
                 % Access with halo offset
@@ -203,10 +203,33 @@ spmd
         end
         M(halo+1:halo+nx, halo+1:halo+ny, :) = Mnp(halo+1:halo+nx, halo+1:halo+ny, :);
         
-        % CRITICAL: Exchange halos BEFORE flux computation (pas_HLL needs neighbor data)
+        % CRITICAL: Exchange M halos FIRST, then recompute Fx/Fy in halos
         M = halo_exchange_2d(M, decomp, bc);
-        Fx = halo_exchange_2d(Fx, decomp, bc);
-        Fy = halo_exchange_2d(Fy, decomp, bc);
+        
+        % Recompute Fx/Fy in halo cells using exchanged M values
+        % This ensures pas_HLL has correct flux values at domain boundaries
+        for ih = [1, halo+nx+1]  % Left and right halos
+            for jh = halo+1:halo+ny
+                MOM = squeeze(M(ih, jh, :));
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
+                [~, ~, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [~, ~, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [Mx, My, ~, ~] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
+                Fx(ih, jh, :) = Mx;
+                Fy(ih, jh, :) = My;
+            end
+        end
+        for ih = halo+1:halo+nx
+            for jh = [1, halo+ny+1]  % Bottom and top halos
+                MOM = squeeze(M(ih, jh, :));
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
+                [~, ~, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [~, ~, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [Mx, My, ~, ~] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
+                Fx(ih, jh, :) = Mx;
+                Fy(ih, jh, :) = My;
+            end
+        end
         
         % Global reduction for time step (all ranks need same dt)
         vmax_local = max([abs(vpxmax(:)); abs(vpxmin(:)); abs(vpymax(:)); abs(vpymin(:))]);
