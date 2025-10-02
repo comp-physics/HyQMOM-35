@@ -222,7 +222,7 @@ spmd
         vpymin_ext(:, halo+1:halo+ny) = vpymin;
         vpymax_ext(:, halo+1:halo+ny) = vpymax;
         
-        % Exchange X-direction wave speeds (send h rows to match halo width)
+        % Exchange X-direction wave speeds
         if decomp.neighbors.left ~= -1
             labSend(vpxmin(1:halo,:), decomp.neighbors.left);
             labSend(vpxmax(1:halo,:), decomp.neighbors.left);
@@ -246,7 +246,7 @@ spmd
             vpxmax_ext(halo+nx+1:nx+2*halo, :) = repmat(vpxmax(end,:), halo, 1);
         end
         
-        % Exchange Y-direction wave speeds (send h columns to match halo width)
+        % Exchange Y-direction wave speeds
         if decomp.neighbors.down ~= -1
             labSend(vpymin(:,1:halo), decomp.neighbors.down);
             labSend(vpymax(:,1:halo), decomp.neighbors.down);
