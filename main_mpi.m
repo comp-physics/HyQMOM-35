@@ -20,7 +20,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments
-defaults = struct('Np', 40, 'tmax', 0.1, 'enable_plots', false, 'num_workers', 2);
+defaults = struct('Np', 40, 'tmax', 0.1, 'enable_plots', true, 'num_workers', 2);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
@@ -203,6 +203,11 @@ spmd
         end
         M(halo+1:halo+nx, halo+1:halo+ny, :) = Mnp(halo+1:halo+nx, halo+1:halo+ny, :);
         
+        % CRITICAL: Exchange halos BEFORE flux computation (pas_HLL needs neighbor data)
+        M = halo_exchange_2d(M, decomp, bc);
+        Fx = halo_exchange_2d(Fx, decomp, bc);
+        Fy = halo_exchange_2d(Fy, decomp, bc);
+        
         % Global reduction for time step (all ranks need same dt)
         vmax_local = max([abs(vpxmax(:)); abs(vpxmin(:)); abs(vpymax(:)); abs(vpymin(:))]);
         vmax = max(gcat(vmax_local, 1));  % Global max across all ranks
@@ -211,25 +216,34 @@ spmd
         t = t + dt;
         
         % X-direction flux update
+        % pas_HLL needs neighbors, so extract interior + halos (full local array in X)
         Mnpx = M;
         for j = 1:ny
             jh = j + halo;
-            % Extract interior only (pas_HLL expects N×Nmom, not (N+2*halo)×Nmom)
-            MOM = squeeze(M(halo+1:halo+nx, jh, :));
-            FX  = squeeze(Fx(halo+1:halo+nx, jh, :));
-            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpxmin(:,j), vpxmax(:,j));
-            Mnpx(halo+1:halo+nx, jh, :) = MNP;
+            % Extract full X-extent (includes left/right halos for stencil)
+            MOM = squeeze(M(:, jh, :));  % Size: (nx+2*halo) x Nmom
+            FX  = squeeze(Fx(:, jh, :));
+            % Extend wave speed arrays to match (replicate boundary values)
+            vpxmin_ext = [vpxmin(1,j); vpxmin(:,j); vpxmin(end,j)];
+            vpxmax_ext = [vpxmax(1,j); vpxmax(:,j); vpxmax(end,j)];
+            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpxmin_ext, vpxmax_ext);
+            % pas_HLL returns array same size as input; extract interior
+            Mnpx(halo+1:halo+nx, jh, :) = MNP(halo+1:halo+nx, :);
         end
         
         % Y-direction flux update
         Mnpy = M;
         for i = 1:nx
             ih = i + halo;
-            % Extract interior only (pas_HLL expects N×Nmom, not (N+2*halo)×Nmom)
-            MOM = squeeze(M(ih, halo+1:halo+ny, :));
-            FY  = squeeze(Fy(ih, halo+1:halo+ny, :));
-            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpymin(i,:)', vpymax(i,:)');
-            Mnpy(ih, halo+1:halo+ny, :) = MNP;
+            % Extract full Y-extent (includes bottom/top halos for stencil)
+            MOM = squeeze(M(ih, :, :));  % Size: (ny+2*halo) x Nmom
+            FY  = squeeze(Fy(ih, :, :));
+            % Extend wave speed arrays to match
+            vpymin_ext = [vpymin(i,1); vpymin(i,:)'; vpymin(i,end)];
+            vpymax_ext = [vpymax(i,1); vpymax(i,:)'; vpymax(i,end)];
+            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpymin_ext, vpymax_ext);
+            % Extract interior
+            Mnpy(ih, halo+1:halo+ny, :) = MNP(halo+1:halo+ny, :);
         end
         
         % Combine updates (Strang splitting)
@@ -279,21 +293,20 @@ spmd
         
         % Receive from all other ranks
         for src = 2:numlabs
-            blk = labReceive(src);
-            Px = decomp.dims(1);
-            r = src - 1;
-            rx = mod(r, Px);
-            ry = floor(r / Px);
-            [~, i0_s, i1_s] = block_partition_1d(Np, decomp.dims(1), rx);
-            [~, j0_s, j1_s] = block_partition_1d(Np, decomp.dims(2), ry);
-            M_final(i0_s:i1_s, j0_s:j1_s, :) = blk;
+            % Receive data packet: {M_interior, i0i1, j0j1}
+            data_packet = labReceive(src);
+            blk = data_packet{1};
+            i_range = data_packet{2};
+            j_range = data_packet{3};
+            M_final(i_range(1):i_range(2), j_range(1):j_range(2), :) = blk;
         end
         
         final_time = t;
         time_steps = nn;
     else
-        % All other ranks: send to rank 1
-        labSend(M_interior, 1);
+        % All other ranks: send to rank 1 with index information
+        data_packet = {M_interior, i0i1, j0j1};
+        labSend(data_packet, 1);
         M_final = [];
         final_time = [];
         time_steps = [];
@@ -313,6 +326,48 @@ end
 % Compute derived quantities on gathered result
 [C, S] = compute_CS_grid(M_final);
 [M5, C5, S5] = compute_M5_grid(M_final);
+
+% Plot results if requested
+if enable_plots
+    figure(1); clf;
+    subplot(2,3,1);
+    imagesc(grid_worker.x, grid_worker.y, M_final(:,:,1)');
+    axis equal tight; colorbar;
+    title(sprintf('Density at t=%.3f (MPI %d ranks)', final_time, num_workers));
+    xlabel('x'); ylabel('y');
+    
+    subplot(2,3,2);
+    imagesc(grid_worker.x, grid_worker.y, sqrt(M_final(:,:,2).^2 + M_final(:,:,6).^2)');
+    axis equal tight; colorbar;
+    title('Velocity Magnitude');
+    xlabel('x'); ylabel('y');
+    
+    subplot(2,3,3);
+    imagesc(grid_worker.x, grid_worker.y, M_final(:,:,4)');
+    axis equal tight; colorbar;
+    title('Temperature (M_{200})');
+    xlabel('x'); ylabel('y');
+    
+    subplot(2,3,4);
+    imagesc(grid_worker.x, grid_worker.y, C(:,:,1)');
+    axis equal tight; colorbar;
+    title('C_{200}');
+    xlabel('x'); ylabel('y');
+    
+    subplot(2,3,5);
+    imagesc(grid_worker.x, grid_worker.y, S(:,:,1)');
+    axis equal tight; colorbar;
+    title('S_{200}');
+    xlabel('x'); ylabel('y');
+    
+    subplot(2,3,6);
+    text(0.5, 0.5, sprintf('MPI Run\n%d ranks\n%d steps\nt=%.4f', ...
+        num_workers, time_steps, final_time), ...
+        'HorizontalAlignment', 'center', 'FontSize', 12);
+    axis off;
+    
+    drawnow;
+end
 
 % Build results structure
 if nargout > 0
