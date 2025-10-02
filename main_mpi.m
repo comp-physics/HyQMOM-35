@@ -297,132 +297,160 @@ spmd
         t = t + dt;
         
         % X-direction flux update
-        % Strategy: Use pas_HLL on interior-only (matches serial), then manually fix boundaries
+        % Strategy: Include exactly one halo at processor boundaries so pas_HLL sees neighbor data
         Mnpx = M;
+        
+        % Determine boundary types
+        has_left_neighbor = (decomp.neighbors.left ~= -1);
+        has_right_neighbor = (decomp.neighbors.right ~= -1);
         
         for j = 1:ny
             jh = j + halo;
             
-            % Always use interior-only (same as serial and MPI-1)
-            MOM = squeeze(M(halo+1:halo+nx, jh, :));
-            FX  = squeeze(Fx(halo+1:halo+nx, jh, :));
-            vpx_min = vpxmin(1:nx, j);
-            vpx_max = vpxmax(1:nx, j);
-            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max);
-            Mnpx(halo+1:halo+nx, jh, :) = MNP;
-            
-            % Manual boundary correction for processor boundaries
-            % Left boundary (first interior cell)
-            if decomp.neighbors.left ~= -1
-                % Recompute first interior cell using halo data
-                i_int = 1;  % First interior cell (absolute index: halo+1)
-                
-                % Flux at left face (between halo and first interior)
-                flux_left = compute_boundary_flux_hll(...
-                    squeeze(M(halo, jh, :)), squeeze(M(halo+1, jh, :)), ...
-                    squeeze(Fx(halo, jh, :)), squeeze(Fx(halo+1, jh, :)), ...
-                    vpxmin_ext(halo, j), vpxmax_ext(halo, j), ...
-                    vpxmin_ext(halo+1, j), vpxmax_ext(halo+1, j));
-                
-                % Flux at right face (between first and second interior)
-                flux_right = compute_boundary_flux_hll(...
-                    squeeze(M(halo+1, jh, :)), squeeze(M(halo+2, jh, :)), ...
-                    squeeze(Fx(halo+1, jh, :)), squeeze(Fx(halo+2, jh, :)), ...
-                    vpxmin_ext(halo+1, j), vpxmax_ext(halo+1, j), ...
-                    vpxmin_ext(halo+2, j), vpxmax_ext(halo+2, j));
-                
-                % Update using correct boundary flux (reshape for proper assignment)
-                update = squeeze(M(halo+i_int, jh, :)) - dt/dx_worker*(flux_right - flux_left);
-                Mnpx(halo+i_int, jh, :) = reshape(update, [1, 1, Nmom_worker]);
+            % Determine array extent: include ONE immediate halo cell at processor boundaries
+            % halo=2, so M indices: 1-2=left halos, 3-14=interior (nx=12), 15-16=right halos
+            % We want immediate neighbor: left=index 2, right=index 15
+            if has_left_neighbor && has_right_neighbor
+                % Both processor boundaries: include immediate neighbor halos
+                i_start = halo;              % e.g., 2 (immediate left halo)
+                i_end = halo + nx + 1;       % e.g., 15 (immediate right halo)
+                vp_start = halo;
+                vp_end = halo + nx + 1;
+                apply_bc_left = false;
+                apply_bc_right = false;
+            elseif has_left_neighbor
+                % Left processor, right physical: include immediate left halo only
+                i_start = halo;              % e.g., 2
+                i_end = halo + nx;           % e.g., 14
+                vp_start = halo;
+                vp_end = halo + nx;
+                apply_bc_left = false;
+                apply_bc_right = true;
+            elseif has_right_neighbor
+                % Left physical, right processor: include immediate right halo only
+                i_start = halo + 1;          % e.g., 3
+                i_end = halo + nx + 1;       % e.g., 15
+                vp_start = halo + 1;
+                vp_end = halo + nx + 1;
+                apply_bc_left = true;
+                apply_bc_right = false;
+            else
+                % Both physical boundaries (1 rank): interior only
+                i_start = halo + 1;          % e.g., 3
+                i_end = halo + nx;           % e.g., 14
+                vp_start = 1;
+                vp_end = nx;
+                apply_bc_left = true;
+                apply_bc_right = true;
             end
             
-            % Right boundary (last interior cell)
-            if decomp.neighbors.right ~= -1
-                % Recompute last interior cell using halo data
-                i_int = nx;  % Last interior cell
-                
-                % Flux at left face (between second-to-last and last interior)
-                flux_left = compute_boundary_flux_hll(...
-                    squeeze(M(halo+nx-1, jh, :)), squeeze(M(halo+nx, jh, :)), ...
-                    squeeze(Fx(halo+nx-1, jh, :)), squeeze(Fx(halo+nx, jh, :)), ...
-                    vpxmin_ext(halo+nx-1, j), vpxmax_ext(halo+nx-1, j), ...
-                    vpxmin_ext(halo+nx, j), vpxmax_ext(halo+nx, j));
-                
-                % Flux at right face (between last interior and halo)
-                flux_right = compute_boundary_flux_hll(...
-                    squeeze(M(halo+nx, jh, :)), squeeze(M(halo+nx+1, jh, :)), ...
-                    squeeze(Fx(halo+nx, jh, :)), squeeze(Fx(halo+nx+1, jh, :)), ...
-                    vpxmin_ext(halo+nx, j), vpxmax_ext(halo+nx, j), ...
-                    vpxmin_ext(halo+nx+1, j), vpxmax_ext(halo+nx+1, j));
-                
-                % Update using correct boundary flux (reshape for proper assignment)
-                update = squeeze(M(halo+i_int, jh, :)) - dt/dx_worker*(flux_right - flux_left);
-                Mnpx(halo+i_int, jh, :) = reshape(update, [1, 1, Nmom_worker]);
+            % Extract array with appropriate extent
+            MOM = squeeze(M(i_start:i_end, jh, :));
+            FX  = squeeze(Fx(i_start:i_end, jh, :));
+            
+            % Get wave speeds (use extended array if we included halos, otherwise interior)
+            if has_left_neighbor || has_right_neighbor
+                vpx_min = vpxmin_ext(vp_start:vp_end, j);
+                vpx_max = vpxmax_ext(vp_start:vp_end, j);
+            else
+                vpx_min = vpxmin(vp_start:vp_end, j);
+                vpx_max = vpxmax(vp_start:vp_end, j);
+            end
+            
+            % Call pas_HLL with BC flags
+            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max, apply_bc_left, apply_bc_right);
+            
+            % Extract interior portion of result and write back
+            if has_left_neighbor && has_right_neighbor
+                % Result is [halo, interior_1:nx, halo], extract middle nx cells
+                Mnpx(halo+1:halo+nx, jh, :) = MNP(2:end-1, :);
+            elseif has_left_neighbor
+                % Result is [halo, interior_1:nx], extract last nx cells
+                Mnpx(halo+1:halo+nx, jh, :) = MNP(2:end, :);
+            elseif has_right_neighbor
+                % Result is [interior_1:nx, halo], extract first nx cells
+                Mnpx(halo+1:halo+nx, jh, :) = MNP(1:end-1, :);
+            else
+                % Result is [interior_1:nx], use as is
+                Mnpx(halo+1:halo+nx, jh, :) = MNP;
             end
         end
         
         % Y-direction flux update
-        % Strategy: Use pas_HLL on interior-only (matches serial), then manually fix boundaries
+        % Strategy: Include exactly one halo at processor boundaries so pas_HLL sees neighbor data
         Mnpy = M;
+        
+        % Determine boundary types
+        has_down_neighbor = (decomp.neighbors.down ~= -1);
+        has_up_neighbor = (decomp.neighbors.up ~= -1);
         
         for i = 1:nx
             ih = i + halo;
             
-            % Always use interior-only (same as serial and MPI-1)
-            MOM = squeeze(M(ih, halo+1:halo+ny, :));
-            FY  = squeeze(Fy(ih, halo+1:halo+ny, :));
-            vpy_min = vpymin(i, 1:ny)';
-            vpy_max = vpymax(i, 1:ny)';
-            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max);
-            Mnpy(ih, halo+1:halo+ny, :) = MNP;
-            
-            % Manual boundary correction for processor boundaries
-            % Bottom boundary (first interior cell)
-            if decomp.neighbors.down ~= -1
-                % Recompute first interior cell using halo data
-                j_int = 1;  % First interior cell (absolute index: halo+1)
-                
-                % Flux at bottom face (between halo and first interior)
-                flux_down = compute_boundary_flux_hll(...
-                    squeeze(M(ih, halo, :)), squeeze(M(ih, halo+1, :)), ...
-                    squeeze(Fy(ih, halo, :)), squeeze(Fy(ih, halo+1, :)), ...
-                    vpymin_ext(i, halo), vpymax_ext(i, halo), ...
-                    vpymin_ext(i, halo+1), vpymax_ext(i, halo+1));
-                
-                % Flux at top face (between first and second interior)
-                flux_up = compute_boundary_flux_hll(...
-                    squeeze(M(ih, halo+1, :)), squeeze(M(ih, halo+2, :)), ...
-                    squeeze(Fy(ih, halo+1, :)), squeeze(Fy(ih, halo+2, :)), ...
-                    vpymin_ext(i, halo+1), vpymax_ext(i, halo+1), ...
-                    vpymin_ext(i, halo+2), vpymax_ext(i, halo+2));
-                
-                % Update using correct boundary flux (reshape for proper assignment)
-                update = squeeze(M(ih, halo+j_int, :)) - dt/dy_worker*(flux_up - flux_down);
-                Mnpy(ih, halo+j_int, :) = reshape(update, [1, 1, Nmom_worker]);
+            % Determine array extent: include one halo cell at processor boundaries
+            if has_down_neighbor && has_up_neighbor
+                % Both processor boundaries: include both halos
+                j_start = halo;
+                j_end = halo + ny + 1;
+                vp_start = halo;
+                vp_end = halo + ny + 1;
+                apply_bc_down = false;
+                apply_bc_up = false;
+            elseif has_down_neighbor
+                % Bottom processor, top physical: include bottom halo only
+                j_start = halo;
+                j_end = halo + ny;
+                vp_start = halo;
+                vp_end = halo + ny;
+                apply_bc_down = false;
+                apply_bc_up = true;
+            elseif has_up_neighbor
+                % Bottom physical, top processor: include top halo only
+                j_start = halo + 1;
+                j_end = halo + ny + 1;
+                vp_start = halo + 1;
+                vp_end = halo + ny + 1;
+                apply_bc_down = true;
+                apply_bc_up = false;
+            else
+                % Both physical boundaries (1 rank): interior only
+                j_start = halo + 1;
+                j_end = halo + ny;
+                vp_start = 1;
+                vp_end = ny;
+                apply_bc_down = true;
+                apply_bc_up = true;
             end
             
-            % Top boundary (last interior cell)
-            if decomp.neighbors.up ~= -1
-                % Recompute last interior cell using halo data
-                j_int = ny;  % Last interior cell
-                
-                % Flux at bottom face (between second-to-last and last interior)
-                flux_down = compute_boundary_flux_hll(...
-                    squeeze(M(ih, halo+ny-1, :)), squeeze(M(ih, halo+ny, :)), ...
-                    squeeze(Fy(ih, halo+ny-1, :)), squeeze(Fy(ih, halo+ny, :)), ...
-                    vpymin_ext(i, halo+ny-1), vpymax_ext(i, halo+ny-1), ...
-                    vpymin_ext(i, halo+ny), vpymax_ext(i, halo+ny));
-                
-                % Flux at top face (between last interior and halo)
-                flux_up = compute_boundary_flux_hll(...
-                    squeeze(M(ih, halo+ny, :)), squeeze(M(ih, halo+ny+1, :)), ...
-                    squeeze(Fy(ih, halo+ny, :)), squeeze(Fy(ih, halo+ny+1, :)), ...
-                    vpymin_ext(i, halo+ny), vpymax_ext(i, halo+ny), ...
-                    vpymin_ext(i, halo+ny+1), vpymax_ext(i, halo+ny+1));
-                
-                % Update using correct boundary flux (reshape for proper assignment)
-                update = squeeze(M(ih, halo+j_int, :)) - dt/dy_worker*(flux_up - flux_down);
-                Mnpy(ih, halo+j_int, :) = reshape(update, [1, 1, Nmom_worker]);
+            % Extract array with appropriate extent
+            MOM = squeeze(M(ih, j_start:j_end, :));
+            FY  = squeeze(Fy(ih, j_start:j_end, :));
+            
+            % Get wave speeds (use extended array if we included halos, otherwise interior)
+            if has_down_neighbor || has_up_neighbor
+                vpy_min = vpymin_ext(i, vp_start:vp_end)';
+                vpy_max = vpymax_ext(i, vp_start:vp_end)';
+            else
+                vpy_min = vpymin(i, vp_start:vp_end)';
+                vpy_max = vpymax(i, vp_start:vp_end)';
+            end
+            
+            % Call pas_HLL with BC flags
+            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max, apply_bc_down, apply_bc_up);
+            
+            % Extract interior portion of result and write back
+            if has_down_neighbor && has_up_neighbor
+                % Result is [halo, interior_1:ny, halo], extract middle ny cells
+                Mnpy(ih, halo+1:halo+ny, :) = MNP(2:end-1, :);
+            elseif has_down_neighbor
+                % Result is [halo, interior_1:ny], extract last ny cells
+                Mnpy(ih, halo+1:halo+ny, :) = MNP(2:end, :);
+            elseif has_up_neighbor
+                % Result is [interior_1:ny, halo], extract first ny cells
+                Mnpy(ih, halo+1:halo+ny, :) = MNP(1:end-1, :);
+            else
+                % Result is [interior_1:ny], use as is
+                Mnpy(ih, halo+1:halo+ny, :) = MNP;
             end
         end
         
