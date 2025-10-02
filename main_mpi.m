@@ -202,10 +202,92 @@ spmd
         end
         M(halo+1:halo+nx, halo+1:halo+ny, :) = Mnp(halo+1:halo+nx, halo+1:halo+ny, :);
         
-        % CRITICAL: Exchange M, Fx, Fy AND wave speeds from neighbors
+        % CRITICAL: Exchange M, Fx, Fy from neighbors
         M = halo_exchange_2d(M, decomp, bc);
         Fx = halo_exchange_2d(Fx, decomp, bc);
         Fy = halo_exchange_2d(Fy, decomp, bc);
+        
+        % NEW: Compute wave speeds in halo cells for pas_HLL stencil
+        % Create extended wave speed arrays (interior + halos)
+        vpxmin_ext = zeros(nx+2*halo, ny);
+        vpxmax_ext = zeros(nx+2*halo, ny);
+        vpymin_ext = zeros(nx, ny+2*halo);
+        vpymax_ext = zeros(nx, ny+2*halo);
+        
+        % Copy interior wave speeds
+        vpxmin_ext(halo+1:halo+nx, :) = vpxmin;
+        vpxmax_ext(halo+1:halo+nx, :) = vpxmax;
+        vpymin_ext(:, halo+1:halo+ny) = vpymin;
+        vpymax_ext(:, halo+1:halo+ny) = vpymax;
+        
+        % Compute Fx, Fy, and wave speeds in halo cells (they have M data from exchange)
+        % Left halo (i=1:halo)
+        for i = 1:halo
+            for j = 1:ny
+                jh = j + halo;
+                MOM = squeeze(M(i, jh, :));
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
+                [v6x_min, v6x_max, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6y_min, v6y_max, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
+                Fx(i, jh, :) = Mx;
+                Fy(i, jh, :) = My;
+                [~, v5x_min, v5x_max] = closure_and_eigenvalues(Mr([1,2,3,4,5]));
+                vpxmin_ext(i, j) = min(v5x_min, v6x_min);
+                vpxmax_ext(i, j) = max(v5x_max, v6x_max);
+            end
+        end
+        
+        % Right halo (i=halo+nx+1:nx+2*halo)
+        for i = halo+nx+1:nx+2*halo
+            for j = 1:ny
+                jh = j + halo;
+                MOM = squeeze(M(i, jh, :));
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
+                [v6x_min, v6x_max, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6y_min, v6y_max, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
+                Fx(i, jh, :) = Mx;
+                Fy(i, jh, :) = My;
+                [~, v5x_min, v5x_max] = closure_and_eigenvalues(Mr([1,2,3,4,5]));
+                vpxmin_ext(i, j) = min(v5x_min, v6x_min);
+                vpxmax_ext(i, j) = max(v5x_max, v6x_max);
+            end
+        end
+        
+        % Bottom halo (j=1:halo)
+        for i = 1:nx
+            ih = i + halo;
+            for j = 1:halo
+                MOM = squeeze(M(ih, j, :));
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
+                [v6x_min, v6x_max, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6y_min, v6y_max, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
+                Fx(ih, j, :) = Mx;
+                Fy(ih, j, :) = My;
+                [~, v5y_min, v5y_max] = closure_and_eigenvalues(Mr([1,6,10,13,15]));
+                vpymin_ext(i, j) = min(v5y_min, v6y_min);
+                vpymax_ext(i, j) = max(v5y_max, v6y_max);
+            end
+        end
+        
+        % Top halo (j=halo+ny+1:ny+2*halo)
+        for i = 1:nx
+            ih = i + halo;
+            for j = halo+ny+1:ny+2*halo
+                MOM = squeeze(M(ih, j, :));
+                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
+                [v6x_min, v6x_max, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6y_min, v6y_max, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
+                Fx(ih, j, :) = Mx;
+                Fy(ih, j, :) = My;
+                [~, v5y_min, v5y_max] = closure_and_eigenvalues(Mr([1,6,10,13,15]));
+                vpymin_ext(i, j) = min(v5y_min, v6y_min);
+                vpymax_ext(i, j) = max(v5y_max, v6y_max);
+            end
+        end
         
         % Global reduction for time step (all ranks need same dt)
         vmax_local = max([abs(vpxmax(:)); abs(vpxmin(:)); abs(vpymax(:)); abs(vpymin(:))]);
@@ -215,38 +297,69 @@ spmd
         t = t + dt;
         
         % X-direction flux update
-        % Extract INTERIOR ONLY to match serial array size
-        % pas_HLL will apply physical BCs (halos already contain neighbor data via exchange)
         Mnpx = M;
+        
+        % Determine if we have processor boundaries
+        has_left_neighbor = (decomp.neighbors.left ~= -1);
+        has_right_neighbor = (decomp.neighbors.right ~= -1);
+        
         for j = 1:ny
             jh = j + halo;
-            % Extract INTERIOR cells only (same size as serial!)
-            MOM = squeeze(M(halo+1:halo+nx, jh, :));  % Size: nx x Nmom (no halos)
-            FX  = squeeze(Fx(halo+1:halo+nx, jh, :));
-            % Use interior wave speeds
-            vpx_min = vpxmin(1:nx, j);
-            vpx_max = vpxmax(1:nx, j);
-            % pas_HLL operates on same array size as serial, applies physical BCs at endpoints
-            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max);
-            % Write back to interior
-            Mnpx(halo+1:halo+nx, jh, :) = MNP;
+            
+            if has_left_neighbor || has_right_neighbor
+                % Has processor boundaries: include halos for stencil, extract interior result
+                MOM = squeeze(M(:, jh, :));  % Full array with halos
+                FX  = squeeze(Fx(:, jh, :));
+                vpx_min = vpxmin_ext(:, j);
+                vpx_max = vpxmax_ext(:, j);
+                % Pass BC flags: false for processor boundaries, true for physical boundaries
+                apply_bc_left = ~has_left_neighbor;
+                apply_bc_right = ~has_right_neighbor;
+                MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max, apply_bc_left, apply_bc_right);
+                % Extract interior from result
+                Mnpx(halo+1:halo+nx, jh, :) = MNP(halo+1:halo+nx, :);
+            else
+                % No processor boundaries (1 rank): use interior only (matches serial)
+                MOM = squeeze(M(halo+1:halo+nx, jh, :));
+                FX  = squeeze(Fx(halo+1:halo+nx, jh, :));
+                vpx_min = vpxmin(1:nx, j);
+                vpx_max = vpxmax(1:nx, j);
+                MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max);
+                Mnpx(halo+1:halo+nx, jh, :) = MNP;
+            end
         end
         
         % Y-direction flux update
-        % Extract INTERIOR ONLY to match serial array size
         Mnpy = M;
+        
+        % Determine if we have processor boundaries
+        has_down_neighbor = (decomp.neighbors.down ~= -1);
+        has_up_neighbor = (decomp.neighbors.up ~= -1);
+        
         for i = 1:nx
             ih = i + halo;
-            % Extract INTERIOR cells only (same size as serial!)
-            MOM = squeeze(M(ih, halo+1:halo+ny, :));  % Size: ny x Nmom (no halos)
-            FY  = squeeze(Fy(ih, halo+1:halo+ny, :));
-            % Use interior wave speeds
-            vpy_min = vpymin(i, 1:ny)';
-            vpy_max = vpymax(i, 1:ny)';
-            % pas_HLL operates on same array size as serial, applies physical BCs at endpoints
-            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max);
-            % Write back to interior
-            Mnpy(ih, halo+1:halo+ny, :) = MNP;
+            
+            if has_down_neighbor || has_up_neighbor
+                % Has processor boundaries: include halos for stencil, extract interior result
+                MOM = squeeze(M(ih, :, :));  % Full array with halos
+                FY  = squeeze(Fy(ih, :, :));
+                vpy_min = vpymin_ext(i, :)';
+                vpy_max = vpymax_ext(i, :)';
+                % Pass BC flags: false for processor boundaries, true for physical boundaries
+                apply_bc_down = ~has_down_neighbor;
+                apply_bc_up = ~has_up_neighbor;
+                MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max, apply_bc_down, apply_bc_up);
+                % Extract interior from result
+                Mnpy(ih, halo+1:halo+ny, :) = MNP(halo+1:halo+ny, :);
+            else
+                % No processor boundaries (1 rank): use interior only (matches serial)
+                MOM = squeeze(M(ih, halo+1:halo+ny, :));
+                FY  = squeeze(Fy(ih, halo+1:halo+ny, :));
+                vpy_min = vpymin(i, 1:ny)';
+                vpy_max = vpymax(i, 1:ny)';
+                MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max);
+                Mnpy(ih, halo+1:halo+ny, :) = MNP;
+            end
         end
         
         % Combine updates (Strang splitting) - INTERIOR ONLY
