@@ -207,69 +207,6 @@ spmd
         Fx = halo_exchange_2d(Fx, decomp, bc);
         Fy = halo_exchange_2d(Fy, decomp, bc);
         
-        % Exchange wave speeds from neighbors (NOT recompute!)
-        % These are used by pas_HLL which needs neighbor wave speeds for HLL flux
-        
-        % Create extended wave speed arrays for pas_HLL
-        vpxmin_ext = zeros(nx+2*halo, ny);
-        vpxmax_ext = zeros(nx+2*halo, ny);
-        vpymin_ext = zeros(nx, ny+2*halo);
-        vpymax_ext = zeros(nx, ny+2*halo);
-        
-        % Copy interior wave speeds
-        vpxmin_ext(halo+1:halo+nx, :) = vpxmin;
-        vpxmax_ext(halo+1:halo+nx, :) = vpxmax;
-        vpymin_ext(:, halo+1:halo+ny) = vpymin;
-        vpymax_ext(:, halo+1:halo+ny) = vpymax;
-        
-        % Exchange X-direction wave speeds
-        if decomp.neighbors.left ~= -1
-            labSend(vpxmin(1:halo,:), decomp.neighbors.left);
-            labSend(vpxmax(1:halo,:), decomp.neighbors.left);
-        end
-        if decomp.neighbors.right ~= -1
-            labSend(vpxmin(nx-halo+1:nx,:), decomp.neighbors.right);
-            labSend(vpxmax(nx-halo+1:nx,:), decomp.neighbors.right);
-        end
-        if decomp.neighbors.left ~= -1
-            vpxmin_ext(1:halo, :) = labReceive(decomp.neighbors.left);
-            vpxmax_ext(1:halo, :) = labReceive(decomp.neighbors.left);
-        else
-            vpxmin_ext(1:halo, :) = repmat(vpxmin(1,:), halo, 1);
-            vpxmax_ext(1:halo, :) = repmat(vpxmax(1,:), halo, 1);
-        end
-        if decomp.neighbors.right ~= -1
-            vpxmin_ext(halo+nx+1:nx+2*halo, :) = labReceive(decomp.neighbors.right);
-            vpxmax_ext(halo+nx+1:nx+2*halo, :) = labReceive(decomp.neighbors.right);
-        else
-            vpxmin_ext(halo+nx+1:nx+2*halo, :) = repmat(vpxmin(end,:), halo, 1);
-            vpxmax_ext(halo+nx+1:nx+2*halo, :) = repmat(vpxmax(end,:), halo, 1);
-        end
-        
-        % Exchange Y-direction wave speeds
-        if decomp.neighbors.down ~= -1
-            labSend(vpymin(:,1:halo), decomp.neighbors.down);
-            labSend(vpymax(:,1:halo), decomp.neighbors.down);
-        end
-        if decomp.neighbors.up ~= -1
-            labSend(vpymin(:,ny-halo+1:ny), decomp.neighbors.up);
-            labSend(vpymax(:,ny-halo+1:ny), decomp.neighbors.up);
-        end
-        if decomp.neighbors.down ~= -1
-            vpymin_ext(:, 1:halo) = labReceive(decomp.neighbors.down);
-            vpymax_ext(:, 1:halo) = labReceive(decomp.neighbors.down);
-        else
-            vpymin_ext(:, 1:halo) = repmat(vpymin(:,1), 1, halo);
-            vpymax_ext(:, 1:halo) = repmat(vpymax(:,1), 1, halo);
-        end
-        if decomp.neighbors.up ~= -1
-            vpymin_ext(:, halo+ny+1:ny+2*halo) = labReceive(decomp.neighbors.up);
-            vpymax_ext(:, halo+ny+1:ny+2*halo) = labReceive(decomp.neighbors.up);
-        else
-            vpymin_ext(:, halo+ny+1:ny+2*halo) = repmat(vpymin(:,end), 1, halo);
-            vpymax_ext(:, halo+ny+1:ny+2*halo) = repmat(vpymin(:,end), 1, halo);
-        end
-        
         % Global reduction for time step (all ranks need same dt)
         vmax_local = max([abs(vpxmax(:)); abs(vpxmin(:)); abs(vpymax(:)); abs(vpymin(:))]);
         vmax = max(gcat(vmax_local, 1));  % Global max across all ranks
@@ -278,40 +215,38 @@ spmd
         t = t + dt;
         
         % X-direction flux update
-        % pas_HLL needs neighbors, so extract interior + halos (full local array in X)
+        % Extract INTERIOR ONLY to match serial array size
+        % pas_HLL will apply physical BCs (halos already contain neighbor data via exchange)
         Mnpx = M;
-        % Determine boundary types for X-direction
-        apply_bc_xleft = (decomp.neighbors.left == -1);   % Physical boundary on left
-        apply_bc_xright = (decomp.neighbors.right == -1); % Physical boundary on right
         for j = 1:ny
             jh = j + halo;
-            % Extract full X-extent (includes left/right halos for stencil)
-            MOM = squeeze(M(:, jh, :));  % Size: (nx+2*halo) x Nmom
-            FX  = squeeze(Fx(:, jh, :));
-            % Use exchanged wave speeds (from neighbors, not replicated!)
-            vpx_min = vpxmin_ext(:, j);
-            vpx_max = vpxmax_ext(:, j);
-            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max, apply_bc_xleft, apply_bc_xright);
-            % pas_HLL returns array same size as input; extract interior
-            Mnpx(halo+1:halo+nx, jh, :) = MNP(halo+1:halo+nx, :);
+            % Extract INTERIOR cells only (same size as serial!)
+            MOM = squeeze(M(halo+1:halo+nx, jh, :));  % Size: nx x Nmom (no halos)
+            FX  = squeeze(Fx(halo+1:halo+nx, jh, :));
+            % Use interior wave speeds
+            vpx_min = vpxmin(1:nx, j);
+            vpx_max = vpxmax(1:nx, j);
+            % pas_HLL operates on same array size as serial, applies physical BCs at endpoints
+            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max);
+            % Write back to interior
+            Mnpx(halo+1:halo+nx, jh, :) = MNP;
         end
         
         % Y-direction flux update
+        % Extract INTERIOR ONLY to match serial array size
         Mnpy = M;
-        % Determine boundary types for Y-direction
-        apply_bc_ydown = (decomp.neighbors.down == -1);  % Physical boundary on bottom
-        apply_bc_yup = (decomp.neighbors.up == -1);      % Physical boundary on top
         for i = 1:nx
             ih = i + halo;
-            % Extract full Y-extent (includes bottom/top halos for stencil)
-            MOM = squeeze(M(ih, :, :));  % Size: (ny+2*halo) x Nmom
-            FY  = squeeze(Fy(ih, :, :));
-            % Use exchanged wave speeds (from neighbors, not replicated!)
-            vpy_min = vpymin_ext(i, :)';
-            vpy_max = vpymax_ext(i, :)';
-            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max, apply_bc_ydown, apply_bc_yup);
-            % Extract interior
-            Mnpy(ih, halo+1:halo+ny, :) = MNP(halo+1:halo+ny, :);
+            % Extract INTERIOR cells only (same size as serial!)
+            MOM = squeeze(M(ih, halo+1:halo+ny, :));  % Size: ny x Nmom (no halos)
+            FY  = squeeze(Fy(ih, halo+1:halo+ny, :));
+            % Use interior wave speeds
+            vpy_min = vpymin(i, 1:ny)';
+            vpy_max = vpymax(i, 1:ny)';
+            % pas_HLL operates on same array size as serial, applies physical BCs at endpoints
+            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max);
+            % Write back to interior
+            Mnpy(ih, halo+1:halo+ny, :) = MNP;
         end
         
         % Combine updates (Strang splitting) - INTERIOR ONLY
