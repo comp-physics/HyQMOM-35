@@ -203,32 +203,72 @@ spmd
         end
         M(halo+1:halo+nx, halo+1:halo+ny, :) = Mnp(halo+1:halo+nx, halo+1:halo+ny, :);
         
-        % CRITICAL: Exchange M halos FIRST, then recompute Fx/Fy in halos
+        % CRITICAL: Exchange M, Fx, Fy AND wave speeds from neighbors
         M = halo_exchange_2d(M, decomp, bc);
+        Fx = halo_exchange_2d(Fx, decomp, bc);
+        Fy = halo_exchange_2d(Fy, decomp, bc);
         
-        % Recompute Fx/Fy in halo cells using exchanged M values
-        % This ensures pas_HLL has correct flux values at domain boundaries
-        for ih = [1, halo+nx+1]  % Left and right halos
-            for jh = halo+1:halo+ny
-                MOM = squeeze(M(ih, jh, :));
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [~, ~, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [~, ~, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [Mx, My, ~, ~] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
-                Fx(ih, jh, :) = Mx;
-                Fy(ih, jh, :) = My;
-            end
+        % Exchange wave speeds from neighbors (NOT recompute!)
+        % These are used by pas_HLL which needs neighbor wave speeds for HLL flux
+        
+        % Create extended wave speed arrays for pas_HLL
+        vpxmin_ext = zeros(nx+2*halo, ny);
+        vpxmax_ext = zeros(nx+2*halo, ny);
+        vpymin_ext = zeros(nx, ny+2*halo);
+        vpymax_ext = zeros(nx, ny+2*halo);
+        
+        % Copy interior wave speeds
+        vpxmin_ext(halo+1:halo+nx, :) = vpxmin;
+        vpxmax_ext(halo+1:halo+nx, :) = vpxmax;
+        vpymin_ext(:, halo+1:halo+ny) = vpymin;
+        vpymax_ext(:, halo+1:halo+ny) = vpymax;
+        
+        % Exchange X-direction wave speeds
+        if decomp.neighbors.left ~= -1
+            labSend(vpxmin(1,:)', decomp.neighbors.left);
+            labSend(vpxmax(1,:)', decomp.neighbors.left);
         end
-        for ih = halo+1:halo+nx
-            for jh = [1, halo+ny+1]  % Bottom and top halos
-                MOM = squeeze(M(ih, jh, :));
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [~, ~, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [~, ~, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [Mx, My, ~, ~] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
-                Fx(ih, jh, :) = Mx;
-                Fy(ih, jh, :) = My;
-            end
+        if decomp.neighbors.right ~= -1
+            labSend(vpxmin(end,:)', decomp.neighbors.right);
+            labSend(vpxmax(end,:)', decomp.neighbors.right);
+        end
+        if decomp.neighbors.left ~= -1
+            vpxmin_ext(1:halo, :) = labReceive(decomp.neighbors.left)';
+            vpxmax_ext(1:halo, :) = labReceive(decomp.neighbors.left)';
+        else
+            vpxmin_ext(1:halo, :) = repmat(vpxmin(1,:), halo, 1);
+            vpxmax_ext(1:halo, :) = repmat(vpxmax(1,:), halo, 1);
+        end
+        if decomp.neighbors.right ~= -1
+            vpxmin_ext(halo+nx+1:nx+2*halo, :) = labReceive(decomp.neighbors.right)';
+            vpxmax_ext(halo+nx+1:nx+2*halo, :) = labReceive(decomp.neighbors.right)';
+        else
+            vpxmin_ext(halo+nx+1:nx+2*halo, :) = repmat(vpxmin(end,:), halo, 1);
+            vpxmax_ext(halo+nx+1:nx+2*halo, :) = repmat(vpxmax(end,:), halo, 1);
+        end
+        
+        % Exchange Y-direction wave speeds
+        if decomp.neighbors.down ~= -1
+            labSend(vpymin(:,1), decomp.neighbors.down);
+            labSend(vpymax(:,1), decomp.neighbors.down);
+        end
+        if decomp.neighbors.up ~= -1
+            labSend(vpymin(:,end), decomp.neighbors.up);
+            labSend(vpymax(:,end), decomp.neighbors.up);
+        end
+        if decomp.neighbors.down ~= -1
+            vpymin_ext(:, 1:halo) = labReceive(decomp.neighbors.down);
+            vpymax_ext(:, 1:halo) = labReceive(decomp.neighbors.down);
+        else
+            vpymin_ext(:, 1:halo) = repmat(vpymin(:,1), 1, halo);
+            vpymax_ext(:, 1:halo) = repmat(vpymax(:,1), 1, halo);
+        end
+        if decomp.neighbors.up ~= -1
+            vpymin_ext(:, halo+ny+1:ny+2*halo) = labReceive(decomp.neighbors.up);
+            vpymax_ext(:, halo+ny+1:ny+2*halo) = labReceive(decomp.neighbors.up);
+        else
+            vpymin_ext(:, halo+ny+1:ny+2*halo) = repmat(vpymin(:,end), 1, halo);
+            vpymax_ext(:, halo+ny+1:ny+2*halo) = repmat(vpymax(:,end), 1, halo);
         end
         
         % Global reduction for time step (all ranks need same dt)
@@ -246,10 +286,10 @@ spmd
             % Extract full X-extent (includes left/right halos for stencil)
             MOM = squeeze(M(:, jh, :));  % Size: (nx+2*halo) x Nmom
             FX  = squeeze(Fx(:, jh, :));
-            % Extend wave speed arrays to match (replicate boundary values)
-            vpxmin_ext = [vpxmin(1,j); vpxmin(:,j); vpxmin(end,j)];
-            vpxmax_ext = [vpxmax(1,j); vpxmax(:,j); vpxmax(end,j)];
-            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpxmin_ext, vpxmax_ext);
+            % Use exchanged wave speeds (from neighbors, not replicated!)
+            vpx_min = vpxmin_ext(:, j);
+            vpx_max = vpxmax_ext(:, j);
+            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max);
             % pas_HLL returns array same size as input; extract interior
             Mnpx(halo+1:halo+nx, jh, :) = MNP(halo+1:halo+nx, :);
         end
@@ -261,16 +301,20 @@ spmd
             % Extract full Y-extent (includes bottom/top halos for stencil)
             MOM = squeeze(M(ih, :, :));  % Size: (ny+2*halo) x Nmom
             FY  = squeeze(Fy(ih, :, :));
-            % Extend wave speed arrays to match
-            vpymin_ext = [vpymin(i,1); vpymin(i,:)'; vpymin(i,end)];
-            vpymax_ext = [vpymax(i,1); vpymax(i,:)'; vpymax(i,end)];
-            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpymin_ext, vpymax_ext);
+            % Use exchanged wave speeds (from neighbors, not replicated!)
+            vpy_min = vpymin_ext(i, :)';
+            vpy_max = vpymax_ext(i, :)';
+            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max);
             % Extract interior
             Mnpy(ih, halo+1:halo+ny, :) = MNP(halo+1:halo+ny, :);
         end
         
-        % Combine updates (Strang splitting)
-        M = Mnpx + Mnpy - M;
+        % Combine updates (Strang splitting) - INTERIOR ONLY
+        % Mnpx and Mnpy halos contain stale M values, only interior was updated by pas_HLL
+        M(halo+1:halo+nx, halo+1:halo+ny, :) = ...
+            Mnpx(halo+1:halo+nx, halo+1:halo+ny, :) + ...
+            Mnpy(halo+1:halo+nx, halo+1:halo+ny, :) - ...
+            M(halo+1:halo+nx, halo+1:halo+ny, :);
         
         % Exchange halos before realizability enforcement
         M = halo_exchange_2d(M, decomp, bc);
