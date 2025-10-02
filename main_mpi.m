@@ -297,68 +297,132 @@ spmd
         t = t + dt;
         
         % X-direction flux update
+        % Strategy: Use pas_HLL on interior-only (matches serial), then manually fix boundaries
         Mnpx = M;
-        
-        % Determine if we have processor boundaries
-        has_left_neighbor = (decomp.neighbors.left ~= -1);
-        has_right_neighbor = (decomp.neighbors.right ~= -1);
         
         for j = 1:ny
             jh = j + halo;
             
-            if has_left_neighbor || has_right_neighbor
-                % Has processor boundaries: include halos for stencil, extract interior result
-                MOM = squeeze(M(:, jh, :));  % Full array with halos
-                FX  = squeeze(Fx(:, jh, :));
-                vpx_min = vpxmin_ext(:, j);
-                vpx_max = vpxmax_ext(:, j);
-                % Pass BC flags: false for processor boundaries, true for physical boundaries
-                apply_bc_left = ~has_left_neighbor;
-                apply_bc_right = ~has_right_neighbor;
-                MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max, apply_bc_left, apply_bc_right);
-                % Extract interior from result
-                Mnpx(halo+1:halo+nx, jh, :) = MNP(halo+1:halo+nx, :);
-            else
-                % No processor boundaries (1 rank): use interior only (matches serial)
-                MOM = squeeze(M(halo+1:halo+nx, jh, :));
-                FX  = squeeze(Fx(halo+1:halo+nx, jh, :));
-                vpx_min = vpxmin(1:nx, j);
-                vpx_max = vpxmax(1:nx, j);
-                MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max);
-                Mnpx(halo+1:halo+nx, jh, :) = MNP;
+            % Always use interior-only (same as serial and MPI-1)
+            MOM = squeeze(M(halo+1:halo+nx, jh, :));
+            FX  = squeeze(Fx(halo+1:halo+nx, jh, :));
+            vpx_min = vpxmin(1:nx, j);
+            vpx_max = vpxmax(1:nx, j);
+            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max);
+            Mnpx(halo+1:halo+nx, jh, :) = MNP;
+            
+            % Manual boundary correction for processor boundaries
+            % Left boundary (first interior cell)
+            if decomp.neighbors.left ~= -1
+                % Recompute first interior cell using halo data
+                i_int = 1;  % First interior cell (absolute index: halo+1)
+                
+                % Flux at left face (between halo and first interior)
+                flux_left = compute_boundary_flux_hll(...
+                    squeeze(M(halo, jh, :)), squeeze(M(halo+1, jh, :)), ...
+                    squeeze(Fx(halo, jh, :)), squeeze(Fx(halo+1, jh, :)), ...
+                    vpxmin_ext(halo, j), vpxmax_ext(halo, j), ...
+                    vpxmin_ext(halo+1, j), vpxmax_ext(halo+1, j));
+                
+                % Flux at right face (between first and second interior)
+                flux_right = compute_boundary_flux_hll(...
+                    squeeze(M(halo+1, jh, :)), squeeze(M(halo+2, jh, :)), ...
+                    squeeze(Fx(halo+1, jh, :)), squeeze(Fx(halo+2, jh, :)), ...
+                    vpxmin_ext(halo+1, j), vpxmax_ext(halo+1, j), ...
+                    vpxmin_ext(halo+2, j), vpxmax_ext(halo+2, j));
+                
+                % Update using correct boundary flux (reshape for proper assignment)
+                update = squeeze(M(halo+i_int, jh, :)) - dt/dx_worker*(flux_right - flux_left);
+                Mnpx(halo+i_int, jh, :) = reshape(update, [1, 1, Nmom_worker]);
+            end
+            
+            % Right boundary (last interior cell)
+            if decomp.neighbors.right ~= -1
+                % Recompute last interior cell using halo data
+                i_int = nx;  % Last interior cell
+                
+                % Flux at left face (between second-to-last and last interior)
+                flux_left = compute_boundary_flux_hll(...
+                    squeeze(M(halo+nx-1, jh, :)), squeeze(M(halo+nx, jh, :)), ...
+                    squeeze(Fx(halo+nx-1, jh, :)), squeeze(Fx(halo+nx, jh, :)), ...
+                    vpxmin_ext(halo+nx-1, j), vpxmax_ext(halo+nx-1, j), ...
+                    vpxmin_ext(halo+nx, j), vpxmax_ext(halo+nx, j));
+                
+                % Flux at right face (between last interior and halo)
+                flux_right = compute_boundary_flux_hll(...
+                    squeeze(M(halo+nx, jh, :)), squeeze(M(halo+nx+1, jh, :)), ...
+                    squeeze(Fx(halo+nx, jh, :)), squeeze(Fx(halo+nx+1, jh, :)), ...
+                    vpxmin_ext(halo+nx, j), vpxmax_ext(halo+nx, j), ...
+                    vpxmin_ext(halo+nx+1, j), vpxmax_ext(halo+nx+1, j));
+                
+                % Update using correct boundary flux (reshape for proper assignment)
+                update = squeeze(M(halo+i_int, jh, :)) - dt/dx_worker*(flux_right - flux_left);
+                Mnpx(halo+i_int, jh, :) = reshape(update, [1, 1, Nmom_worker]);
             end
         end
         
         % Y-direction flux update
+        % Strategy: Use pas_HLL on interior-only (matches serial), then manually fix boundaries
         Mnpy = M;
-        
-        % Determine if we have processor boundaries
-        has_down_neighbor = (decomp.neighbors.down ~= -1);
-        has_up_neighbor = (decomp.neighbors.up ~= -1);
         
         for i = 1:nx
             ih = i + halo;
             
-            if has_down_neighbor || has_up_neighbor
-                % Has processor boundaries: include halos for stencil, extract interior result
-                MOM = squeeze(M(ih, :, :));  % Full array with halos
-                FY  = squeeze(Fy(ih, :, :));
-                vpy_min = vpymin_ext(i, :)';
-                vpy_max = vpymax_ext(i, :)';
-                % Pass BC flags: false for processor boundaries, true for physical boundaries
-                apply_bc_down = ~has_down_neighbor;
-                apply_bc_up = ~has_up_neighbor;
-                MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max, apply_bc_down, apply_bc_up);
-                % Extract interior from result
-                Mnpy(ih, halo+1:halo+ny, :) = MNP(halo+1:halo+ny, :);
-            else
-                % No processor boundaries (1 rank): use interior only (matches serial)
-                MOM = squeeze(M(ih, halo+1:halo+ny, :));
-                FY  = squeeze(Fy(ih, halo+1:halo+ny, :));
-                vpy_min = vpymin(i, 1:ny)';
-                vpy_max = vpymax(i, 1:ny)';
-                MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max);
-                Mnpy(ih, halo+1:halo+ny, :) = MNP;
+            % Always use interior-only (same as serial and MPI-1)
+            MOM = squeeze(M(ih, halo+1:halo+ny, :));
+            FY  = squeeze(Fy(ih, halo+1:halo+ny, :));
+            vpy_min = vpymin(i, 1:ny)';
+            vpy_max = vpymax(i, 1:ny)';
+            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max);
+            Mnpy(ih, halo+1:halo+ny, :) = MNP;
+            
+            % Manual boundary correction for processor boundaries
+            % Bottom boundary (first interior cell)
+            if decomp.neighbors.down ~= -1
+                % Recompute first interior cell using halo data
+                j_int = 1;  % First interior cell (absolute index: halo+1)
+                
+                % Flux at bottom face (between halo and first interior)
+                flux_down = compute_boundary_flux_hll(...
+                    squeeze(M(ih, halo, :)), squeeze(M(ih, halo+1, :)), ...
+                    squeeze(Fy(ih, halo, :)), squeeze(Fy(ih, halo+1, :)), ...
+                    vpymin_ext(i, halo), vpymax_ext(i, halo), ...
+                    vpymin_ext(i, halo+1), vpymax_ext(i, halo+1));
+                
+                % Flux at top face (between first and second interior)
+                flux_up = compute_boundary_flux_hll(...
+                    squeeze(M(ih, halo+1, :)), squeeze(M(ih, halo+2, :)), ...
+                    squeeze(Fy(ih, halo+1, :)), squeeze(Fy(ih, halo+2, :)), ...
+                    vpymin_ext(i, halo+1), vpymax_ext(i, halo+1), ...
+                    vpymin_ext(i, halo+2), vpymax_ext(i, halo+2));
+                
+                % Update using correct boundary flux (reshape for proper assignment)
+                update = squeeze(M(ih, halo+j_int, :)) - dt/dy_worker*(flux_up - flux_down);
+                Mnpy(ih, halo+j_int, :) = reshape(update, [1, 1, Nmom_worker]);
+            end
+            
+            % Top boundary (last interior cell)
+            if decomp.neighbors.up ~= -1
+                % Recompute last interior cell using halo data
+                j_int = ny;  % Last interior cell
+                
+                % Flux at bottom face (between second-to-last and last interior)
+                flux_down = compute_boundary_flux_hll(...
+                    squeeze(M(ih, halo+ny-1, :)), squeeze(M(ih, halo+ny, :)), ...
+                    squeeze(Fy(ih, halo+ny-1, :)), squeeze(Fy(ih, halo+ny, :)), ...
+                    vpymin_ext(i, halo+ny-1), vpymax_ext(i, halo+ny-1), ...
+                    vpymin_ext(i, halo+ny), vpymax_ext(i, halo+ny));
+                
+                % Flux at top face (between last interior and halo)
+                flux_up = compute_boundary_flux_hll(...
+                    squeeze(M(ih, halo+ny, :)), squeeze(M(ih, halo+ny+1, :)), ...
+                    squeeze(Fy(ih, halo+ny, :)), squeeze(Fy(ih, halo+ny+1, :)), ...
+                    vpymin_ext(i, halo+ny), vpymax_ext(i, halo+ny), ...
+                    vpymin_ext(i, halo+ny+1), vpymax_ext(i, halo+ny+1));
+                
+                % Update using correct boundary flux (reshape for proper assignment)
+                update = squeeze(M(ih, halo+j_int, :)) - dt/dy_worker*(flux_up - flux_down);
+                Mnpy(ih, halo+j_int, :) = reshape(update, [1, 1, Nmom_worker]);
             end
         end
         
