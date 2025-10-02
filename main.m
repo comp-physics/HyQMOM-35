@@ -7,16 +7,17 @@ function [results] = main(varargin)
 %      M031,M012,M112,M013,M022]
 %
 % Usage:
-%   main()                    % Run with default parameters
+%   main()                    % Run with default parameters (serial)
 %   main(Np, tmax)           % Override Np and tmax
 %   main(Np, tmax, enable_plots) % Override plotting
-%   main(Np, tmax, enable_plots, save_output) % Override all parameters
+%   main(Np, tmax, enable_plots, save_output) % Override saving
+%   main(Np, tmax, enable_plots, save_output, use_mpi) % Enable MPI parallelization
+%   main(Np, tmax, enable_plots, save_output, use_mpi, num_workers) % Specify MPI ranks
 %
 % Examples:
-%   main()           % Default: Np=6, tmax=0.05, enable_plots=true, save_output=false
-%   main(6, 0.02)    % Golden file parameters with plotting enabled, no saving
-%   main(6, 0.02, false) % Golden file parameters without plotting, no saving
-%   main(6, 0.02, false, true) % Golden file creation with saving enabled
+%   main()                            % Serial: Np=10, tmax=0.1
+%   main(20, 0.1, false, false, true) % MPI with default workers (2)
+%   main(20, 0.1, false, false, true, 4) % MPI with 4 workers
 %
 % This version limits the energy fluxes and checks realizability and
 % hyperbolicity
@@ -37,14 +38,33 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments with defaults
-defaults = struct('Np', 10, 'tmax', 0.1, 'enable_plots', false, 'save_output', false);
+defaults = struct('Np', 10, 'tmax', 0.1, 'enable_plots', false, 'save_output', false, ...
+                  'use_mpi', false, 'num_workers', 2);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
     enable_plots = defaults.enable_plots;
     save_output = defaults.save_output;
-else
+    use_mpi = defaults.use_mpi;
+    num_workers = defaults.num_workers;
+elseif nargin <= 4
     [Np, tmax, enable_plots, save_output] = parse_input_args(nargin, varargin, defaults);
+    use_mpi = defaults.use_mpi;
+    num_workers = defaults.num_workers;
+elseif nargin == 5
+    [Np, tmax, enable_plots, save_output] = parse_input_args(4, varargin(1:4), defaults);
+    use_mpi = varargin{5};
+    num_workers = defaults.num_workers;
+else  % nargin >= 6
+    [Np, tmax, enable_plots, save_output] = parse_input_args(4, varargin(1:4), defaults);
+    use_mpi = varargin{5};
+    num_workers = varargin{6};
+end
+
+% If MPI requested, delegate to main_mpi
+if use_mpi
+    results = main_mpi(Np, tmax, enable_plots, num_workers);
+    return;
 end
 
 % Physical parameters

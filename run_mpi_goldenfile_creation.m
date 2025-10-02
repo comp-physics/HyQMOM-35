@@ -13,7 +13,7 @@ fprintf('\n');
 addpath('src');
 
 % Check required files
-required_files = {'main_mpi.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
+required_files = {'main.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
 for i = 1:length(required_files)
     if ~exist(required_files{i}, 'file')
         error('%s not found', required_files{i});
@@ -47,10 +47,10 @@ for i = 1:length(RANK_COUNTS)
     fprintf('═══════════════════════════════════════════════════════════\n\n');
     
     try
-        % Run MPI simulation
+        % Run MPI simulation using unified main() interface
         fprintf('Running MPI simulation with %d rank(s)...\n', num_ranks);
         tic;
-        results = main_mpi(GOLDEN_NP, GOLDEN_TMAX, false, num_ranks);
+        results = main(GOLDEN_NP, GOLDEN_TMAX, false, false, true, num_ranks);
         elapsed_time = toc;
         
         fprintf('Simulation completed in %.2f seconds\n', elapsed_time);

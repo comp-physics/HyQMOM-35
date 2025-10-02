@@ -219,8 +219,8 @@ function mpi_data = run_mpi_simulation(Np, tmax, num_ranks)
         parpool('local', num_ranks);
     end
     
-    % Run MPI simulation using main_mpi
-    mpi_data = main_mpi(Np, tmax, false, num_ranks);
+    % Run MPI simulation using unified main() interface
+    mpi_data = main(Np, tmax, false, false, true, num_ranks);
     
     fprintf('  Completed: Np=%d, tmax=%.3f, ranks=%d, steps=%d\n', ...
             mpi_data.parameters.Np, mpi_data.parameters.tmax, ...
