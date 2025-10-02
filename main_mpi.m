@@ -20,7 +20,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments
-defaults = struct('Np', 40, 'tmax', 0.1, 'enable_plots', true, 'num_workers', 2);
+defaults = struct('Np', 40, 'tmax', 0.05, 'enable_plots', true, 'num_workers', 2);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
@@ -202,12 +202,12 @@ spmd
         end
         M(halo+1:halo+nx, halo+1:halo+ny, :) = Mnp(halo+1:halo+nx, halo+1:halo+ny, :);
         
-        % CRITICAL: Exchange M, Fx, Fy from neighbors
+        % Exchange M, Fx, Fy from neighbors
         M = halo_exchange_2d(M, decomp, bc);
         Fx = halo_exchange_2d(Fx, decomp, bc);
         Fy = halo_exchange_2d(Fy, decomp, bc);
         
-        % NEW: Compute wave speeds in halo cells for pas_HLL stencil
+        % Compute wave speeds in halo cells for pas_HLL stencil
         % Create extended wave speed arrays (interior + halos)
         vpxmin_ext = zeros(nx+2*halo, ny);
         vpxmax_ext = zeros(nx+2*halo, ny);
@@ -307,37 +307,35 @@ spmd
         for j = 1:ny
             jh = j + halo;
             
-            % Determine array extent: include ONE immediate halo cell at processor boundaries
-            % halo=2, so M indices: 1-2=left halos, 3-14=interior (nx=12), 15-16=right halos
-            % We want immediate neighbor: left=index 2, right=index 15
+            % Determine array extent: include one halo cell at processor boundaries
             if has_left_neighbor && has_right_neighbor
-                % Both processor boundaries: include immediate neighbor halos
-                i_start = halo;              % e.g., 2 (immediate left halo)
-                i_end = halo + nx + 1;       % e.g., 15 (immediate right halo)
+                % Both processor boundaries
+                i_start = halo;
+                i_end = halo + nx + 1;
                 vp_start = halo;
                 vp_end = halo + nx + 1;
                 apply_bc_left = false;
                 apply_bc_right = false;
             elseif has_left_neighbor
-                % Left processor, right physical: include immediate left halo only
-                i_start = halo;              % e.g., 2
-                i_end = halo + nx;           % e.g., 14
+                % Left processor, right physical
+                i_start = halo;
+                i_end = halo + nx;
                 vp_start = halo;
                 vp_end = halo + nx;
                 apply_bc_left = false;
                 apply_bc_right = true;
             elseif has_right_neighbor
-                % Left physical, right processor: include immediate right halo only
-                i_start = halo + 1;          % e.g., 3
-                i_end = halo + nx + 1;       % e.g., 15
+                % Left physical, right processor
+                i_start = halo + 1;
+                i_end = halo + nx + 1;
                 vp_start = halo + 1;
                 vp_end = halo + nx + 1;
                 apply_bc_left = true;
                 apply_bc_right = false;
             else
-                % Both physical boundaries (1 rank): interior only
-                i_start = halo + 1;          % e.g., 3
-                i_end = halo + nx;           % e.g., 14
+                % Both physical boundaries (1 rank)
+                i_start = halo + 1;
+                i_end = halo + nx;
                 vp_start = 1;
                 vp_end = nx;
                 apply_bc_left = true;

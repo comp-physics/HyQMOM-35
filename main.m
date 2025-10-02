@@ -38,7 +38,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments with defaults
-defaults = struct('Np', 10, 'tmax', 0.1, 'enable_plots', false, 'save_output', false, ...
+defaults = struct('Np', 20, 'tmax', 0.05, 'enable_plots', true, 'save_output', false, ...
                   'use_mpi', false, 'num_workers', 2);
 if nargin == 0
     Np = defaults.Np;
