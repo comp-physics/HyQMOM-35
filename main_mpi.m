@@ -280,6 +280,9 @@ spmd
         % X-direction flux update
         % pas_HLL needs neighbors, so extract interior + halos (full local array in X)
         Mnpx = M;
+        % Determine boundary types for X-direction
+        apply_bc_xleft = (decomp.neighbors.left == -1);   % Physical boundary on left
+        apply_bc_xright = (decomp.neighbors.right == -1); % Physical boundary on right
         for j = 1:ny
             jh = j + halo;
             % Extract full X-extent (includes left/right halos for stencil)
@@ -288,13 +291,16 @@ spmd
             % Use exchanged wave speeds (from neighbors, not replicated!)
             vpx_min = vpxmin_ext(:, j);
             vpx_max = vpxmax_ext(:, j);
-            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max);
+            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max, apply_bc_xleft, apply_bc_xright);
             % pas_HLL returns array same size as input; extract interior
             Mnpx(halo+1:halo+nx, jh, :) = MNP(halo+1:halo+nx, :);
         end
         
         % Y-direction flux update
         Mnpy = M;
+        % Determine boundary types for Y-direction
+        apply_bc_ydown = (decomp.neighbors.down == -1);  % Physical boundary on bottom
+        apply_bc_yup = (decomp.neighbors.up == -1);      % Physical boundary on top
         for i = 1:nx
             ih = i + halo;
             % Extract full Y-extent (includes bottom/top halos for stencil)
@@ -303,7 +309,7 @@ spmd
             % Use exchanged wave speeds (from neighbors, not replicated!)
             vpy_min = vpymin_ext(i, :)';
             vpy_max = vpymax_ext(i, :)';
-            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max);
+            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max, apply_bc_ydown, apply_bc_yup);
             % Extract interior
             Mnpy(ih, halo+1:halo+ny, :) = MNP(halo+1:halo+ny, :);
         end
