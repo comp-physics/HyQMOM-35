@@ -109,8 +109,7 @@ spmd
     end
     
     % Define all constants directly inside spmd block
-    % Workers cannot access client variables, so redefine everything
-    halo = 1;
+    halo = 2;  % Required for pas_HLL stencil
     bc = struct('type', 'copy');
     
     % Physical parameters (must match values outside spmd)
@@ -223,38 +222,38 @@ spmd
         vpymin_ext(:, halo+1:halo+ny) = vpymin;
         vpymax_ext(:, halo+1:halo+ny) = vpymax;
         
-        % Exchange X-direction wave speeds
+        % Exchange X-direction wave speeds (send h rows to match halo width)
         if decomp.neighbors.left ~= -1
-            labSend(vpxmin(1,:)', decomp.neighbors.left);
-            labSend(vpxmax(1,:)', decomp.neighbors.left);
+            labSend(vpxmin(1:halo,:), decomp.neighbors.left);
+            labSend(vpxmax(1:halo,:), decomp.neighbors.left);
         end
         if decomp.neighbors.right ~= -1
-            labSend(vpxmin(end,:)', decomp.neighbors.right);
-            labSend(vpxmax(end,:)', decomp.neighbors.right);
+            labSend(vpxmin(nx-halo+1:nx,:), decomp.neighbors.right);
+            labSend(vpxmax(nx-halo+1:nx,:), decomp.neighbors.right);
         end
         if decomp.neighbors.left ~= -1
-            vpxmin_ext(1:halo, :) = labReceive(decomp.neighbors.left)';
-            vpxmax_ext(1:halo, :) = labReceive(decomp.neighbors.left)';
+            vpxmin_ext(1:halo, :) = labReceive(decomp.neighbors.left);
+            vpxmax_ext(1:halo, :) = labReceive(decomp.neighbors.left);
         else
             vpxmin_ext(1:halo, :) = repmat(vpxmin(1,:), halo, 1);
             vpxmax_ext(1:halo, :) = repmat(vpxmax(1,:), halo, 1);
         end
         if decomp.neighbors.right ~= -1
-            vpxmin_ext(halo+nx+1:nx+2*halo, :) = labReceive(decomp.neighbors.right)';
-            vpxmax_ext(halo+nx+1:nx+2*halo, :) = labReceive(decomp.neighbors.right)';
+            vpxmin_ext(halo+nx+1:nx+2*halo, :) = labReceive(decomp.neighbors.right);
+            vpxmax_ext(halo+nx+1:nx+2*halo, :) = labReceive(decomp.neighbors.right);
         else
             vpxmin_ext(halo+nx+1:nx+2*halo, :) = repmat(vpxmin(end,:), halo, 1);
             vpxmax_ext(halo+nx+1:nx+2*halo, :) = repmat(vpxmax(end,:), halo, 1);
         end
         
-        % Exchange Y-direction wave speeds
+        % Exchange Y-direction wave speeds (send h columns to match halo width)
         if decomp.neighbors.down ~= -1
-            labSend(vpymin(:,1), decomp.neighbors.down);
-            labSend(vpymax(:,1), decomp.neighbors.down);
+            labSend(vpymin(:,1:halo), decomp.neighbors.down);
+            labSend(vpymax(:,1:halo), decomp.neighbors.down);
         end
         if decomp.neighbors.up ~= -1
-            labSend(vpymin(:,end), decomp.neighbors.up);
-            labSend(vpymax(:,end), decomp.neighbors.up);
+            labSend(vpymin(:,ny-halo+1:ny), decomp.neighbors.up);
+            labSend(vpymax(:,ny-halo+1:ny), decomp.neighbors.up);
         end
         if decomp.neighbors.down ~= -1
             vpymin_ext(:, 1:halo) = labReceive(decomp.neighbors.down);
@@ -268,7 +267,7 @@ spmd
             vpymax_ext(:, halo+ny+1:ny+2*halo) = labReceive(decomp.neighbors.up);
         else
             vpymin_ext(:, halo+ny+1:ny+2*halo) = repmat(vpymin(:,end), 1, halo);
-            vpymax_ext(:, halo+ny+1:ny+2*halo) = repmat(vpymax(:,end), 1, halo);
+            vpymax_ext(:, halo+ny+1:ny+2*halo) = repmat(vpymin(:,end), 1, halo);
         end
         
         % Global reduction for time step (all ranks need same dt)

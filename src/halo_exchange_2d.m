@@ -39,14 +39,14 @@ function A = halo_exchange_2d(A, decomp, bc)
     left_neighbor = decomp.neighbors.left;
     right_neighbor = decomp.neighbors.right;
     
-    % Send to left neighbor (my leftmost interior column)
+    % Send to left neighbor (my leftmost h interior columns)
     if left_neighbor ~= -1
-        labSend(A(h+1:h+1, h+1:h+ny, :), left_neighbor);
+        labSend(A(h+1:h+h, h+1:h+ny, :), left_neighbor);
     end
     
-    % Send to right neighbor (my rightmost interior column)
+    % Send to right neighbor (my rightmost h interior columns)
     if right_neighbor ~= -1
-        labSend(A(h+nx:h+nx, h+1:h+ny, :), right_neighbor);
+        labSend(A(h+nx-h+1:h+nx, h+1:h+ny, :), right_neighbor);
     end
     
     % Receive from left neighbor into my left halo
@@ -63,14 +63,14 @@ function A = halo_exchange_2d(A, decomp, bc)
     down_neighbor = decomp.neighbors.down;
     up_neighbor = decomp.neighbors.up;
     
-    % Send to down neighbor (my bottommost interior row)
+    % Send to down neighbor (my bottommost h interior rows)
     if down_neighbor ~= -1
-        labSend(A(h+1:h+nx, h+1:h+1, :), down_neighbor);
+        labSend(A(h+1:h+nx, h+1:h+h, :), down_neighbor);
     end
     
-    % Send to up neighbor (my topmost interior row)
+    % Send to up neighbor (my topmost h interior rows)
     if up_neighbor ~= -1
-        labSend(A(h+1:h+nx, h+ny:h+ny, :), up_neighbor);
+        labSend(A(h+1:h+nx, h+ny-h+1:h+ny, :), up_neighbor);
     end
     
     % Receive from down neighbor into my bottom halo

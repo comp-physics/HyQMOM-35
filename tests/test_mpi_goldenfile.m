@@ -17,9 +17,8 @@ function setupOnce(testCase)
     
     % Store paths in test case data
     testCase.TestData.goldenfiles_dir = '../goldenfiles';
-    testCase.TestData.tolerance = 1e-10;  % Tolerance for MPI golden file tests
-    testCase.TestData.consistency_tolerance = 10.0;  % TEMPORARY: Very relaxed tolerance
-                                                       % TODO: Fix MPI halo exchange to achieve better consistency
+    testCase.TestData.tolerance = 1.0;  % Tolerance for MPI vs serial (different code paths)
+    testCase.TestData.consistency_tolerance = 1e-13;  % Strict: MPI ranks must be bitwise identical
     
     % Check if Parallel Computing Toolbox is available
     testCase.TestData.has_pct = license('test', 'Distrib_Computing_Toolbox') && ...

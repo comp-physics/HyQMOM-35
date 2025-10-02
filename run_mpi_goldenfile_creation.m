@@ -27,8 +27,8 @@ if ~exist(goldenfiles_dir, 'dir')
     fprintf('Created directory: %s\n\n', goldenfiles_dir);
 end
 
-% Parameters
-GOLDEN_NP = 10;
+% Parameters (Np=20 required for halo=2 with 4 ranks: 20/2=10 pts/rank minimum)
+GOLDEN_NP = 20;
 GOLDEN_TMAX = 0.1;
 RANK_COUNTS = [1, 2, 4];
 
