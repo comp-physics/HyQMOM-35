@@ -15,9 +15,23 @@ function Mp = pas_HLL(M,F,dt,dx,vpmin,vpmax,apply_bc_left,apply_bc_right)
     Np = size(M,1);
     Nmom = size(M,2);
     Wstar = zeros(Np,Nmom);
-    for j = 2:Np-1
-        lleft(j) =min([vpmin(j),vpmin(j+1)]);
-        lright(j)=max([vpmax(j),vpmax(j+1)]);
+    lleft = zeros(Np,1);
+    lright = zeros(Np,1);
+    
+    % Determine loop range based on boundary conditions
+    % If left processor boundary (apply_bc_left=false), extend loop to START at 1
+    j_start = 2;
+    if ~apply_bc_left
+        j_start = 1;  % Start at 1 to compute Wstar(1) using left neighbor M(1)
+    end
+    
+    % For right boundary, we always end at Np-1 because computing at Np would need M(Np+1)
+    j_end = Np-1;
+    
+    % Compute Wstar using stencil (needs M(j) and M(j+1))
+    for j = j_start:j_end
+        lleft(j) = min([vpmin(j),vpmin(j+1)]);
+        lright(j) = max([vpmax(j),vpmax(j+1)]);
         %Wstar
         if abs(lleft(j)-lright(j))>1.d-10
             Wstar(j,:) = (lleft(j)*M(j,:) - lright(j)*M(j+1,:))/(lleft(j) - lright(j))...
@@ -27,9 +41,13 @@ function Mp = pas_HLL(M,F,dt,dx,vpmin,vpmax,apply_bc_left,apply_bc_right)
         end
     end
     
-    % Apply boundary conditions based on boundary type
-    Wstar(1,:)  = Wstar(2,:);
-    Wstar(Np,:) = Wstar(Np-1,:);
+    % Apply boundary conditions ONLY at physical boundaries
+    if apply_bc_left
+        Wstar(1,:) = Wstar(2,:);
+    end
+    if apply_bc_right
+        Wstar(Np,:) = Wstar(Np-1,:);
+    end
     
     if apply_bc_left
         F(1,:) = F(2,:);
