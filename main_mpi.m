@@ -20,7 +20,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments
-defaults = struct('Np', 40, 'tmax', 0.05, 'enable_plots', true, 'num_workers', 2);
+defaults = struct('Np', 200, 'tmax', 0.05, 'enable_plots', false, 'num_workers', 10);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
@@ -173,6 +173,7 @@ spmd
     
     while t < tmax && nn < nnmax_worker
         nn = nn + 1;
+        step_start_time = tic;  % Start timing this timestep
         
         % Compute fluxes and wave speeds for interior cells
         for i = 1:nx
@@ -491,6 +492,12 @@ spmd
         
         % Exchange halos for next iteration
         M = halo_exchange_2d(M, decomp, bc);
+        
+        % Print timestep timing (only from rank 1)
+        step_time = toc(step_start_time);
+        if labindex == 1
+            fprintf('Step %4d: t = %.6f, dt = %.6e, wall time = %.4f s\n', nn, t, dt, step_time);
+        end
     end
     
     % Gather results to rank 1 using asynchronous send/receive
