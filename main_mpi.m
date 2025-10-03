@@ -493,10 +493,19 @@ spmd
         % Exchange halos for next iteration
         M = halo_exchange_2d(M, decomp, bc);
         
-        % Print timestep timing (only from rank 1)
-        step_time = toc(step_start_time);
+        % Compute MaxDiff for symmetry check (only from rank 1)
         if labindex == 1
-            fprintf('Step %4d: t = %.6f, dt = %.6e, wall time = %.4f s\n', nn, t, dt, step_time);
+            % Extract interior for symmetry test
+            M_interior = M(halo+1:halo+nx, halo+1:halo+ny, :);
+            [~, MaxDiff] = test_symmetry_2D(M_interior, nx);
+            
+            % Print timestep timing and MaxDiff
+            step_time = toc(step_start_time);
+            fprintf('Step %4d: t = %.6f, dt = %.6e, wall time = %.4f s, MaxDiff = ', nn, t, dt, step_time);
+            fprintf('%.3e ', MaxDiff);
+            fprintf('\n');
+        else
+            step_time = toc(step_start_time);
         end
     end
     
