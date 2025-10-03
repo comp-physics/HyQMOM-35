@@ -20,7 +20,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments
-defaults = struct('Np', 200, 'tmax', 0.05, 'enable_plots', false, 'num_workers', 10);
+defaults = struct('Np', 200, 'tmax', 0.05, 'enable_plots', false, 'num_workers', 2);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;

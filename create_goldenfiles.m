@@ -1,10 +1,12 @@
 % Script to create golden files for MPI regression testing
-% Creates golden files for 1, 2, and 4 MPI ranks
+% Creates golden files for 1, 2, 3, and 4 MPI ranks
+% Each configuration uses 20 grid points per rank per dimension
 
 fprintf('\n');
 fprintf('╔══════════════════════════════════════════════════════════════╗\n');
 fprintf('║                                                              ║\n');
 fprintf('║     MPI Golden File Creation                                ║\n');
+fprintf('║     (20 grid points per rank per dimension)                 ║\n');
 fprintf('║                                                              ║\n');
 fprintf('╚══════════════════════════════════════════════════════════════╝\n');
 fprintf('\n');
@@ -13,7 +15,7 @@ fprintf('\n');
 addpath('src');
 
 % Check required files
-required_files = {'main.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
+required_files = {'main_mpi.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
 for i = 1:length(required_files)
     if ~exist(required_files{i}, 'file')
         error('%s not found', required_files{i});
@@ -27,30 +29,46 @@ if ~exist(goldenfiles_dir, 'dir')
     fprintf('Created directory: %s\n\n', goldenfiles_dir);
 end
 
-% Parameters (Np=20 required for halo=2 with 4 ranks: 20/2=10 pts/rank minimum)
-GOLDEN_NP = 20;
+% Parameters: 20 grid points per rank per dimension
+POINTS_PER_RANK = 20;
 GOLDEN_TMAX = 0.1;
-RANK_COUNTS = [1, 2, 4];
+RANK_COUNTS = [1, 2, 3, 4];
 
 fprintf('Golden file parameters:\n');
-fprintf('  Grid size: %d × %d\n', GOLDEN_NP, GOLDEN_NP);
+fprintf('  Grid points per rank: %d × %d\n', POINTS_PER_RANK, POINTS_PER_RANK);
 fprintf('  Final time: %.3f\n', GOLDEN_TMAX);
 fprintf('  Rank counts: %s\n\n', mat2str(RANK_COUNTS));
+
+% Calculate grid sizes for each rank count
+% For 2D Cartesian decomposition: sqrt(num_ranks) ranks per dimension
+fprintf('Grid sizes:\n');
+for i = 1:length(RANK_COUNTS)
+    num_ranks = RANK_COUNTS(i);
+    [Px, Py] = choose_process_grid_for_validation(num_ranks);
+    Np = Px * POINTS_PER_RANK;
+    fprintf('  %d rank(s): %dx%d process grid → %d×%d grid points\n', ...
+            num_ranks, Px, Py, Np, Np);
+end
+fprintf('\n');
 
 all_success = true;
 
 for i = 1:length(RANK_COUNTS)
     num_ranks = RANK_COUNTS(i);
     
+    % Calculate grid size for this rank count
+    [Px, Py] = choose_process_grid_for_validation(num_ranks);
+    Np = Px * POINTS_PER_RANK;
+    
     fprintf('═══════════════════════════════════════════════════════════\n');
-    fprintf('Creating golden file for %d rank(s)...\n', num_ranks);
+    fprintf('Creating golden file for %d rank(s) (%d×%d grid)...\n', num_ranks, Np, Np);
     fprintf('═══════════════════════════════════════════════════════════\n\n');
     
     try
-        % Run MPI simulation using unified main() interface
+        % Run MPI simulation
         fprintf('Running MPI simulation with %d rank(s)...\n', num_ranks);
         tic;
-        results = main(GOLDEN_NP, GOLDEN_TMAX, false, false, true, num_ranks);
+        results = main_mpi(Np, GOLDEN_TMAX, false, num_ranks);
         elapsed_time = toc;
         
         fprintf('Simulation completed in %.2f seconds\n', elapsed_time);
@@ -64,15 +82,16 @@ for i = 1:length(RANK_COUNTS)
         % Add metadata
         golden_data.metadata.creation_date = datestr(now);
         golden_data.metadata.matlab_version = version;
-        golden_data.metadata.description = sprintf('MPI golden file: Np=%d, tmax=%.3f, ranks=%d', ...
-                                                    GOLDEN_NP, GOLDEN_TMAX, num_ranks);
+        golden_data.metadata.description = sprintf('MPI golden file: %d ranks, Np=%d (%d pts/rank), tmax=%.3f', ...
+                                                    num_ranks, Np, POINTS_PER_RANK, GOLDEN_TMAX);
         golden_data.metadata.num_ranks = num_ranks;
+        golden_data.metadata.points_per_rank = POINTS_PER_RANK;
         golden_data.metadata.git_branch = 'mpi';
         
         % Save golden file
         golden_filename = fullfile(goldenfiles_dir, ...
                                   sprintf('goldenfile_mpi_%dranks_Np%d_tmax%03d.mat', ...
-                                          num_ranks, GOLDEN_NP, round(GOLDEN_TMAX*1000)));
+                                          num_ranks, Np, round(GOLDEN_TMAX*1000)));
         save(golden_filename, 'golden_data');
         
         fprintf('✓ Golden file saved: %s\n', golden_filename);
@@ -116,8 +135,11 @@ if all_success
     fprintf('✓ SUCCESS: All MPI golden files created\n');
     fprintf('\nCreated files:\n');
     for i = 1:length(RANK_COUNTS)
+        num_ranks = RANK_COUNTS(i);
+        [Px, ~] = choose_process_grid_for_validation(num_ranks);
+        Np = Px * POINTS_PER_RANK;
         filename = sprintf('goldenfile_mpi_%dranks_Np%d_tmax%03d.mat', ...
-                          RANK_COUNTS(i), GOLDEN_NP, round(GOLDEN_TMAX*1000));
+                          num_ranks, Np, round(GOLDEN_TMAX*1000));
         filepath = fullfile(goldenfiles_dir, filename);
         if exist(filepath, 'file')
             fprintf('  ✓ %s (%.2f KB)\n', filename, dir(filepath).bytes / 1024);
@@ -126,8 +148,7 @@ if all_success
     
     fprintf('\nNext steps:\n');
     fprintf('  1. Run: runtests(''tests/test_mpi_goldenfile.m'')\n');
-    fprintf('  2. Compare MPI results with serial golden file\n');
-    fprintf('  3. Verify consistency across different rank counts\n');
+    fprintf('  2. Verify consistency across different rank counts\n');
 else
     fprintf('⚠ WARNING: Some golden files failed to create\n');
     fprintf('Check error messages above for details\n');
