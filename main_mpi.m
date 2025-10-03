@@ -2,6 +2,12 @@ function [results] = main_mpi(varargin)
 % MPI-parallel version of main solver using domain decomposition
 % Same interface as main.m but runs with MPI parallelization
 %
+% Parameters:
+%   Np          - GLOBAL grid size (total points in each direction)
+%   tmax        - Final simulation time
+%   enable_plots - Enable/disable plotting (default: false)
+%   num_workers - Number of MPI ranks/workers (default: 4)
+%
 % Usage:
 %   main_mpi()                           % Run with defaults
 %   main_mpi(Np, tmax)                   % Override Np and tmax
@@ -9,8 +15,12 @@ function [results] = main_mpi(varargin)
 %   main_mpi(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
 %
 % Examples:
-%   main_mpi()                    % Default: Np=10, tmax=0.1, 4 workers
-%   main_mpi(10, 0.1, false, 2)   % 10x10 grid, 2 MPI ranks
+%   main_mpi()                    % Default: Np=20 (global), tmax=0.1, 4 workers
+%   main_mpi(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
+%   main_mpi(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
+%
+% Note: Np is the TOTAL grid size. It will be decomposed into subdomains.
+%       Each rank must have at least 10×10 interior points.
 
 % Add src directory to path
 script_dir = fileparts(mfilename('fullpath'));
@@ -20,7 +30,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments
-defaults = struct('Np', 40, 'tmax', 0.1, 'enable_plots', false, 'num_workers', 4);
+defaults = struct('Np', 20, 'tmax', 0.1, 'enable_plots', false, 'num_workers', 4);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
