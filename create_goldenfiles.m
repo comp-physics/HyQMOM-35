@@ -34,31 +34,64 @@ POINTS_PER_RANK = 20;
 GOLDEN_TMAX = 0.1;
 RANK_COUNTS = [1, 2, 3, 4];
 
+% Calculate Np for each rank count to ensure >= 10 pts/rank in BOTH directions
+% Np must be divisible by both Px and Py, with at least 10 points per rank
+NP_VALUES = zeros(size(RANK_COUNTS));
+for i = 1:length(RANK_COUNTS)
+    [Px, Py] = choose_process_grid_local(RANK_COUNTS(i));
+    % Calculate Np to give at least POINTS_PER_RANK in each direction
+    % Np = max(Px, Py) * POINTS_PER_RANK ensures all ranks get POINTS_PER_RANK
+    Np_candidate = max(Px, Py) * POINTS_PER_RANK;
+    % But we need Np / Px >= 10 AND Np / Py >= 10
+    min_for_x = Px * 10;  % Minimum to give 10 pts/rank in x
+    min_for_y = Py * 10;  % Minimum to give 10 pts/rank in y
+    Np_min = max(min_for_x, min_for_y);
+    NP_VALUES(i) = max(Np_candidate, Np_min);
+end
+
 fprintf('Golden file parameters:\n');
 fprintf('  Grid points per rank: %d × %d\n', POINTS_PER_RANK, POINTS_PER_RANK);
 fprintf('  Final time: %.3f\n', GOLDEN_TMAX);
 fprintf('  Rank counts: %s\n\n', mat2str(RANK_COUNTS));
 
-% Calculate grid sizes for each rank count
-% For 2D Cartesian decomposition: sqrt(num_ranks) ranks per dimension
-fprintf('Grid sizes:\n');
+% Show grid sizes
+fprintf('Grid sizes (to achieve ~20 pts/rank minimum in each direction):\n');
 for i = 1:length(RANK_COUNTS)
     num_ranks = RANK_COUNTS(i);
-    [Px, Py] = choose_process_grid_for_validation(num_ranks);
-    Np = Px * POINTS_PER_RANK;
-    fprintf('  %d rank(s): %dx%d process grid → %d×%d grid points\n', ...
-            num_ranks, Px, Py, Np, Np);
+    [Px, Py] = choose_process_grid_local(num_ranks);
+    Np = NP_VALUES(i);
+    pts_per_rank_x = Np / Px;
+    pts_per_rank_y = Np / Py;
+    fprintf('  %d rank(s): %dx%d process grid → %d×%d grid (%.1f×%.1f pts/rank)\n', ...
+            num_ranks, Px, Py, Np, Np, pts_per_rank_x, pts_per_rank_y);
 end
 fprintf('\n');
+
+% Local helper function to choose process grid (same logic as in setup_mpi_cartesian_2d.m)
+function [Px, Py] = choose_process_grid_local(nl)
+    bestDiff = inf;
+    Px = 1; Py = nl;
+    for p = 1:nl
+        if mod(nl, p) == 0
+            q = nl / p;
+            d = abs(p - q);
+            if d < bestDiff
+                bestDiff = d;
+                Px = p;
+                Py = q;
+            end
+        end
+    end
+end
 
 all_success = true;
 
 for i = 1:length(RANK_COUNTS)
     num_ranks = RANK_COUNTS(i);
     
-    % Calculate grid size for this rank count
-    [Px, Py] = choose_process_grid_for_validation(num_ranks);
-    Np = Px * POINTS_PER_RANK;
+    % Get pre-calculated grid size for this rank count
+    Np = NP_VALUES(i);
+    [Px, Py] = choose_process_grid_local(num_ranks);
     
     fprintf('═══════════════════════════════════════════════════════════\n');
     fprintf('Creating golden file for %d rank(s) (%d×%d grid)...\n', num_ranks, Np, Np);
@@ -136,8 +169,7 @@ if all_success
     fprintf('\nCreated files:\n');
     for i = 1:length(RANK_COUNTS)
         num_ranks = RANK_COUNTS(i);
-        [Px, ~] = choose_process_grid_for_validation(num_ranks);
-        Np = Px * POINTS_PER_RANK;
+        Np = NP_VALUES(i);
         filename = sprintf('goldenfile_mpi_%dranks_Np%d_tmax%03d.mat', ...
                           num_ranks, Np, round(GOLDEN_TMAX*1000));
         filepath = fullfile(goldenfiles_dir, filename);

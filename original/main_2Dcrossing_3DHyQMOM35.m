@@ -12,7 +12,7 @@
 %
 clc
 clear 
-% close all
+close all
 
 % Knudsen number (>= 0.001 to avoid long simulations)
 Kn = 1/1;
@@ -21,13 +21,13 @@ Kn = 1/1;
 Ma = 0;  % (= u/sqrt(Theta))
 
 % final time (<= 0.075 to keep waves in 2-D box - smaller for large Ma)
-tmax = 0.05 ;
+tmax = 0.1 ;
 
 % flag for 2-D case (use only if S101=S011=0) if flag2D == 1
 flag2D = 0;
 
 %% 2-D space discretization: square domain
-Np = 20;
+Np = 40;
 CFL = 0.5;
 xmin = -0.5;
 xmax = 0.5;
