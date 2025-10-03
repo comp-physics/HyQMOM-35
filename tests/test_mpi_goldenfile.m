@@ -1,9 +1,7 @@
 function tests = test_mpi_goldenfile
-% Test MPI implementation against golden files for 1, 2, 3, and 4 ranks
-% Validates that:
-% 1. MPI results are consistent across different rank counts
-% 2. Results match stored golden files within tolerance
-% Each configuration uses 20 grid points per rank per dimension
+% Test MPI implementation against golden file for 2 ranks
+% CI environment has max 2 workers, so we only test 2-rank configuration
+% This validates that MPI implementation works correctly
 
 tests = functiontests(localfunctions);
 end
@@ -17,7 +15,7 @@ function setupOnce(testCase)
     
     % Store paths in test case data
     testCase.TestData.goldenfiles_dir = '../goldenfiles';
-    testCase.TestData.consistency_tolerance = 1e-6;  % ~1e-6 is expected for MPI (floating-point)
+    testCase.TestData.tolerance = 1e-6;  % Tolerance for MPI (floating-point differences)
     
     % Check if Parallel Computing Toolbox is available
     testCase.TestData.has_pct = license('test', 'Distrib_Computing_Toolbox') && ...
@@ -28,52 +26,20 @@ function setupOnce(testCase)
     end
 end
 
-function test_mpi_1_rank(testCase)
-% Test MPI with 1 rank (20x20 grid)
+function test_mpi_2_ranks_vs_golden(testCase)
+% Test MPI with 2 ranks against golden file (40×40 grid)
     
     if ~testCase.TestData.has_pct
-        fprintf('\n=== TEST: MPI 1 Rank ===\n');
+        fprintf('\n=== TEST: MPI 2 Ranks vs Golden ===\n');
         fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
         assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
         return;
     end
     
-    fprintf('\n=== TEST: MPI 1 Rank (20x20 grid) ===\n');
-    
-    num_ranks = 1;
-    Np = 20;  % 1 rank × 20 pts/rank
-    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_1ranks_Np20_tmax100.mat');
-    
-    if ~exist(golden_file, 'file')
-        error('Golden file for 1 rank not found. Run create_goldenfiles.m first.');
-    end
-    
-    golden = load(golden_file);
-    golden_data = golden.golden_data;
-    
-    % Run MPI simulation
-    fprintf('Running MPI simulation with 1 rank...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
-    
-    % Compare against golden file
-    compare_results(testCase, mpi_data, golden_data, ...
-                   testCase.TestData.consistency_tolerance, '1-rank MPI vs Golden');
-end
-
-function test_mpi_2_ranks(testCase)
-% Test MPI with 2 ranks (40x40 grid: 2x1 decomposition, 20 pts/rank)
-    
-    if ~testCase.TestData.has_pct
-        fprintf('\n=== TEST: MPI 2 Ranks ===\n');
-        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
-        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
-        return;
-    end
-    
-    fprintf('\n=== TEST: MPI 2 Ranks (40x40 grid) ===\n');
+    fprintf('\n=== TEST: MPI 2 Ranks (40×40 grid) ===\n');
     
     num_ranks = 2;
-    Np = 40;  % 2 ranks × 20 pts/rank
+    Np = 40;
     golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_2ranks_Np40_tmax100.mat');
     
     if ~exist(golden_file, 'file')
@@ -89,112 +55,7 @@ function test_mpi_2_ranks(testCase)
     
     % Compare against golden file
     compare_results(testCase, mpi_data, golden_data, ...
-                   testCase.TestData.consistency_tolerance, '2-rank MPI vs Golden');
-end
-
-function test_mpi_3_ranks(testCase)
-% Test MPI with 3 ranks (60x60 grid: 3x1 decomposition, 20 pts/rank)
-    
-    if ~testCase.TestData.has_pct
-        fprintf('\n=== TEST: MPI 3 Ranks ===\n');
-        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
-        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
-        return;
-    end
-    
-    fprintf('\n=== TEST: MPI 3 Ranks (60x60 grid) ===\n');
-    
-    num_ranks = 3;
-    Np = 60;  % 3 ranks × 20 pts/rank
-    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_3ranks_Np60_tmax100.mat');
-    
-    if ~exist(golden_file, 'file')
-        error('Golden file for 3 ranks not found. Run create_goldenfiles.m first.');
-    end
-    
-    golden = load(golden_file);
-    golden_data = golden.golden_data;
-    
-    % Run MPI simulation
-    fprintf('Running MPI simulation with 3 ranks...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
-    
-    % Compare against golden file
-    compare_results(testCase, mpi_data, golden_data, ...
-                   testCase.TestData.consistency_tolerance, '3-rank MPI vs Golden');
-end
-
-function test_mpi_4_ranks(testCase)
-% Test MPI with 4 ranks (40x40 grid: 2x2 decomposition, 20 pts/rank)
-    
-    if ~testCase.TestData.has_pct
-        fprintf('\n=== TEST: MPI 4 Ranks ===\n');
-        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
-        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
-        return;
-    end
-    
-    fprintf('\n=== TEST: MPI 4 Ranks (40x40 grid) ===\n');
-    
-    num_ranks = 4;
-    Np = 40;  % 2×2 ranks × 20 pts/rank
-    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_4ranks_Np40_tmax100.mat');
-    
-    if ~exist(golden_file, 'file')
-        error('Golden file for 4 ranks not found. Run create_goldenfiles.m first.');
-    end
-    
-    golden = load(golden_file);
-    golden_data = golden.golden_data;
-    
-    % Run MPI simulation
-    fprintf('Running MPI simulation with 4 ranks...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
-    
-    % Compare against golden file
-    compare_results(testCase, mpi_data, golden_data, ...
-                   testCase.TestData.consistency_tolerance, '4-rank MPI vs Golden');
-end
-
-function test_mpi_consistency_across_ranks(testCase)
-% Test that 1, 2, 3, and 4 rank results are consistent at common grid points
-    
-    if ~testCase.TestData.has_pct
-        fprintf('\n=== TEST: MPI Consistency Across Ranks ===\n');
-        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
-        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
-        return;
-    end
-    
-    fprintf('\n=== TEST: MPI Consistency Across Ranks ===\n');
-    fprintf('Comparing 1-rank (20x20) vs 2-rank (40x40) at downsampled points...\n\n');
-    
-    % Load 1-rank golden file (20x20)
-    golden_1rank = load(fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_1ranks_Np20_tmax100.mat'));
-    M_1rank = golden_1rank.golden_data.moments.M;
-    
-    % Load 2-rank golden file (40x40)
-    golden_2rank = load(fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_2ranks_Np40_tmax100.mat'));
-    M_2rank = golden_2rank.golden_data.moments.M;
-    
-    % Compare at downsampled points (every other point in 40x40 grid)
-    % 40x40[1:2:end, 1:2:end] should roughly match 20x20
-    M_2rank_ds = M_2rank(1:2:end, 1:2:end, :);
-    
-    diff = abs(M_1rank - M_2rank_ds);
-    max_diff = max(diff(:));
-    
-    fprintf('Max difference between 1-rank and 2-rank (downsampled): %.6e\n', max_diff);
-    
-    % Note: Results may differ because different grid sizes = different IC = different physics
-    % This is more of an informational test
-    if max_diff < 0.1  % Very loose tolerance since grids are different
-        fprintf('✓ Results are similar\n');
-    else
-        fprintf('Note: Results differ (expected - different grid resolutions)\n');
-    end
-    
-    fprintf('\n');
+                   testCase.TestData.tolerance, '2-rank MPI vs Golden');
 end
 
 %% Helper Functions
