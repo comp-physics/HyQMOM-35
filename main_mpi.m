@@ -20,7 +20,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments
-defaults = struct('Np', 20, 'tmax', 0.1, 'enable_plots', false, 'num_workers', 1);
+defaults = struct('Np', 40, 'tmax', 0.1, 'enable_plots', false, 'num_workers', 4);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
@@ -493,11 +493,26 @@ spmd
         % Exchange halos for next iteration
         M = halo_exchange_2d(M, decomp, bc);
         
-        % Compute MaxDiff for symmetry check (only from rank 1)
+        % Compute MaxDiff for symmetry check over GLOBAL domain
+        % Gather interior data from all ranks to rank 1
+        M_interior_local = M(halo+1:halo+nx, halo+1:halo+ny, :);
+        
         if labindex == 1
-            % Extract interior for symmetry test
-            M_interior = M(halo+1:halo+nx, halo+1:halo+ny, :);
-            [~, MaxDiff] = test_symmetry_2D(M_interior, nx);
+            % Rank 1: collect from all workers to reconstruct global array
+            M_global_temp = zeros(Np, Np, Nmom);
+            M_global_temp(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = M_interior_local;
+            
+            % Receive from all other ranks
+            for src = 2:numlabs
+                data_packet = labReceive(src);
+                blk = data_packet{1};
+                i_range = data_packet{2};
+                j_range = data_packet{3};
+                M_global_temp(i_range(1):i_range(2), j_range(1):j_range(2), :) = blk;
+            end
+            
+            % Now compute MaxDiff on full global domain
+            [~, MaxDiff] = test_symmetry_2D(M_global_temp, Np);
             
             % Print timestep timing and MaxDiff
             step_time = toc(step_start_time);
@@ -505,6 +520,9 @@ spmd
             fprintf('%.3e ', MaxDiff);
             fprintf('\n');
         else
+            % All other ranks: send to rank 1
+            data_packet = {M_interior_local, i0i1, j0j1};
+            labSend(data_packet, 1);
             step_time = toc(step_start_time);
         end
     end
