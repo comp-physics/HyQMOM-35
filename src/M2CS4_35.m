@@ -11,7 +11,7 @@ C4 = zeros(size(M4));
 S4 = zeros(size(M4));
 
 % Extract moments (unpacking for readability in symbolic function call)
-m = unpack_moments35(M4);
+m = moment_struct('from_vector', M4);
 
 % Compute central moments using symbolic function
 C = M4toC4_3D(m.M000,m.M100,m.M200,m.M300,m.M400,m.M010,m.M110,m.M210,m.M310,...
