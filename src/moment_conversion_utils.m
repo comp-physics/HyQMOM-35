@@ -15,6 +15,9 @@ function varargout = moment_conversion_utils(operation, varargin)
     switch lower(operation)
         case 's_to_c'
             varargout{1} = standardized_to_central(varargin{:});
+        case 's_to_c_batch'
+            % Convert many S variables to C variables at once
+            [varargout{1:nargout}] = S_to_C_batch(varargin{:});
         case 'm5_to_vars'
             [varargout{1:56}] = extract_M5_array(varargin{:});
         case 'm4_to_vars'
@@ -202,3 +205,73 @@ end
 
 end
 
+%% Batch S→C conversion for individual variables (convenience function)
+function [C110,C101,C011,C300,C210,C201,C120,C111,C102,C030,C021,C012,C003,...
+          C400,C310,C301,C220,C211,C202,C130,C121,C112,C103,C040,C031,C022,C013,C004,...
+          C500,C410,C401,C320,C311,C302,C230,C221,C212,C203,C140,C131,C122,C113,C104,C050,C041,C032,C023,C014,C005] = ...
+    S_to_C_batch(S110,S101,S011,S300,S210,S201,S120,S111,S102,S030,S021,S012,S003,...
+                 S400,S310,S301,S220,S211,S202,S130,S121,S112,S103,S040,S031,S022,S013,S004,...
+                 S500,S410,S401,S320,S311,S302,S230,S221,S212,S203,S140,S131,S122,S113,S104,S050,S041,S032,S023,S014,S005,...
+                 sC200,sC020,sC002)
+%S_TO_C_BATCH Batch convert standardized to central moments
+%   Takes individual S variables and returns individual C variables
+%   C_ijk = S_ijk * sC200^i * sC020^j * sC002^k
+
+% Order 2
+C110 = S110*sC200*sC020;
+C101 = S101*sC200*sC002;
+C011 = S011*sC020*sC002;
+
+% Order 3
+C300 = S300*sC200^3;
+C210 = S210*sC200^2*sC020;
+C201 = S201*sC200^2*sC002;
+C120 = S120*sC200*sC020^2;
+C111 = S111*sC200*sC020*sC002;
+C102 = S102*sC200*sC002^2;
+C030 = S030*sC020^3;
+C021 = S021*sC020^2*sC002;
+C012 = S012*sC020*sC002^2;
+C003 = S003*sC002^3;
+
+% Order 4
+C400 = S400*sC200^4;
+C310 = S310*sC200^3*sC020;
+C301 = S301*sC200^3*sC002;
+C220 = S220*sC200^2*sC020^2;
+C211 = S211*sC200^2*sC020*sC002;
+C202 = S202*sC200^2*sC002^2;
+C130 = S130*sC200*sC020^3;
+C121 = S121*sC200*sC020^2*sC002;
+C112 = S112*sC200*sC020*sC002^2;
+C103 = S103*sC200*sC002^3;
+C040 = S040*sC020^4;
+C031 = S031*sC020^3*sC002;
+C022 = S022*sC020^2*sC002^2;
+C013 = S013*sC020*sC002^3;
+C004 = S004*sC002^4;
+
+% Order 5 (closure moments)
+C500 = S500*sC200^5;
+C410 = S410*sC200^4*sC020;
+C401 = S401*sC200^4*sC002;
+C320 = S320*sC200^3*sC020^2;
+C311 = S311*sC200^3*sC020*sC002;
+C302 = S302*sC200^3*sC002^2;
+C230 = S230*sC200^2*sC020^3;
+C221 = S221*sC200^2*sC020^2*sC002;
+C212 = S212*sC200^2*sC020*sC002^2;
+C203 = S203*sC200^2*sC002^3;
+C140 = S140*sC200*sC020^4;
+C131 = S131*sC200*sC020^3*sC002;
+C122 = S122*sC200*sC020^2*sC002^2;
+C113 = S113*sC200*sC020*sC002^3;
+C104 = S104*sC200*sC002^4;
+C050 = S050*sC020^5;
+C041 = S041*sC020^4*sC002;
+C032 = S032*sC020^3*sC002^2;
+C023 = S023*sC020^2*sC002^3;
+C014 = S014*sC020*sC002^4;
+C005 = S005*sC002^5;
+
+end
