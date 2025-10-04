@@ -201,8 +201,8 @@ spmd
                 MOM = squeeze(M(ih, jh, :));
                 
                 [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D_worker, Ma_worker);
+                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D_worker, Ma_worker);
                 [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
                 
                 Fx(ih, jh, :) = Mx;
@@ -262,8 +262,8 @@ spmd
                 jh = j + halo;
                 MOM = squeeze(M(ih, jh, :));
                 [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D_worker, Ma_worker);
+                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D_worker, Ma_worker);
                 [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
                 Mnp(ih, jh, :) = Mr;
             end

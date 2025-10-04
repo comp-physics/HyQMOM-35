@@ -45,7 +45,7 @@ function [S30,S40,S11,S21,S31,S12,S22,S03,S13,S04] = check2D_impl(S30,S40,S11,S2
         S22 = s4m;
     else
         % check and correct realizability of cross moments
-        [S21,S12,S31,S22,S13] = realizable_2D(S30,S40,S11,S21,S31,S12,S22,S03,S13,S04);
+        [S21,S12,S31,S22,S13] = realizability('2D',S30,S40,S11,S21,S31,S12,S22,S03,S13,S04);
     end
 end
 
