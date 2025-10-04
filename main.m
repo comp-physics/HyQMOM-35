@@ -360,8 +360,8 @@ else
 end
 
 % Compute derived quantities on gathered result
-[C, S] = compute_CS_grid(M_final);
-[M5, C5, S5] = compute_M5_grid(M_final);
+[C, S] = grid_moment_processor(M_final, @M2CS4_35);
+[M5, C5, S5] = grid_moment_processor(M_final, @Moments5_3D);
 
 % Plot results if requested
 if enable_plots

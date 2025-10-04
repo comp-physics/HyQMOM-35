@@ -1,176 +1,232 @@
 % Script to create golden files for MPI regression testing
-% Creates golden files for 1, 2, 3, and 4 MPI ranks
-% Each configuration uses 20 grid points per rank per dimension
+%
+% Usage:
+%   create_goldenfiles             % CI mode: creates 1 and 2 rank files
+%   create_goldenfiles('local')    % Local mode: creates 4 and 8 rank files
+%   create_goldenfiles('all')      % All: creates 1, 2, 4, and 8 rank files
+%
+% The CI-compatible files (1-2 ranks) are smaller and faster.
+% Local files (4-8 ranks) provide comprehensive testing but require more resources.
 
-fprintf('\n');
-fprintf('╔══════════════════════════════════════════════════════════════╗\n');
-fprintf('║                                                              ║\n');
-fprintf('║     MPI Golden File Creation (CI-Compatible)                ║\n');
-fprintf('║     Creates golden files for 1 and 2 MPI ranks              ║\n');
-fprintf('║     (CI environment limited to 2 workers)                   ║\n');
-fprintf('║                                                              ║\n');
-fprintf('╚══════════════════════════════════════════════════════════════╝\n');
-fprintf('\n');
-
-% Add src directory to path
-addpath('src');
-addpath('src/autogen');
-
-% Check required files
-required_files = {'main.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
-for i = 1:length(required_files)
-    if ~exist(required_files{i}, 'file')
-        error('%s not found', required_files{i});
+function create_goldenfiles(mode)
+    if nargin < 1
+        mode = 'ci';  % Default to CI mode
     end
-end
-
-% Create goldenfiles directory if needed
-goldenfiles_dir = 'goldenfiles';
-if ~exist(goldenfiles_dir, 'dir')
-    mkdir(goldenfiles_dir);
-    fprintf('Created directory: %s\n\n', goldenfiles_dir);
-end
-
-% Parameters: 20 grid points per rank per dimension
-POINTS_PER_RANK = 20;
-GOLDEN_TMAX = 0.1;
-% Create golden files for 1 and 2 ranks (CI limitation: max 2 workers)
-RANK_COUNTS = [1, 2];
-
-% Calculate Np for each rank count to ensure >= 10 pts/rank in BOTH directions
-% Np must be divisible by both Px and Py, with at least 10 points per rank
-NP_VALUES = zeros(size(RANK_COUNTS));
-for i = 1:length(RANK_COUNTS)
-    [Px, Py] = mpi_utils('choose_grid', RANK_COUNTS(i));
-    % Calculate Np to give at least POINTS_PER_RANK in each direction
-    % Np = max(Px, Py) * POINTS_PER_RANK ensures all ranks get POINTS_PER_RANK
-    Np_candidate = max(Px, Py) * POINTS_PER_RANK;
-    % But we need Np / Px >= 10 AND Np / Py >= 10
-    min_for_x = Px * 10;  % Minimum to give 10 pts/rank in x
-    min_for_y = Py * 10;  % Minimum to give 10 pts/rank in y
-    Np_min = max(min_for_x, min_for_y);
-    NP_VALUES(i) = max(Np_candidate, Np_min);
-end
-
-fprintf('Golden file parameters:\n');
-fprintf('  Grid points per rank: %d × %d\n', POINTS_PER_RANK, POINTS_PER_RANK);
-fprintf('  Final time: %.3f\n', GOLDEN_TMAX);
-fprintf('  Rank counts: %s\n\n', mat2str(RANK_COUNTS));
-
-% Show grid sizes
-fprintf('Grid sizes (to achieve ~20 pts/rank minimum in each direction):\n');
-for i = 1:length(RANK_COUNTS)
-    num_ranks = RANK_COUNTS(i);
-    [Px, Py] = choose_process_grid(num_ranks);
-    Np = NP_VALUES(i);
-    pts_per_rank_x = Np / Px;
-    pts_per_rank_y = Np / Py;
-    fprintf('  %d rank(s): %dx%d process grid → %d×%d grid (%.1f×%.1f pts/rank)\n', ...
-            num_ranks, Px, Py, Np, Np, pts_per_rank_x, pts_per_rank_y);
-end
-fprintf('\n');
-
-all_success = true;
-
-for i = 1:length(RANK_COUNTS)
-    num_ranks = RANK_COUNTS(i);
     
-    % Get pre-calculated grid size for this rank count
-    Np = NP_VALUES(i);
-    [Px, Py] = choose_process_grid(num_ranks);
+    fprintf('\n');
+    fprintf('╔══════════════════════════════════════════════════════════════╗\n');
+    fprintf('║                                                              ║\n');
     
-    fprintf('═══════════════════════════════════════════════════════════\n');
-    fprintf('Creating golden file for %d rank(s) (%d×%d grid)...\n', num_ranks, Np, Np);
-    fprintf('═══════════════════════════════════════════════════════════\n\n');
+    switch lower(mode)
+        case 'ci'
+            fprintf('║     MPI Golden File Creation (CI Mode)                      ║\n');
+            fprintf('║     Creates files for 1 and 2 MPI ranks                    ║\n');
+            RANK_COUNTS = [1, 2];
+        case 'local'
+            fprintf('║     MPI Golden File Creation (Local Mode)                   ║\n');
+            fprintf('║     Creates files for 4 and 8 MPI ranks                    ║\n');
+            RANK_COUNTS = [4, 8];
+        case 'all'
+            fprintf('║     MPI Golden File Creation (All Modes)                    ║\n');
+            fprintf('║     Creates files for 1, 2, 4, and 8 MPI ranks             ║\n');
+            RANK_COUNTS = [1, 2, 4, 8];
+        otherwise
+            error('Invalid mode. Use ''ci'', ''local'', or ''all''');
+    end
     
-    try
-        % Run MPI simulation
-        fprintf('Running MPI simulation with %d rank(s)...\n', num_ranks);
-        tic;
-        results = main(Np, GOLDEN_TMAX, false, num_ranks);
-        elapsed_time = toc;
-        
-        fprintf('Simulation completed in %.2f seconds\n', elapsed_time);
-        fprintf('  Final time: %.6f\n', results.parameters.final_time);
-        fprintf('  Time steps: %d\n\n', results.parameters.time_steps);
-        
-        % Create golden data structure
-        golden_data = results;
-        golden_data.parameters.elapsed_time = elapsed_time;
-        
-        % Add metadata
-        golden_data.metadata.creation_date = datestr(now);
-        golden_data.metadata.matlab_version = version;
-        golden_data.metadata.description = sprintf('MPI golden file: %d ranks, Np=%d (%d pts/rank), tmax=%.3f', ...
-                                                    num_ranks, Np, POINTS_PER_RANK, GOLDEN_TMAX);
-        golden_data.metadata.num_ranks = num_ranks;
-        golden_data.metadata.points_per_rank = POINTS_PER_RANK;
-        golden_data.metadata.git_branch = 'mpi';
-        
-        % Save golden file
-        golden_filename = fullfile(goldenfiles_dir, ...
-                                  sprintf('goldenfile_mpi_%dranks_Np%d_tmax%03d.mat', ...
-                                          num_ranks, Np, round(GOLDEN_TMAX*1000)));
-        save(golden_filename, 'golden_data');
-        
-        fprintf('✓ Golden file saved: %s\n', golden_filename);
-        fprintf('  File size: %.2f KB\n', dir(golden_filename).bytes / 1024);
-        
-        % Verify symmetry
-        fprintf('\nVerifying symmetry:\n');
-        M = golden_data.moments.M;
-        max_asym = 0;
-        for mom = 1:5
-            asym = max(abs(M(:,:,mom) - flipud(M(:,:,mom))), [], 'all');
-            fprintf('  M%d asymmetry: %.3e\n', mom-1, asym);
-            max_asym = max(max_asym, asym);
+    fprintf('║                                                              ║\n');
+    fprintf('╚══════════════════════════════════════════════════════════════╝\n');
+    fprintf('\n');
+    
+    % Add src directory to path
+    addpath('src');
+    addpath('src/autogen');
+    
+    % Check required files
+    required_files = {'main.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
+    for i = 1:length(required_files)
+        if ~exist(required_files{i}, 'file')
+            error('%s not found', required_files{i});
         end
-        
-        if max_asym < 1e-12
-            fprintf('  ✓ Symmetry preserved\n');
+    end
+    
+    % Check for Parallel Computing Toolbox
+    has_pct = license('test', 'Distrib_Computing_Toolbox') && ~isempty(ver('parallel'));
+    if ~has_pct
+        error('Parallel Computing Toolbox is required for MPI golden file creation');
+    end
+    
+    % Create goldenfiles directory if needed
+    goldenfiles_dir = 'goldenfiles';
+    if ~exist(goldenfiles_dir, 'dir')
+        mkdir(goldenfiles_dir);
+        fprintf('Created directory: %s\n\n', goldenfiles_dir);
+    end
+    
+    % Parameters
+    GOLDEN_TMAX = 0.1;
+    
+    % Determine grid sizes based on rank count
+    % CI tests (1-2 ranks): 20×20 grid
+    % Local tests (4-8 ranks): 40×40 grid
+    NP_VALUES = zeros(size(RANK_COUNTS));
+    for i = 1:length(RANK_COUNTS)
+        if RANK_COUNTS(i) <= 2
+            NP_VALUES(i) = 20;  % CI: smaller, faster
         else
-            fprintf('  ⚠ Warning: symmetry degraded (max: %.3e)\n', max_asym);
+            NP_VALUES(i) = 40;  % Local: larger, more comprehensive
         end
-        
-        fprintf('\n');
-        
-    catch ME
-        fprintf('\n✗ ERROR creating golden file for %d rank(s):\n', num_ranks);
-        fprintf('  %s\n', ME.message);
-        if ~isempty(ME.stack)
-            fprintf('  Stack trace:\n');
-            for j = 1:min(3, length(ME.stack))
-                fprintf('    %s (line %d)\n', ME.stack(j).name, ME.stack(j).line);
-            end
-        end
-        all_success = false;
-        fprintf('\n');
     end
-end
-
-% Summary
-fprintf('═══════════════════════════════════════════════════════════\n');
-if all_success
-    fprintf('✓ SUCCESS: All MPI golden files created\n');
-    fprintf('\nCreated files:\n');
+    
+    fprintf('Parameters:\n');
+    fprintf('  tmax: %.2f\n', GOLDEN_TMAX);
+    fprintf('  Rank counts: [%s]\n\n', num2str(RANK_COUNTS));
+    
+    % Verify grid sizes are valid
+    fprintf('Grid configuration:\n');
     for i = 1:length(RANK_COUNTS)
         num_ranks = RANK_COUNTS(i);
         Np = NP_VALUES(i);
-        filename = sprintf('goldenfile_mpi_%dranks_Np%d_tmax%03d.mat', ...
-                          num_ranks, Np, round(GOLDEN_TMAX*1000));
-        filepath = fullfile(goldenfiles_dir, filename);
-        if exist(filepath, 'file')
-            fprintf('  ✓ %s (%.2f KB)\n', filename, dir(filepath).bytes / 1024);
+        [Px, Py] = mpi_utils('choose_grid', num_ranks);
+        min_pts_x = floor(Np / Px);
+        min_pts_y = floor(Np / Py);
+        
+        if min_pts_x < 10 || min_pts_y < 10
+            error(['Grid too small for %d ranks (process grid %dx%d gives %d×%d pts/rank).\n' ...
+                   'Need at least 10×10 per rank.'], ...
+                   num_ranks, Px, Py, min_pts_x, min_pts_y);
+        end
+        
+        fprintf('  %d rank(s): %d×%d grid, process grid %dx%d → %d×%d pts/rank\n', ...
+                num_ranks, Np, Np, Px, Py, min_pts_x, min_pts_y);
+    end
+    fprintf('\n');
+    
+    %% Generate golden files
+    all_success = true;
+    for i = 1:length(RANK_COUNTS)
+        num_ranks = RANK_COUNTS(i);
+        Np = NP_VALUES(i);
+        
+        fprintf('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+        fprintf('  Generating golden file for %d rank(s) (Np=%d)\n', num_ranks, Np);
+        fprintf('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+        
+        try
+            % Run simulation
+            tic;
+            fprintf('  Running simulation...\n');
+            results = main(Np, GOLDEN_TMAX, false, num_ranks);
+            elapsed = toc;
+            
+            fprintf('  Simulation complete in %.1f seconds\n', elapsed);
+            fprintf('    Final time: %.6f\n', results.parameters.final_time);
+            fprintf('    Time steps: %d\n', results.parameters.time_steps);
+            
+            % Extract results (handle cell array from parallel pool)
+            if iscell(results.moments.M)
+                M_final = results.moments.M{1};
+            else
+                M_final = results.moments.M;
+            end
+            
+            if iscell(results.grid)
+                grid_final = results.grid{1};
+            else
+                grid_final = results.grid;
+            end
+            
+            % Package golden data
+            golden_data = struct();
+            golden_data.M = M_final;
+            golden_data.Np = Np;
+            golden_data.tmax = GOLDEN_TMAX;
+            golden_data.final_time = results.parameters.final_time;
+            golden_data.time_steps = results.parameters.time_steps;
+            golden_data.num_ranks = num_ranks;
+            golden_data.xm = grid_final.xm;
+            golden_data.ym = grid_final.ym;
+            golden_data.creation_date = datestr(now);
+            golden_data.matlab_version = version;
+            
+            % Get git branch if available
+            [status, git_branch] = system('git rev-parse --abbrev-ref HEAD 2>/dev/null');
+            if status == 0
+                golden_data.git_branch = strtrim(git_branch);
+            else
+                golden_data.git_branch = 'unknown';
+            end
+            
+            % Save golden file
+            golden_filename = sprintf('goldenfile_mpi_%dranks_Np%d_tmax%d.mat', ...
+                                      num_ranks, Np, round(GOLDEN_TMAX*1000));
+            golden_path = fullfile(goldenfiles_dir, golden_filename);
+            
+            save(golden_path, 'golden_data', '-v7.3');
+            
+            file_info = dir(golden_path);
+            fprintf('  ✓ Saved: %s (%.1f KB)\n', golden_filename, file_info.bytes/1024);
+            fprintf('    Grid: %dx%d, %d ranks, %.3f final time\n\n', ...
+                    Np, Np, num_ranks, results.parameters.final_time);
+            
+        catch ME
+            fprintf('  ✗ ERROR: %s\n', ME.message);
+            if ~isempty(ME.stack)
+                fprintf('    at %s (line %d)\n', ME.stack(1).name, ME.stack(1).line);
+            end
+            all_success = false;
+            fprintf('\n');
         end
     end
     
-    fprintf('\nNext steps:\n');
-    fprintf('  1. Run: runtests(''tests/test_mpi_goldenfile.m'')\n');
-    fprintf('  2. Tests are CI-compatible (max 2 workers)\n');
-else
-    fprintf('⚠ WARNING: Some golden files failed to create\n');
-    fprintf('Check error messages above for details\n');
+    %% Summary
+    fprintf('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    if all_success
+        fprintf('✅ GOLDEN FILE CREATION COMPLETE\n');
+    else
+        fprintf('⚠️  GOLDEN FILE CREATION COMPLETED WITH ERRORS\n');
+    end
+    fprintf('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
+    
+    fprintf('Generated %d golden file(s) in %s/:\n', length(RANK_COUNTS), goldenfiles_dir);
+    total_size = 0;
+    for i = 1:length(RANK_COUNTS)
+        num_ranks = RANK_COUNTS(i);
+        Np = NP_VALUES(i);
+        golden_filename = sprintf('goldenfile_mpi_%dranks_Np%d_tmax%d.mat', ...
+                                  num_ranks, Np, round(GOLDEN_TMAX*1000));
+        golden_path = fullfile(goldenfiles_dir, golden_filename);
+        if exist(golden_path, 'file')
+            finfo = dir(golden_path);
+            total_size = total_size + finfo.bytes;
+            fprintf('  ✓ %s (%.1f KB)\n', golden_filename, finfo.bytes/1024);
+        else
+            fprintf('  ✗ %s (FAILED)\n', golden_filename);
+        end
+    end
+    
+    fprintf('\nTotal size: %.1f KB\n\n', total_size/1024);
+    
+    % Mode-specific next steps
+    fprintf('Next steps:\n');
+    switch lower(mode)
+        case 'ci'
+            fprintf('  1. Run: cd tests && runtests(''test_mpi_goldenfile'')\n');
+            fprintf('  2. These files are used by CI (1-2 ranks only)\n');
+            fprintf('  3. Commit these files to git if intentionally changed\n');
+        case 'local'
+            fprintf('  1. Run: cd tests && runtests(''test_mpi_local_only'')\n');
+            fprintf('  2. These files are for local testing (4-8 ranks)\n');
+            fprintf('  3. Commit these files to git:\n');
+            fprintf('     git add goldenfiles/goldenfile_mpi_4ranks*.mat\n');
+            fprintf('     git add goldenfiles/goldenfile_mpi_8ranks*.mat\n');
+            fprintf('     git commit -m "Update local MPI golden files"\n');
+        case 'all'
+            fprintf('  1. Run: cd tests && runtests  % Runs all tests\n');
+            fprintf('  2. Commit updated files to git if intentionally changed\n');
+    end
+    
+    fprintf('\nNote: Golden files are committed to version control.\n');
+    fprintf('      CI tests auto-skip local-only tests (4+ ranks).\n');
+    fprintf('\n');
 end
-fprintf('═══════════════════════════════════════════════════════════\n');
-fprintf('\n');
-
