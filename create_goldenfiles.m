@@ -17,7 +17,7 @@ addpath('src');
 addpath('src/autogen');
 
 % Check required files
-required_files = {'main_mpi.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
+required_files = {'main.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
 for i = 1:length(required_files)
     if ~exist(required_files{i}, 'file')
         error('%s not found', required_files{i});
@@ -41,7 +41,7 @@ RANK_COUNTS = [1, 2];
 % Np must be divisible by both Px and Py, with at least 10 points per rank
 NP_VALUES = zeros(size(RANK_COUNTS));
 for i = 1:length(RANK_COUNTS)
-    [Px, Py] = choose_process_grid(RANK_COUNTS(i));
+    [Px, Py] = mpi_utils('choose_grid', RANK_COUNTS(i));
     % Calculate Np to give at least POINTS_PER_RANK in each direction
     % Np = max(Px, Py) * POINTS_PER_RANK ensures all ranks get POINTS_PER_RANK
     Np_candidate = max(Px, Py) * POINTS_PER_RANK;
@@ -87,7 +87,7 @@ for i = 1:length(RANK_COUNTS)
         % Run MPI simulation
         fprintf('Running MPI simulation with %d rank(s)...\n', num_ranks);
         tic;
-        results = main_mpi(Np, GOLDEN_TMAX, false, num_ranks);
+        results = main(Np, GOLDEN_TMAX, false, num_ranks);
         elapsed_time = toc;
         
         fprintf('Simulation completed in %.2f seconds\n', elapsed_time);

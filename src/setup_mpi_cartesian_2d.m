@@ -33,7 +33,7 @@ function decomp = setup_mpi_cartesian_2d(np, halo)
     end
 
     % Choose process grid dimensions (Px, Py)
-    [Px, Py] = choose_process_grid(nl);
+    [Px, Py] = mpi_utils('choose_grid', nl);
 
     % Rank coordinates (0-based)
     r = labindex - 1;
@@ -41,8 +41,8 @@ function decomp = setup_mpi_cartesian_2d(np, halo)
     ry = floor(r / Px);
 
     % Compute local interior sizes using block decomposition with remainders
-    [nx_local, i0, i1] = block_partition_1d(np, Px, rx);
-    [ny_local, j0, j1] = block_partition_1d(np, Py, ry);
+    [nx_local, i0, i1] = mpi_utils('partition', np, Px, rx);
+    [ny_local, j0, j1] = mpi_utils('partition', np, Py, ry);
 
     % Neighbor ranks (1-based), -1 if boundary
     neighbors = struct('left', -1, 'right', -1, 'down', -1, 'up', -1);

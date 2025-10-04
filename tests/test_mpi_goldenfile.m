@@ -1,13 +1,11 @@
 function tests = test_mpi_goldenfile
-% Test MPI implementation against golden files for 1 and 2 ranks
-% CI environment has max 2 workers, so we test both 1-rank and 2-rank configurations
-% This validates that MPI implementation works correctly for both single and multi-rank cases
 
 tests = functiontests(localfunctions);
 end
 
 function setupOnce(testCase)
-% Setup for all tests
+    % Setup for all tests
+
     % Add parent directory to path
     addpath('..');
     % Add src directory to path
@@ -28,7 +26,7 @@ function setupOnce(testCase)
 end
 
 function test_mpi_1_rank_vs_golden(testCase)
-% Test MPI with 1 rank (single processor) against golden file (20×20 grid)
+    % Test MPI with 1 rank (single processor) against golden file (20×20 grid)
     
     if ~testCase.TestData.has_pct
         fprintf('\n=== TEST: MPI 1 Rank vs Golden ===\n');
@@ -94,14 +92,11 @@ end
 %% Helper Functions
 
 function mpi_data = run_mpi_simulation(Np, tmax, num_ranks)
-% Run MPI simulation and return results
-    
-    % Use main_mpi directly
-    mpi_data = main_mpi(Np, tmax, false, num_ranks);
+    mpi_data = main(Np, tmax, false, num_ranks);
 end
 
 function compare_results(testCase, data1, data2, tolerance, description)
-% Compare two result structures
+    % Compare two result structures
     
     fprintf('\nComparing results: %s\n', description);
     
@@ -134,12 +129,12 @@ function compare_results(testCase, data1, data2, tolerance, description)
     % Assess result
     if max_diff < tolerance
         if max_diff < 1e-14
-            fprintf('  ✅ PERFECT: Bitwise identical!\n');
+            fprintf('  PERFECT: Bitwise identical!\n');
         else
-            fprintf('  ✅ PASS: Within tolerance (%.1e)\n', tolerance);
+            fprintf('  PASS: Within tolerance (%.1e)\n', tolerance);
         end
     else
-        fprintf('  ❌ FAIL: Exceeds tolerance (%.1e)\n', tolerance);
+        fprintf('  FAIL: Exceeds tolerance (%.1e)\n', tolerance);
         error('Results differ by %.6e, tolerance %.6e', max_diff, tolerance);
     end
     

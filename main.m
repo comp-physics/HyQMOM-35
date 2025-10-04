@@ -1,6 +1,5 @@
-function [results] = main_mpi(varargin)
-% MPI-parallel version of main solver using domain decomposition
-% Same interface as main.m but runs with MPI parallelization
+function [results] = main(varargin)
+% Main solver for 3D HyQMOM with MPI-parallel domain decomposition
 %
 % Parameters:
 %   Np          - GLOBAL grid size (total points in each direction)
@@ -9,15 +8,15 @@ function [results] = main_mpi(varargin)
 %   num_workers - Number of MPI ranks/workers (default: 4)
 %
 % Usage:
-%   main_mpi()                           % Run with defaults
-%   main_mpi(Np, tmax)                   % Override Np and tmax
-%   main_mpi(Np, tmax, enable_plots)     % Override plotting
-%   main_mpi(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
+%   main()                           % Run with defaults
+%   main(Np, tmax)                   % Override Np and tmax
+%   main(Np, tmax, enable_plots)     % Override plotting
+%   main(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
 %
 % Examples:
-%   main_mpi()                    % Default: Np=20 (global), tmax=0.1, 4 workers
-%   main_mpi(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
-%   main_mpi(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
+%   main()                    % Default: Np=20 (global), tmax=0.1, 4 workers
+%   main(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
+%   main(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
 %
 % Note: Np is the TOTAL grid size. It will be decomposed into subdomains.
 %       Each rank must have at least 10×10 interior points.
@@ -90,7 +89,7 @@ rhor = 0.01;
 
 % Validate grid size for MPI decomposition
 % Requirement: minimum ~10 points per rank in each direction
-[Px, Py] = choose_process_grid(num_workers);
+[Px, Py] = mpi_utils('choose_grid', num_workers);
 min_points_x = floor(Np / Px);
 min_points_y = floor(Np / Py);
 min_points = min(min_points_x, min_points_y);
@@ -149,8 +148,8 @@ spmd
     rhor_worker = 0.01;
     
     % Grid setup (each worker needs this)
-    grid = setup_simulation_grid(Np, -0.5, 0.5, -0.5, 0.5);
-    M_global = setup_crossing_jets_IC(Np, Nmom_worker, rhol_worker, rhor_worker, Ma_worker, T_worker, r110_worker, r101_worker, r011_worker);
+    grid = grid_utils('setup', Np, -0.5, 0.5, -0.5, 0.5);
+    M_global = grid_utils('crossing_jets_ic', Np, Nmom_worker, rhol_worker, rhor_worker, Ma_worker, T_worker, r110_worker, r101_worker, r011_worker);
     
     % Setup domain decomposition
     decomp = setup_mpi_cartesian_2d(Np, halo);
@@ -239,12 +238,12 @@ spmd
         t = t + dt;
         
         % X-direction flux update with processor boundary handling
-        Mnpx = apply_flux_update_x(M, Fx, vpxmin, vpxmax, vpxmin_ext, vpxmax_ext, ...
-                                    nx, ny, halo, dt, dx_worker, decomp);
+        Mnpx = apply_flux_update(M, Fx, vpxmin, vpxmax, vpxmin_ext, vpxmax_ext, ...
+                                  nx, ny, halo, dt, dx_worker, decomp, 1);
         
         % Y-direction flux update with processor boundary handling
-        Mnpy = apply_flux_update_y(M, Fy, vpymin, vpymax, vpymin_ext, vpymax_ext, ...
-                                    nx, ny, halo, dt, dy_worker, decomp);
+        Mnpy = apply_flux_update(M, Fy, vpymin, vpymax, vpymin_ext, vpymax_ext, ...
+                                  nx, ny, halo, dt, dy_worker, decomp, 2);
         
         % Combine updates (Strang splitting) - INTERIOR ONLY
         % Mnpx and Mnpy halos contain stale M values, only interior was updated by pas_HLL
@@ -305,7 +304,7 @@ spmd
             end
             
             % Now compute MaxDiff on full global domain
-            [~, MaxDiff] = test_symmetry_2D(M_global_temp, Np);
+            [~, MaxDiff] = diagnostics('test_symmetry', M_global_temp, Np);
             
             % Print timestep timing and MaxDiff
             step_time = toc(step_start_time);

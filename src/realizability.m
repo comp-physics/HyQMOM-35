@@ -1,3 +1,146 @@
+function varargout = realizability(operation, varargin)
+%REALIZABILITY Consolidated utility functions for moment realizability checks.
+%   This function acts as a dispatcher for various realizability helpers.
+%
+%   Usage:
+%     [S21, S12, S31, S22, S13] = realizability('2D', S30, S40, S11, S21, S31, S12, S22, S03, S13, S04)
+%     [S300,...,flag220] = realizability('3D', S300, ..., S022)
+%     [S111r] = realizability('S111', S110, S101, S011, S210, S201, S120, S021, S102, S012, S111)
+%     [S110r, S101r, S011r, S2r] = realizability('S2', S110, S101, S011)
+%     [S210r, S201r] = realizability('S210', S110, S101, S011, S300, S210, S201, H200, beta)
+%     S211r = realizability('S211', e11, e22, e33, e12, e13, d23, S211, beta)
+%     [S310r, S220r] = realizability('S310', S110, S101, S011, S300, S210, S201, S120, S111, S310, S220, H200, beta)
+%     [S220r] = realizability('S310_220', S110, S101, S011, S210, S120, S111, S220)
+%     S220r = realizability('S220', S110, S220, A220)
+%
+%   Operations:
+%     '2D'       : Find realizable moment set in 2D
+%     '3D'       : Check and correct realizability of cross moments in 3D
+%     'S111'     : Check and correct realizability of S111
+%     'S2'       : Check and correct realizability of 2nd-order moments
+%     'S210'     : Check and correct realizability of S210, S201
+%     'S211'     : Check and correct realizability of S211
+%     'S310'     : Check and correct realizability of S310 and S220
+%     'S310_220' : Check and correct realizability of S220 for S310
+%     'S220'     : Check maximum bounds and correct S220
+%
+%   See also: Flux_closure35_and_realizable_3D
+
+    switch lower(operation)
+        case '2d'
+            [varargout{1:5}] = realizable_2D(varargin{:});
+        case '3d'
+            [varargout{1:29}] = realizable_3D(varargin{:});
+        case 's111'
+            varargout{1} = realizability_S111(varargin{:});
+        case 's2'
+            [varargout{1:4}] = realizability_S2(varargin{:});
+        case 's210'
+            [varargout{1:2}] = realizability_S210(varargin{:});
+        case 's211'
+            varargout{1} = realizability_S211(varargin{:});
+        case 's310'
+            [varargout{1:2}] = realizability_S310(varargin{:});
+        case 's310_220'
+            varargout{1} = realizability_S310_220(varargin{:});
+        case 's220'
+            varargout{1} = realizablity_S220(varargin{:});
+        otherwise
+            error('realizability:UnknownOperation', 'Unknown operation: %s', operation);
+    end
+end
+
+%% realizable_2D
+function [S21,S12,S31,S22,S13] = realizable_2D(S30,S40,S11,S21,S31,S12,S22,S03,S13,S04)
+%realizable_2D Find realizable moment set in 2D
+%   
+% check realizability of S11
+Del1= max(0,1 - S11^2);
+%
+H20 = max(eps,S40 - S30^2 - 1);
+H02 = max(eps,S04 - S03^2 - 1);
+% check realizability of S12 and S21
+G1 = sqrt(Del1*H02);
+s12min = S11*S03 - G1;
+s12max = S11*S03 + G1;
+if S12 <= s12min 
+    S12 = s12min ;
+elseif S12 >= s12max
+    S12 = s12max;
+end
+%
+G1 = sqrt(Del1*H20);
+s21min = S11*S30 - G1;
+s21max = S11*S30 + G1;
+if S21 <= s21min
+    S21 = s21min;
+elseif S21 >= s21max
+    S21 = s21max;
+end
+% at this point first minor is nonnegative
+%
+% check realizability of S22
+G22 = sqrt((H20+S30^2)*(H02+S03^2));
+s22min = max(S11^2,1-G22);
+% s22min = max(s22min,S11^2 + (S21^2 - 2*S11*S12*S21 + S12^2)/(Del1+eps));
+s22max = 1+G22;
+if S22 < s22min
+    S22 = s22min;
+elseif S22 > s22max
+    S22 = s22max;
+end
+% given s22, check realizability of S13 and S31
+G31 = (Del1*S22 - Del1*S11^2 - S12^2 + 2*S11*S12*S21 - S21^2)*(Del1*H20 - (S21 - S11*S30)^2);
+G13 = (Del1*S22 - Del1*S11^2 - S12^2 + 2*S11*S12*S21 - S21^2)*(Del1*H02 - (S12 - S11*S03)^2);
+if G31 < 0 || G13 < 0
+    G31 = 0;
+    G13 = 0;
+else
+    G13 = sqrt(G13);
+    G31 = sqrt(G31);
+end
+s31min = S11 + (S12*S21 + S21*S30 - S11*S21^2 - S11*S12*S30 - G31)/(Del1+eps);
+s31max = S11 + (S12*S21 + S21*S30 - S11*S21^2 - S11*S12*S30 + G31)/(Del1+eps);
+if S31 <= s31min
+    S31 = s31min;
+elseif S31 >= s31max
+    S31 = s31max;
+end
+%
+s13min = S11 + (S12*S21 + S12*S03 - S11*S12^2 - S11*S21*S03 - G13)/(Del1+eps);
+s13max = S11 + (S12*S21 + S12*S03 - S11*S12^2 - S11*S21*S03 + G13)/(Del1+eps);
+if S13 <= s13min
+    S13 = s13min;
+elseif S13 >= s13max
+    S13 = s13max;
+end
+% at this point second minor is nonnegative, check third for S22
+L3 = delta2starchol_L3(S03,S04,S11,S12,S13,S21,S22,S30,S31,S40);
+if L3 < 0
+    % check realizability of S22 using roots of degree 3 polynomial
+    R = rootsR(Del1,H02,H20,S03,S11,S12,S13,S21,S30,S31);
+    Rr = sort(real(R));
+    s22maxr = min(s22max,Rr(3));
+    s22minr = max(s22min,Rr(2));
+    if s22maxr < s22minr
+        s22minr = s22maxr;
+    end
+    S22a = S22;
+    if S22 > s22maxr
+        S22a = s22maxr;
+    elseif S22 < s22minr
+        S22a = s22minr;
+    end
+    % check for complex roots, in which case L3 remains < 0
+    if max(abs(imag(R)))/max(abs(R)) > 1000*eps
+        % complex roots : do not change S22
+    else
+        S22 = S22a;
+    end
+end
+end
+
+%% realizable_3D
 function [S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
           S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,...
           S211,S021,S121,S031,S012,S112,S013,S022,flag220] = ...
@@ -570,7 +713,7 @@ else % treat interior of 2nd-order moment space
         e46=E(4,6);
         e55=E(5,5);
         e56=E(5,6);
-        e66=E(6,6);
+        e66=E(6,66);
         %
         ex = -e22+e14;
         d22 = S202-e22;
@@ -680,3 +823,169 @@ else % treat interior of 2nd-order moment space
 end
 %
 end
+
+%% realizability_S111
+function [S111r] = realizability_S111(S110,S101,S011,S210,S201,S120,S021,S102,S012,S111)
+% realizability_S111 checks and corrects realizablity of S111
+%
+S111r = S111;
+A110 = ((S101-S011*S110)*S210+(S011-S101*S110)*S120)/(1-S110^2);
+A101 = ((S110-S011*S101)*S201+(S011-S110*S101)*S102)/(1-S101^2);
+A011 = ((S110-S101*S011)*S021+(S101-S110*S011)*S012)/(1-S011^2);
+Rmin = min([A110,A101,A011]);
+Rmax = max([A110,A101,A011]);
+if S111 > Rmax
+    S111r = Rmax;
+elseif S111 < Rmin
+    S111r = Rmin;
+end
+end
+
+%% realizability_S2
+function [S110r,S101r,S011r,S2r] = realizability_S2(S110,S101,S011)
+% realizability_S2 checks and corrects realizablity of 2nd-order moments
+%
+S2 = 1 + 2*S110*S101*S011 - (S110^2+S101^2+S011^2);
+xr = 1;
+if S2 < 0
+    Y = @(x) 1 + 2*S110*S101*S011*x.^3 - (S110^2+S101^2+S011^2)*x.^2;
+    xr = fzero(Y,[0 1]);
+end
+xr = 0.9999*xr;
+S110r = xr*S110;
+S101r = xr*S101;
+S011r = xr*S011;
+S2r = 1 + 2*S110r*S101r*S011r - (S110r^2+S101r^2+S011r^2);
+if S2r < 0
+    warning('S2 < 0 after correction in realizability_S2')
+    disp([S2,S2r])
+end
+end
+
+%% realizability_S210
+function [S210r,S201r] = realizability_S210(S110,S101,S011,S300,S210,S201,H200,beta)
+% realizability_S210 checks and corrects realizablity of S210, S201
+%
+xr = 1;
+X = [S210-S110*S300; S201-S101*S300];
+D1 = [1-S101^2, S101*S110-S011; S101*S110-S011, 1-S110^2];
+U = sqrtm(D1);
+V = U*X;
+L = max([0 V'*V]);
+dD1 = max([0 det(D1)]);
+R = H200*dD1;
+if R <= 0 || X'*X < 1000*eps
+    xr = 0;
+elseif L > R
+    xr = sqrt(R/L);
+end
+Vr = beta*xr*V;
+Xr = U\Vr;
+S210r = Xr(1) + S110*S300;
+S201r = Xr(2) + S101*S300;
+end
+
+%% realizability_S211
+function S211r = realizability_S211(e11,e22,e33,e12,e13,d23,S211,beta)
+% realizability_S211
+%
+S211r = S211;
+b211 = e12*e13;
+G211 = max([0 (e11*e22-e13^2)*(e11*e33-e12^2)]);
+sG211 = beta*sqrt(G211);
+s211min = d23+(b211-sG211)/e11;
+s211max = d23+(b211+sG211)/e11;
+%
+if S211 <= s211min
+    S211r = s211min;
+elseif S211 >= s211max
+    S211r = s211max;
+end
+%
+end
+
+%% realizability_S310
+function [S310r,S220r] = realizability_S310(S110,S101,S011,S300,S210,S201,S120,S111,S310,S220,H200,beta)
+% realizability_S310 checks and corrects realizablity of S310 and S220
+%
+S310r = S310;
+S220r = S220;
+%
+b310 = S111*((1 - S110^2)*S201 + (S101*S110 - S011)*S210 + (S011*S110 - S101)*S300) ...
+     + S120*((1 - S101^2)*S210 + (S011*S101 - S110)*S300 + (S101*S110 - S011)*S201) ...
+     + S210*((1 - S011^2)*S300 + (S011*S101 - S110)*S210 + (S011*S110 - S101)*S201);
+%
+D1 = [1-S101^2, S101*S110-S011;S101*S110-S011, 1-S110^2];
+dD1 = det(D1);
+V1 = [S210-S110*S300; S201-S101*S300];
+L1 = V1'*D1*V1/dD1;
+%
+G310b = H200 - L1;
+if G310b < 0
+    warning('G310b < 0')
+    G310b = 0;
+end
+%
+D2 = [1-S011^2, S011*S101-S110, S011*S110-S101;...
+      S011*S101-S110, 1-S101^2, S101*S110-S011;...
+      S011*S110-S101, S101*S110-S011, 1-S110^2];
+V2 = [S210; S120; S111];
+L2 = V2'*D2*V2/dD1;
+%
+G310a = S220 - S110^2 - L2 + 1000*eps;
+if G310a < 0 || L2 < 0
+    warning('G310a < 0 || L2 < 0')
+    % [G310a L2 b310/dD1]
+    % S220r = S110^2 + L2 + 1000*eps;
+    G310a = 0;
+end
+%
+G310 = G310a*G310b;
+sG310 = beta*sqrt(G310);
+%
+s310min = S110 + b310/dD1 - sG310;
+s310max = S110 + b310/dD1 + sG310;
+%
+if S310 <= s310min
+    S310r = s310min;
+elseif S310 >= s310max
+    S310r = s310max;
+end
+%
+end
+
+%% realizability_S310_220
+function [S220r] = realizability_S310_220(S110,S101,S011,S210,S120,S111,S220)
+% realizability_S310_220 checks and corrects realizablity of S220 for S310
+%
+S220r = S220;
+D1 = [1-S101^2, S101*S110-S011; S101*S110-S011, 1-S110^2];
+dD1 = det(D1);
+%
+D2 = [1-S011^2, S011*S101-S110, S011*S110-S101;...
+      S011*S101-S110, 1-S101^2, S101*S110-S011;...
+      S011*S110-S101, S101*S110-S011, 1-S110^2];
+V2 = [S210; S120; S111];
+L2 = V2'*D2*V2/dD1;
+S220 = S110^2 + L2 + 1000*eps;
+%
+if S220 > S220r
+    S220r = S220;
+end
+%
+end
+
+%% realizablity_S220
+function S220r = realizablity_S220(S110,S220,A220)
+% realizablity_S220 checks maximum bounds and corrects S220
+%
+S220r = S220;
+s220min = max([S110^2 1-A220]);
+s220max = 1+A220;
+if S220 < s220min
+    S220r = s220min;
+elseif S220 > s220max
+    S220r = s220max;
+end
+end
+
