@@ -5,12 +5,17 @@ function varargout = moment_conversion_utils(operation, varargin)
 %
 %   Operations:
 %     'S_to_C'      : Convert standardized to central moments (vectorized)
+%     'S_to_C_batch': Batch convert S→C for individual variables
 %     'M5_to_vars'  : Extract M5 3D array to individual variables
 %     'M4_to_vars'  : Extract M4 3D array to individual variables
+%     'C_to_S'      : Convert central to standardized moments (inverse)
 %
 %   Examples:
-%     C = moment_conversion_utils('S_to_C', S, sC200, sC020, sC002, indices)
+%     C = moment_conversion_utils('S_to_C', S, sC200, sC020, sC002)
 %     [M000, M100, ...] = moment_conversion_utils('M5_to_vars', M5)
+%
+%   Note: For struct-based interfaces, use moment_struct() instead.
+%         This utility focuses on mathematical transformations and array operations.
 
     switch lower(operation)
         case 's_to_c'
@@ -162,12 +167,14 @@ end
 %% Helper: unpack moments vector to struct (for compatibility)
 function S = unpack_moments_to_struct(M_vec)
 % Quick unpacker for common 35-moment vector
-moment_names = {'S000','S100','S200','S300','S400','S010','S110','S210','S310','S020','S120','S220','S030','S130','S040',...
-                'S001','S101','S201','S301','S002','S102','S202','S003','S103','S004','S011','S111','S211','S021','S121',...
-                'S031','S012','S112','S013','S022'};
+% Uses shared moment_names utility
+names = moment_names(4);  % Always 35 moments for S/C conversions
+
+% Convert M names to S names (for standardized moments)
 S = struct();
-for i = 1:min(length(M_vec), length(moment_names))
-    S.(moment_names{i}) = M_vec(i);
+for i = 1:min(length(M_vec), length(names))
+    s_name = strrep(names{i}, 'M', 'S');  % M000 → S000
+    S.(s_name) = M_vec(i);
 end
 end
 
