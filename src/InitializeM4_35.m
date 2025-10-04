@@ -1,172 +1,55 @@
 function M = InitializeM4_35(M000,umean,vmean,wmean,C200,C110,C101,C020,C011,C002)
-% InitializeM4_35 computes 3-D fourth-order joint Gaussian moments
+%INITIALIZEM4_35 Computes 3-D fourth-order joint Gaussian moments
+%
+%   Refactored from 172 lines to ~40 lines by eliminating repetitive array extractions.
+%
 %   Input:
-%       M000 = number density 
-%       umean = M100/M000 (mean velocity u)
-%       vmean = M010/M000 (mean velocity v)
-%       wmean = M001/M000 (mean velocity w)
-%       C*** = covariances
+%       M000  - number density 
+%       umean - M100/M000 (mean velocity u)
+%       vmean - M010/M000 (mean velocity v)
+%       wmean - M001/M000 (mean velocity w)
+%       C200, C110, C101, C020, C011, C002 - covariances
+%
 %   Output:
-% M = [M000,M100,M200,M300,M400,M010,M110,M210,M310,M020,M120,M220,M030,M130,M040,...
-%      M001,M101,M201,M301,M002,M102,M202,M003,M103,M004,M011,M111,M211,M021,M121,...
-%      M031,M012,M112,M013,M022]
+%       M - 35-element vector of moments
 
-% standardized moments for Maxwellian
-S300 = 0;
-S210 = 0;
-S201 = 0;
-S120 = 0;
-S111 = 0;
-S102 = 0;
-S030 = 0;
-S021 = 0;
-S012 = 0;
-S003 = 0;
-%
-S400 = 3;
-S310 = 0;
-S301 = 0;
-S220 = 1;
-S211 = 0;
-S202 = 1;
-S130 = 0;
-S121 = 0;
-S112 = 0;
-S103 = 0;
-S040 = 3;
-S031 = 0;
-S022 = 1;
-S013 = 0;
-S004 = 3;
-%
-% compute 3-D central 4th-order moments for isotropic standardized moments
-C4 = S4toC4_3D_r(C200,C110,C101,C020,C011,C002,S300,S210,S201,S120,S111,S102,S030,S021,S012,S003,...
+% Standardized moments for Maxwellian (Gaussian)
+% 3rd order: all zero (Gaussian is symmetric)
+S300=0; S210=0; S201=0; S120=0; S111=0; S102=0; S030=0; S021=0; S012=0; S003=0;
+
+% 4th order: diagonal = 3 (Gaussian kurtosis), cross = 1 (independent variables)
+S400=3; S310=0; S301=0; S220=1; S211=0; S202=1;
+S130=0; S121=0; S112=0; S103=0; S040=3; S031=0; S022=1; S013=0; S004=3;
+
+% Compute central moments from standardized moments
+C4 = S4toC4_3D_r(C200,C110,C101,C020,C011,C002,...
+                 S300,S210,S201,S120,S111,S102,S030,S021,S012,S003,...
                  S400,S310,S301,S220,S211,S202,S130,S121,S112,S103,S040,S031,S022,S013,S004);
-%
-C200 = C4(3,1,1);
-C110 = C4(2,2,1);
-C101 = C4(2,1,2);
-C020 = C4(1,3,1);
-C011 = C4(1,2,2);
-C002 = C4(1,1,3);
-%
-C300 = C4(4,1,1);
-C210 = C4(3,2,1);
-C201 = C4(3,1,2);
-C120 = C4(2,3,1);
-C111 = C4(2,2,2);
-C102 = C4(2,1,3);
-C030 = C4(1,4,1);
-C021 = C4(1,3,2);
-C012 = C4(1,2,3);
-C003 = C4(1,1,4);
-%
-C400 = C4(5,1,1);
-C310 = C4(4,2,1);
-C301 = C4(4,1,2);
-C220 = C4(3,3,1);
-C211 = C4(3,2,2);
-C202 = C4(3,1,3);
-C130 = C4(2,4,1);
-C121 = C4(2,3,2);
-C112 = C4(2,2,3);
-C103 = C4(2,1,4);
-C040 = C4(1,5,1);
-C031 = C4(1,4,2);
-C022 = C4(1,3,3);
-C013 = C4(1,2,4);
-C004 = C4(1,1,5);
-%
-% compute 4th-order moments
-% M4 = C4toM4_3D(M000,umean,vmean,wmean,C200,C110,C101,C020,C011,C002,...
-%                C300,C210,C201,C120,C111,C102,C030,C021,C012,C003,...
-%                C400,C310,C301,C220,C211,C202,C130,C121,C112,C103,C040,C031,C022,C013,C004);
 
-M4 = C4toM4_3D(M000,umean,vmean,wmean,C200,C110,C101,C020,C011,C002,...
+% Extract central moments from 3D array
+[~, ~, ~, ~, C200, C110, C101, C020, C011, C002, ...
+ C300, C210, C201, C120, C111, C102, C030, C021, C012, C003, ...
+ C400, C310, C301, C220, C211, C202, C130, C121, C112, C103, C040, C031, C022, C013, C004] = ...
+    moment_conversion_utils('M4_to_vars', C4);
+
+% Compute raw moments from central moments
+M4 = C4toM4_3D(M000,umean,vmean,wmean,...
+               C200,C110,C101,C020,C011,C002,...
                C300,C210,C201,C120,C111,C102,C030,C021,C012,C003,...
                C400,C310,C301,C220,C211,C202,C130,C121,C112,C103,C040,C031,C022,C013,C004);
-%
-%
-M000 = M4(1,1,1);
-M100 = M4(2,1,1);
-M010 = M4(1,2,1);
-M001 = M4(1,1,2);
-%
-M200 = M4(3,1,1);
-M110 = M4(2,2,1);
-M101 = M4(2,1,2);
-M020 = M4(1,3,1);
-M011 = M4(1,2,2);
-M002 = M4(1,1,3);
-%
-M300 = M4(4,1,1);
-M210 = M4(3,2,1);
-M201 = M4(3,1,2);
-M120 = M4(2,3,1);
-M111 = M4(2,2,2);
-M102 = M4(2,1,3);
-M030 = M4(1,4,1);
-M021 = M4(1,3,2);
-M012 = M4(1,2,3);
-M003 = M4(1,1,4);
-%
-M400 = M4(5,1,1);
-M310 = M4(4,2,1);
-M301 = M4(4,1,2);
-M220 = M4(3,3,1);
-M211 = M4(3,2,2);
-M202 = M4(3,1,3);
-M130 = M4(2,4,1);
-M121 = M4(2,3,2);
-M112 = M4(2,2,3);
-M103 = M4(2,1,4);
-M040 = M4(1,5,1);
-M031 = M4(1,4,2);
-M022 = M4(1,3,3);
-M013 = M4(1,2,4);
-M004 = M4(1,1,5);
 
+% Extract raw moments from 3D array and pack into vector
+[M000, M100, M010, M001, M200, M110, M101, M020, M011, M002, ...
+ M300, M210, M201, M120, M111, M102, M030, M021, M012, M003, ...
+ M400, M310, M301, M220, M211, M202, M130, M121, M112, M103, M040, M031, M022, M013, M004] = ...
+    moment_conversion_utils('M4_to_vars', M4);
+
+% Pack into 35-element vector (standard ordering)
 % M = [M000,M100,M200,M300,M400,M010,M110,M210,M310,M020,M120,M220,M030,M130,M040,...
 %      M001,M101,M201,M301,M002,M102,M202,M003,M103,M004,M011,M111,M211,M021,M121,...
 %      M031,M012,M112,M013,M022]
-M = zeros(35,1);
-%
-M(1) = M000;
-M(2) = M100;
-M(3) = M200;
-M(4) = M300;
-M(5) = M400;
-M(6) = M010;
-M(7) = M110;
-M(8) = M210;
-M(9) = M310;
-M(10)= M020;
-M(11)= M120;
-M(12)= M220;
-M(13)= M030;
-M(14)= M130;
-M(15)= M040;
-%
-M(16)= M001;
-M(17)= M101;
-M(18)= M201;
-M(19)= M301;
-M(20)= M002;
-M(21)= M102;
-M(22)= M202;
-M(23)= M003;
-M(24)= M103;
-M(25)= M004;
-M(26)= M011;
-M(27)= M111;
-M(28)= M211;
-M(29)= M021;
-M(30)= M121;
-%
-M(31)= M031;
-M(32)= M012;
-M(33)= M112;
-M(34)= M013;
-M(35)= M022;
-%
+M = [M000; M100; M200; M300; M400; M010; M110; M210; M310; M020; M120; M220; M030; M130; M040;
+     M001; M101; M201; M301; M002; M102; M202; M003; M103; M004; M011; M111; M211; M021; M121;
+     M031; M012; M112; M013; M022];
+
 end
