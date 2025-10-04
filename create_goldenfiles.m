@@ -14,6 +14,7 @@ fprintf('\n');
 
 % Add src directory to path
 addpath('src');
+addpath('src/autogen');
 
 % Check required files
 required_files = {'main_mpi.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};

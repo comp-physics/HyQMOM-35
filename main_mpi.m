@@ -27,6 +27,10 @@ script_dir = fileparts(mfilename('fullpath'));
 src_dir = fullfile(script_dir, 'src');
 if exist(src_dir, 'dir')
     addpath(src_dir);
+    autogen_dir = fullfile(src_dir, 'autogen');
+    if exist(autogen_dir, 'dir')
+        addpath(autogen_dir);
+    end
 end
 
 % Parse input arguments
@@ -116,6 +120,10 @@ spmd
     src_dir_worker = fullfile(script_dir_for_workers, 'src');
     if exist(src_dir_worker, 'dir')
         addpath(src_dir_worker);
+        autogen_dir_worker = fullfile(src_dir_worker, 'autogen');
+        if exist(autogen_dir_worker, 'dir')
+            addpath(autogen_dir_worker);
+        end
     end
     
     % Define all constants directly inside spmd block

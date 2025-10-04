@@ -12,6 +12,7 @@ function setupOnce(testCase)
     addpath('..');
     % Add src directory to path
     addpath('../src');
+    addpath('../src/autogen');
     
     % Store paths in test case data
     testCase.TestData.goldenfiles_dir = '../goldenfiles';
