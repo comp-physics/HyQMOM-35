@@ -6,7 +6,7 @@ fprintf('\n');
 fprintf('╔══════════════════════════════════════════════════════════════╗\n');
 fprintf('║                                                              ║\n');
 fprintf('║     MPI Golden File Creation (CI-Compatible)                ║\n');
-fprintf('║     Creates golden file for 2 MPI ranks only                ║\n');
+fprintf('║     Creates golden files for 1 and 2 MPI ranks              ║\n');
 fprintf('║     (CI environment limited to 2 workers)                   ║\n');
 fprintf('║                                                              ║\n');
 fprintf('╚══════════════════════════════════════════════════════════════╝\n');
@@ -14,9 +14,10 @@ fprintf('\n');
 
 % Add src directory to path
 addpath('src');
+addpath('src/autogen');
 
 % Check required files
-required_files = {'main_mpi.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
+required_files = {'main.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
 for i = 1:length(required_files)
     if ~exist(required_files{i}, 'file')
         error('%s not found', required_files{i});
@@ -33,14 +34,14 @@ end
 % Parameters: 20 grid points per rank per dimension
 POINTS_PER_RANK = 20;
 GOLDEN_TMAX = 0.1;
-% Only create 2-rank golden file (CI limitation: max 2 workers)
-RANK_COUNTS = [2];
+% Create golden files for 1 and 2 ranks (CI limitation: max 2 workers)
+RANK_COUNTS = [1, 2];
 
 % Calculate Np for each rank count to ensure >= 10 pts/rank in BOTH directions
 % Np must be divisible by both Px and Py, with at least 10 points per rank
 NP_VALUES = zeros(size(RANK_COUNTS));
 for i = 1:length(RANK_COUNTS)
-    [Px, Py] = choose_process_grid_local(RANK_COUNTS(i));
+    [Px, Py] = mpi_utils('choose_grid', RANK_COUNTS(i));
     % Calculate Np to give at least POINTS_PER_RANK in each direction
     % Np = max(Px, Py) * POINTS_PER_RANK ensures all ranks get POINTS_PER_RANK
     Np_candidate = max(Px, Py) * POINTS_PER_RANK;
@@ -60,7 +61,7 @@ fprintf('  Rank counts: %s\n\n', mat2str(RANK_COUNTS));
 fprintf('Grid sizes (to achieve ~20 pts/rank minimum in each direction):\n');
 for i = 1:length(RANK_COUNTS)
     num_ranks = RANK_COUNTS(i);
-    [Px, Py] = choose_process_grid_local(num_ranks);
+    [Px, Py] = choose_process_grid(num_ranks);
     Np = NP_VALUES(i);
     pts_per_rank_x = Np / Px;
     pts_per_rank_y = Np / Py;
@@ -69,23 +70,6 @@ for i = 1:length(RANK_COUNTS)
 end
 fprintf('\n');
 
-% Local helper function to choose process grid (same logic as in setup_mpi_cartesian_2d.m)
-function [Px, Py] = choose_process_grid_local(nl)
-    bestDiff = inf;
-    Px = 1; Py = nl;
-    for p = 1:nl
-        if mod(nl, p) == 0
-            q = nl / p;
-            d = abs(p - q);
-            if d < bestDiff
-                bestDiff = d;
-                Px = p;
-                Py = q;
-            end
-        end
-    end
-end
-
 all_success = true;
 
 for i = 1:length(RANK_COUNTS)
@@ -93,7 +77,7 @@ for i = 1:length(RANK_COUNTS)
     
     % Get pre-calculated grid size for this rank count
     Np = NP_VALUES(i);
-    [Px, Py] = choose_process_grid_local(num_ranks);
+    [Px, Py] = choose_process_grid(num_ranks);
     
     fprintf('═══════════════════════════════════════════════════════════\n');
     fprintf('Creating golden file for %d rank(s) (%d×%d grid)...\n', num_ranks, Np, Np);
@@ -103,7 +87,7 @@ for i = 1:length(RANK_COUNTS)
         % Run MPI simulation
         fprintf('Running MPI simulation with %d rank(s)...\n', num_ranks);
         tic;
-        results = main_mpi(Np, GOLDEN_TMAX, false, num_ranks);
+        results = main(Np, GOLDEN_TMAX, false, num_ranks);
         elapsed_time = toc;
         
         fprintf('Simulation completed in %.2f seconds\n', elapsed_time);

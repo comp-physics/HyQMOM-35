@@ -1,6 +1,5 @@
-function [results] = main_mpi(varargin)
-% MPI-parallel version of main solver using domain decomposition
-% Same interface as main.m but runs with MPI parallelization
+function [results] = main(varargin)
+% Main solver for 3D HyQMOM with MPI-parallel domain decomposition
 %
 % Parameters:
 %   Np          - GLOBAL grid size (total points in each direction)
@@ -9,15 +8,15 @@ function [results] = main_mpi(varargin)
 %   num_workers - Number of MPI ranks/workers (default: 4)
 %
 % Usage:
-%   main_mpi()                           % Run with defaults
-%   main_mpi(Np, tmax)                   % Override Np and tmax
-%   main_mpi(Np, tmax, enable_plots)     % Override plotting
-%   main_mpi(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
+%   main()                           % Run with defaults
+%   main(Np, tmax)                   % Override Np and tmax
+%   main(Np, tmax, enable_plots)     % Override plotting
+%   main(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
 %
 % Examples:
-%   main_mpi()                    % Default: Np=20 (global), tmax=0.1, 4 workers
-%   main_mpi(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
-%   main_mpi(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
+%   main()                    % Default: Np=20 (global), tmax=0.1, 4 workers
+%   main(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
+%   main(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
 %
 % Note: Np is the TOTAL grid size. It will be decomposed into subdomains.
 %       Each rank must have at least 10×10 interior points.
@@ -27,6 +26,10 @@ script_dir = fileparts(mfilename('fullpath'));
 src_dir = fullfile(script_dir, 'src');
 if exist(src_dir, 'dir')
     addpath(src_dir);
+    autogen_dir = fullfile(src_dir, 'autogen');
+    if exist(autogen_dir, 'dir')
+        addpath(autogen_dir);
+    end
 end
 
 % Parse input arguments
@@ -86,7 +89,7 @@ rhor = 0.01;
 
 % Validate grid size for MPI decomposition
 % Requirement: minimum ~10 points per rank in each direction
-[Px, Py] = choose_process_grid_for_validation(num_workers);
+[Px, Py] = mpi_utils('choose_grid', num_workers);
 min_points_x = floor(Np / Px);
 min_points_y = floor(Np / Py);
 min_points = min(min_points_x, min_points_y);
@@ -116,6 +119,10 @@ spmd
     src_dir_worker = fullfile(script_dir_for_workers, 'src');
     if exist(src_dir_worker, 'dir')
         addpath(src_dir_worker);
+        autogen_dir_worker = fullfile(src_dir_worker, 'autogen');
+        if exist(autogen_dir_worker, 'dir')
+            addpath(autogen_dir_worker);
+        end
     end
     
     % Define all constants directly inside spmd block
@@ -141,8 +148,8 @@ spmd
     rhor_worker = 0.01;
     
     % Grid setup (each worker needs this)
-    grid = setup_simulation_grid(Np, -0.5, 0.5, -0.5, 0.5);
-    M_global = setup_crossing_jets_IC(Np, Nmom_worker, rhol_worker, rhor_worker, Ma_worker, T_worker, r110_worker, r101_worker, r011_worker);
+    grid = grid_utils('setup', Np, -0.5, 0.5, -0.5, 0.5);
+    M_global = grid_utils('crossing_jets_ic', Np, Nmom_worker, rhol_worker, rhor_worker, Ma_worker, T_worker, r110_worker, r101_worker, r011_worker);
     
     % Setup domain decomposition
     decomp = setup_mpi_cartesian_2d(Np, halo);
@@ -194,8 +201,8 @@ spmd
                 MOM = squeeze(M(ih, jh, :));
                 
                 [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D_worker, Ma_worker);
+                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D_worker, Ma_worker);
                 [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
                 
                 Fx(ih, jh, :) = Mx;
@@ -218,87 +225,10 @@ spmd
         Fx = halo_exchange_2d(Fx, decomp, bc);
         Fy = halo_exchange_2d(Fy, decomp, bc);
         
-        % Compute wave speeds in halo cells for pas_HLL stencil
-        % Create extended wave speed arrays (interior + halos)
-        vpxmin_ext = zeros(nx+2*halo, ny);
-        vpxmax_ext = zeros(nx+2*halo, ny);
-        vpymin_ext = zeros(nx, ny+2*halo);
-        vpymax_ext = zeros(nx, ny+2*halo);
-        
-        % Copy interior wave speeds
-        vpxmin_ext(halo+1:halo+nx, :) = vpxmin;
-        vpxmax_ext(halo+1:halo+nx, :) = vpxmax;
-        vpymin_ext(:, halo+1:halo+ny) = vpymin;
-        vpymax_ext(:, halo+1:halo+ny) = vpymax;
-        
-        % Compute Fx, Fy, and wave speeds in halo cells (they have M data from exchange)
-        % Left halo (i=1:halo)
-        for i = 1:halo
-            for j = 1:ny
-                jh = j + halo;
-                MOM = squeeze(M(i, jh, :));
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [v6x_min, v6x_max, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [v6y_min, v6y_max, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
-                Fx(i, jh, :) = Mx;
-                Fy(i, jh, :) = My;
-                [~, v5x_min, v5x_max] = closure_and_eigenvalues(Mr([1,2,3,4,5]));
-                vpxmin_ext(i, j) = min(v5x_min, v6x_min);
-                vpxmax_ext(i, j) = max(v5x_max, v6x_max);
-            end
-        end
-        
-        % Right halo (i=halo+nx+1:nx+2*halo)
-        for i = halo+nx+1:nx+2*halo
-            for j = 1:ny
-                jh = j + halo;
-                MOM = squeeze(M(i, jh, :));
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [v6x_min, v6x_max, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [v6y_min, v6y_max, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
-                Fx(i, jh, :) = Mx;
-                Fy(i, jh, :) = My;
-                [~, v5x_min, v5x_max] = closure_and_eigenvalues(Mr([1,2,3,4,5]));
-                vpxmin_ext(i, j) = min(v5x_min, v6x_min);
-                vpxmax_ext(i, j) = max(v5x_max, v6x_max);
-            end
-        end
-        
-        % Bottom halo (j=1:halo)
-        for i = 1:nx
-            ih = i + halo;
-            for j = 1:halo
-                MOM = squeeze(M(ih, j, :));
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [v6x_min, v6x_max, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [v6y_min, v6y_max, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
-                Fx(ih, j, :) = Mx;
-                Fy(ih, j, :) = My;
-                [~, v5y_min, v5y_max] = closure_and_eigenvalues(Mr([1,6,10,13,15]));
-                vpymin_ext(i, j) = min(v5y_min, v6y_min);
-                vpymax_ext(i, j) = max(v5y_max, v6y_max);
-            end
-        end
-        
-        % Top halo (j=halo+ny+1:ny+2*halo)
-        for i = 1:nx
-            ih = i + halo;
-            for j = halo+ny+1:ny+2*halo
-                MOM = squeeze(M(ih, j, :));
-                [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [v6x_min, v6x_max, Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [v6y_min, v6y_max, Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [Mx, My, ~, Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
-                Fx(ih, j, :) = Mx;
-                Fy(ih, j, :) = My;
-                [~, v5y_min, v5y_max] = closure_and_eigenvalues(Mr([1,6,10,13,15]));
-                vpymin_ext(i, j) = min(v5y_min, v6y_min);
-                vpymax_ext(i, j) = max(v5y_max, v6y_max);
-            end
-        end
+        % Compute fluxes and wave speeds in halo cells for pas_HLL stencil
+        [Fx, Fy, vpxmin_ext, vpxmax_ext, vpymin_ext, vpymax_ext] = ...
+            compute_halo_fluxes_and_wavespeeds(M, Fx, Fy, vpxmin, vpxmax, vpymin, vpymax, ...
+                                               nx, ny, halo, flag2D_worker, Ma_worker);
         
         % Global reduction for time step (all ranks need same dt)
         vmax_local = max([abs(vpxmax(:)); abs(vpxmin(:)); abs(vpymax(:)); abs(vpymin(:))]);
@@ -307,161 +237,13 @@ spmd
         dt = min(dt, tmax-t);
         t = t + dt;
         
-        % X-direction flux update
-        % Strategy: Include exactly one halo at processor boundaries so pas_HLL sees neighbor data
-        Mnpx = M;
+        % X-direction flux update with processor boundary handling
+        Mnpx = apply_flux_update(M, Fx, vpxmin, vpxmax, vpxmin_ext, vpxmax_ext, ...
+                                  nx, ny, halo, dt, dx_worker, decomp, 1);
         
-        % Determine boundary types
-        has_left_neighbor = (decomp.neighbors.left ~= -1);
-        has_right_neighbor = (decomp.neighbors.right ~= -1);
-        
-        for j = 1:ny
-            jh = j + halo;
-            
-            % Determine array extent: include one halo cell at processor boundaries
-            if has_left_neighbor && has_right_neighbor
-                % Both processor boundaries
-                i_start = halo;
-                i_end = halo + nx + 1;
-                vp_start = halo;
-                vp_end = halo + nx + 1;
-                apply_bc_left = false;
-                apply_bc_right = false;
-            elseif has_left_neighbor
-                % Left processor, right physical
-                i_start = halo;
-                i_end = halo + nx;
-                vp_start = halo;
-                vp_end = halo + nx;
-                apply_bc_left = false;
-                apply_bc_right = true;
-            elseif has_right_neighbor
-                % Left physical, right processor
-                i_start = halo + 1;
-                i_end = halo + nx + 1;
-                vp_start = halo + 1;
-                vp_end = halo + nx + 1;
-                apply_bc_left = true;
-                apply_bc_right = false;
-            else
-                % Both physical boundaries (1 rank)
-                i_start = halo + 1;
-                i_end = halo + nx;
-                vp_start = 1;
-                vp_end = nx;
-                apply_bc_left = true;
-                apply_bc_right = true;
-            end
-            
-            % Extract array with appropriate extent
-            MOM = squeeze(M(i_start:i_end, jh, :));
-            FX  = squeeze(Fx(i_start:i_end, jh, :));
-            
-            % Get wave speeds (use extended array if we included halos, otherwise interior)
-            if has_left_neighbor || has_right_neighbor
-                vpx_min = vpxmin_ext(vp_start:vp_end, j);
-                vpx_max = vpxmax_ext(vp_start:vp_end, j);
-            else
-                vpx_min = vpxmin(vp_start:vp_end, j);
-                vpx_max = vpxmax(vp_start:vp_end, j);
-            end
-            
-            % Call pas_HLL with BC flags
-            MNP = pas_HLL(MOM, FX, dt, dx_worker, vpx_min, vpx_max, apply_bc_left, apply_bc_right);
-            
-            % Extract interior portion of result and write back
-            if has_left_neighbor && has_right_neighbor
-                % Result is [halo, interior_1:nx, halo], extract middle nx cells
-                Mnpx(halo+1:halo+nx, jh, :) = MNP(2:end-1, :);
-            elseif has_left_neighbor
-                % Result is [halo, interior_1:nx], extract last nx cells
-                Mnpx(halo+1:halo+nx, jh, :) = MNP(2:end, :);
-            elseif has_right_neighbor
-                % Result is [interior_1:nx, halo], extract first nx cells
-                Mnpx(halo+1:halo+nx, jh, :) = MNP(1:end-1, :);
-            else
-                % Result is [interior_1:nx], use as is
-                Mnpx(halo+1:halo+nx, jh, :) = MNP;
-            end
-        end
-        
-        % Y-direction flux update
-        % Strategy: Include exactly one halo at processor boundaries so pas_HLL sees neighbor data
-        Mnpy = M;
-        
-        % Determine boundary types
-        has_down_neighbor = (decomp.neighbors.down ~= -1);
-        has_up_neighbor = (decomp.neighbors.up ~= -1);
-        
-        for i = 1:nx
-            ih = i + halo;
-            
-            % Determine array extent: include one halo cell at processor boundaries
-            if has_down_neighbor && has_up_neighbor
-                % Both processor boundaries: include both halos
-                j_start = halo;
-                j_end = halo + ny + 1;
-                vp_start = halo;
-                vp_end = halo + ny + 1;
-                apply_bc_down = false;
-                apply_bc_up = false;
-            elseif has_down_neighbor
-                % Bottom processor, top physical: include bottom halo only
-                j_start = halo;
-                j_end = halo + ny;
-                vp_start = halo;
-                vp_end = halo + ny;
-                apply_bc_down = false;
-                apply_bc_up = true;
-            elseif has_up_neighbor
-                % Bottom physical, top processor: include top halo only
-                j_start = halo + 1;
-                j_end = halo + ny + 1;
-                vp_start = halo + 1;
-                vp_end = halo + ny + 1;
-                apply_bc_down = true;
-                apply_bc_up = false;
-            else
-                % Both physical boundaries (1 rank): interior only
-                j_start = halo + 1;
-                j_end = halo + ny;
-                vp_start = 1;
-                vp_end = ny;
-                apply_bc_down = true;
-                apply_bc_up = true;
-            end
-            
-            % Extract array with appropriate extent
-            MOM = squeeze(M(ih, j_start:j_end, :));
-            FY  = squeeze(Fy(ih, j_start:j_end, :));
-            
-            % Get wave speeds (use extended array if we included halos, otherwise interior)
-            if has_down_neighbor || has_up_neighbor
-                vpy_min = vpymin_ext(i, vp_start:vp_end)';
-                vpy_max = vpymax_ext(i, vp_start:vp_end)';
-            else
-                vpy_min = vpymin(i, vp_start:vp_end)';
-                vpy_max = vpymax(i, vp_start:vp_end)';
-            end
-            
-            % Call pas_HLL with BC flags
-            MNP = pas_HLL(MOM, FY, dt, dy_worker, vpy_min, vpy_max, apply_bc_down, apply_bc_up);
-            
-            % Extract interior portion of result and write back
-            if has_down_neighbor && has_up_neighbor
-                % Result is [halo, interior_1:ny, halo], extract middle ny cells
-                Mnpy(ih, halo+1:halo+ny, :) = MNP(2:end-1, :);
-            elseif has_down_neighbor
-                % Result is [halo, interior_1:ny], extract last ny cells
-                Mnpy(ih, halo+1:halo+ny, :) = MNP(2:end, :);
-            elseif has_up_neighbor
-                % Result is [interior_1:ny, halo], extract first ny cells
-                Mnpy(ih, halo+1:halo+ny, :) = MNP(1:end-1, :);
-            else
-                % Result is [interior_1:ny], use as is
-                Mnpy(ih, halo+1:halo+ny, :) = MNP;
-            end
-        end
+        % Y-direction flux update with processor boundary handling
+        Mnpy = apply_flux_update(M, Fy, vpymin, vpymax, vpymin_ext, vpymax_ext, ...
+                                  nx, ny, halo, dt, dy_worker, decomp, 2);
         
         % Combine updates (Strang splitting) - INTERIOR ONLY
         % Mnpx and Mnpy halos contain stale M values, only interior was updated by pas_HLL
@@ -480,8 +262,8 @@ spmd
                 jh = j + halo;
                 MOM = squeeze(M(ih, jh, :));
                 [~,~,~,Mr] = Flux_closure35_and_realizable_3D(MOM, flag2D_worker, Ma_worker);
-                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6x_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
-                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6y_hyperbolic_3D(Mr, flag2D_worker, Ma_worker);
+                [v6xmin(i,j), v6xmax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D_worker, Ma_worker);
+                [v6ymin(i,j), v6ymax(i,j), Mr] = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D_worker, Ma_worker);
                 [~,~,~,Mr] = Flux_closure35_and_realizable_3D(Mr, flag2D_worker, Ma_worker);
                 Mnp(ih, jh, :) = Mr;
             end
@@ -522,7 +304,7 @@ spmd
             end
             
             % Now compute MaxDiff on full global domain
-            [~, MaxDiff] = test_symmetry_2D(M_global_temp, Np);
+            [~, MaxDiff] = diagnostics('test_symmetry', M_global_temp, Np);
             
             % Print timestep timing and MaxDiff
             step_time = toc(step_start_time);
@@ -655,35 +437,5 @@ if nargout > 0
     results.filename = sprintf('mpi_%dranks_Np%d_tmax%g.mat', num_workers, Np, tmax);
 end
 
-end
-
-function [Px, Py] = choose_process_grid_for_validation(nl)
-% Choose nearly-square factorization Px*Py=nl (same as in setup_mpi_cartesian_2d)
-    bestDiff = inf;
-    Px = 1; Py = nl;
-    for p = 1:nl
-        if mod(nl, p) == 0
-            q = nl / p;
-            d = abs(p - q);
-            if d < bestDiff
-                bestDiff = d;
-                Px = p;
-                Py = q;
-            end
-        end
-    end
-end
-
-function [n_local, i0, i1] = block_partition_1d(n, P, r)
-    base = floor(n/P);
-    remn = mod(n, P);
-    if r < remn
-        n_local = base + 1;
-        i0 = r*(base+1) + 1;
-    else
-        n_local = base;
-        i0 = remn*(base+1) + (r-remn)*base + 1;
-    end
-    i1 = i0 + n_local - 1;
 end
 
