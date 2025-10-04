@@ -33,7 +33,7 @@ if exist(src_dir, 'dir')
 end
 
 % Parse input arguments
-defaults = struct('Np', 20, 'tmax', 0.1, 'enable_plots', false, 'num_workers', 4);
+defaults = struct('Np', 20, 'tmax', 0.1, 'enable_plots', true, 'num_workers', 2);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
@@ -360,47 +360,32 @@ else
 end
 
 % Compute derived quantities on gathered result
-[C, S] = compute_CS_grid(M_final);
-[M5, C5, S5] = compute_M5_grid(M_final);
+[C, S] = grid_moment_processor(M_final, @M2CS4_35);
+[M5, C5, S5] = grid_moment_processor(M_final, @Moments5_3D);
 
-% Plot results if requested
+% Plot results if requested using comprehensive plotting functions
 if enable_plots
-    figure(1); clf;
-    subplot(2,3,1);
-    imagesc(grid_worker.x, grid_worker.y, M_final(:,:,1)');
-    axis equal tight; colorbar;
-    title(sprintf('Density at t=%.3f (MPI %d ranks)', final_time, num_workers));
-    xlabel('x'); ylabel('y');
+    % Note: simulation_plots expects moment arrays with structure (Np x Np x Nmom)
+    % and produces comprehensive visualization (Figures 2-12)
     
-    subplot(2,3,2);
-    imagesc(grid_worker.x, grid_worker.y, sqrt(M_final(:,:,2).^2 + M_final(:,:,6).^2)');
-    axis equal tight; colorbar;
-    title('Velocity Magnitude');
-    xlabel('x'); ylabel('y');
+    % Compute eigenvalues for plotting (dummy zeros if not needed)
+    v5xmin = zeros(Np, Np);
+    v5xmax = zeros(Np, Np);
+    v6xmin = zeros(Np, Np);
+    v6xmax = zeros(Np, Np);
+    v5ymin = zeros(Np, Np);
+    v5ymax = zeros(Np, Np);
+    v6ymin = zeros(Np, Np);
+    v6ymax = zeros(Np, Np);
+    lam6xa = zeros(Np, Np, 6);
+    lam6xb = zeros(Np, Np, 6);
+    lam6ya = zeros(Np, Np, 6);
+    lam6yb = zeros(Np, Np, 6);
     
-    subplot(2,3,3);
-    imagesc(grid_worker.x, grid_worker.y, M_final(:,:,4)');
-    axis equal tight; colorbar;
-    title('Temperature (M_{200})');
-    xlabel('x'); ylabel('y');
-    
-    subplot(2,3,4);
-    imagesc(grid_worker.x, grid_worker.y, C(:,:,1)');
-    axis equal tight; colorbar;
-    title('C_{200}');
-    xlabel('x'); ylabel('y');
-    
-    subplot(2,3,5);
-    imagesc(grid_worker.x, grid_worker.y, S(:,:,1)');
-    axis equal tight; colorbar;
-    title('S_{200}');
-    xlabel('x'); ylabel('y');
-    
-    subplot(2,3,6);
-    text(0.5, 0.5, sprintf('MPI Run\n%d ranks\n%d steps\nt=%.4f', ...
-        num_workers, time_steps, final_time), ...
-        'HorizontalAlignment', 'center', 'FontSize', 12);
-    axis off;
+    % Call comprehensive plotting function
+    simulation_plots('final', grid_worker.xm, grid_worker.ym, M_final, C, S, M5, C5, S5, ...
+                     Np, v5xmin, v5xmax, v6xmin, v6xmax, v5ymin, v5ymax, v6ymin, v6ymax, ...
+                     lam6xa, lam6xb, lam6ya, lam6yb, enable_plots);
     
     drawnow;
 end
