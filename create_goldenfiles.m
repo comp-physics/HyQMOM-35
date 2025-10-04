@@ -40,7 +40,7 @@ RANK_COUNTS = [2];
 % Np must be divisible by both Px and Py, with at least 10 points per rank
 NP_VALUES = zeros(size(RANK_COUNTS));
 for i = 1:length(RANK_COUNTS)
-    [Px, Py] = choose_process_grid_local(RANK_COUNTS(i));
+    [Px, Py] = choose_process_grid(RANK_COUNTS(i));
     % Calculate Np to give at least POINTS_PER_RANK in each direction
     % Np = max(Px, Py) * POINTS_PER_RANK ensures all ranks get POINTS_PER_RANK
     Np_candidate = max(Px, Py) * POINTS_PER_RANK;
@@ -60,7 +60,7 @@ fprintf('  Rank counts: %s\n\n', mat2str(RANK_COUNTS));
 fprintf('Grid sizes (to achieve ~20 pts/rank minimum in each direction):\n');
 for i = 1:length(RANK_COUNTS)
     num_ranks = RANK_COUNTS(i);
-    [Px, Py] = choose_process_grid_local(num_ranks);
+    [Px, Py] = choose_process_grid(num_ranks);
     Np = NP_VALUES(i);
     pts_per_rank_x = Np / Px;
     pts_per_rank_y = Np / Py;
@@ -69,23 +69,6 @@ for i = 1:length(RANK_COUNTS)
 end
 fprintf('\n');
 
-% Local helper function to choose process grid (same logic as in setup_mpi_cartesian_2d.m)
-function [Px, Py] = choose_process_grid_local(nl)
-    bestDiff = inf;
-    Px = 1; Py = nl;
-    for p = 1:nl
-        if mod(nl, p) == 0
-            q = nl / p;
-            d = abs(p - q);
-            if d < bestDiff
-                bestDiff = d;
-                Px = p;
-                Py = q;
-            end
-        end
-    end
-end
-
 all_success = true;
 
 for i = 1:length(RANK_COUNTS)
@@ -93,7 +76,7 @@ for i = 1:length(RANK_COUNTS)
     
     % Get pre-calculated grid size for this rank count
     Np = NP_VALUES(i);
-    [Px, Py] = choose_process_grid_local(num_ranks);
+    [Px, Py] = choose_process_grid(num_ranks);
     
     fprintf('═══════════════════════════════════════════════════════════\n');
     fprintf('Creating golden file for %d rank(s) (%d×%d grid)...\n', num_ranks, Np, Np);

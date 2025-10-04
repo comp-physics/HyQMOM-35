@@ -71,37 +71,6 @@ function decomp = setup_mpi_cartesian_2d(np, halo)
     decomp.jstart_jend = [j0, j1];
 end
 
-function [n_local, i0, i1] = block_partition_1d(n, P, r)
-% Compute local size and global start/end indices for block-partitioned 1D grid
-    base = floor(n / P);
-    remn = mod(n, P);
-    if r < remn
-        n_local = base + 1;
-        i0 = r * (base + 1) + 1;
-    else
-        n_local = base;
-        i0 = remn * (base + 1) + (r - remn) * base + 1;
-    end
-    i1 = i0 + n_local - 1;
-end
-
-function [Px, Py] = choose_process_grid(nl)
-% Choose nearly-square factorization Px*Py=nl
-    bestDiff = inf;
-    Px = 1; Py = nl;
-    for p = 1:nl
-        if mod(nl, p) == 0
-            q = nl / p;
-            d = abs(p - q);
-            if d < bestDiff
-                bestDiff = d;
-                Px = p;
-                Py = q;
-            end
-        end
-    end
-end
-
 function rank = rank_from_coords(rx, ry, Px)
 % Convert (rx,ry) 0-based to 1-based lab index
     rank = ry * Px + rx + 1;
