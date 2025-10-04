@@ -6,7 +6,7 @@ fprintf('\n');
 fprintf('╔══════════════════════════════════════════════════════════════╗\n');
 fprintf('║                                                              ║\n');
 fprintf('║     MPI Golden File Creation (CI-Compatible)                ║\n');
-fprintf('║     Creates golden file for 2 MPI ranks only                ║\n');
+fprintf('║     Creates golden files for 1 and 2 MPI ranks              ║\n');
 fprintf('║     (CI environment limited to 2 workers)                   ║\n');
 fprintf('║                                                              ║\n');
 fprintf('╚══════════════════════════════════════════════════════════════╝\n');
@@ -34,8 +34,8 @@ end
 % Parameters: 20 grid points per rank per dimension
 POINTS_PER_RANK = 20;
 GOLDEN_TMAX = 0.1;
-% Only create 2-rank golden file (CI limitation: max 2 workers)
-RANK_COUNTS = [2];
+% Create golden files for 1 and 2 ranks (CI limitation: max 2 workers)
+RANK_COUNTS = [1, 2];
 
 % Calculate Np for each rank count to ensure >= 10 pts/rank in BOTH directions
 % Np must be divisible by both Px and Py, with at least 10 points per rank

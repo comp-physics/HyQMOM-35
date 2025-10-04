@@ -1,7 +1,7 @@
 function tests = test_mpi_goldenfile
-% Test MPI implementation against golden file for 2 ranks
-% CI environment has max 2 workers, so we only test 2-rank configuration
-% This validates that MPI implementation works correctly
+% Test MPI implementation against golden files for 1 and 2 ranks
+% CI environment has max 2 workers, so we test both 1-rank and 2-rank configurations
+% This validates that MPI implementation works correctly for both single and multi-rank cases
 
 tests = functiontests(localfunctions);
 end
@@ -25,6 +25,38 @@ function setupOnce(testCase)
     if ~testCase.TestData.has_pct
         warning('MPI tests require Parallel Computing Toolbox - tests will be skipped');
     end
+end
+
+function test_mpi_1_rank_vs_golden(testCase)
+% Test MPI with 1 rank (single processor) against golden file (20×20 grid)
+    
+    if ~testCase.TestData.has_pct
+        fprintf('\n=== TEST: MPI 1 Rank vs Golden ===\n');
+        fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
+        assumeFail(testCase, 'Parallel Computing Toolbox required for MPI tests');
+        return;
+    end
+    
+    fprintf('\n=== TEST: MPI 1 Rank (20×20 grid) ===\n');
+    
+    num_ranks = 1;
+    Np = 20;
+    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_1ranks_Np20_tmax100.mat');
+    
+    if ~exist(golden_file, 'file')
+        error('Golden file for 1 rank not found. Run create_goldenfiles.m first.');
+    end
+    
+    golden = load(golden_file);
+    golden_data = golden.golden_data;
+    
+    % Run MPI simulation
+    fprintf('Running MPI simulation with 1 rank...\n');
+    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
+    
+    % Compare against golden file
+    compare_results(testCase, mpi_data, golden_data, ...
+                   testCase.TestData.tolerance, '1-rank MPI vs Golden');
 end
 
 function test_mpi_2_ranks_vs_golden(testCase)
