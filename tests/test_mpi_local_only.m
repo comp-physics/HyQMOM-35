@@ -1,16 +1,12 @@
 function tests = test_mpi_local_only
 %TEST_MPI_LOCAL_ONLY Local-only MPI tests for 4 and 8 ranks
-%
 %   These tests are SKIPPED in CI environments (detected by checking for
 %   CI environment variables). They test larger MPI configurations that
 %   require more workers than typically available in CI.
-%
 %   To run locally:
 %     cd tests
 %     runtests('test_mpi_local_only')
-%
 %   Note: Run create_goldenfiles_local.m first to generate golden files.
-
 tests = functiontests(localfunctions);
 end
 

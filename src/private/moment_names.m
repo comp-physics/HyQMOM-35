@@ -1,12 +1,9 @@
 function names = moment_names(order)
 %MOMENT_NAMES Return canonical moment names for specified order
-%
 %   names = moment_names(4)  % Returns 35 names for 4th-order moments
 %   names = moment_names(5)  % Returns 56 names for 5th-order moments
-%
 %   This is a shared utility to avoid duplicating moment name lists
 %   across moment_conversion_utils.m and moment_struct.m
-
     % 4th order: 35 moments
     names_35 = {'M000','M100','M200','M300','M400','M010','M110','M210','M310','M020','M120','M220','M030','M130','M040',...
                 'M001','M101','M201','M301','M002','M102','M202','M003','M103','M004','M011','M111','M211','M021','M121',...

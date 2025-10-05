@@ -1,7 +1,6 @@
 function [Fx,Fy,Fz,M4r] = Flux_closure35_and_realizable_3D(M4,flag2D,Ma)
 % Flux_closure35_and_realizable_3D computes 3-D fluxes for all moments and
 % corrects unrealizable moments
-%
 %   Input:
 %       M4 = 35 moments up to 4th order 
 %          = [M000,M100,M200,M300,M400,M010,M110,M210,M310,M020,M120,M220,M030,M130,M040,...
@@ -22,7 +21,6 @@ function [Fx,Fy,Fz,M4r] = Flux_closure35_and_realizable_3D(M4,flag2D,Ma)
 %             M002,M102,M202,M302,M003,M103,M203,M004,M104,M005,M012,M112,M212,M022,M122,...
 %             M032,M013,M113,M014,M023]
 %       M4r= realizable moments
-
 % Constants
 s3max = 4.0 + abs(Ma)/2.0;
 h2min = 1e-8;
@@ -50,12 +48,12 @@ S101=S4(17); S201=S4(18); S301=S4(19); S102=S4(21); S202=S4(22);
 S003=S4(23); S103=S4(24); S004=S4(25); S011=S4(26); S111=S4(27);
 S211=S4(28); S021=S4(29); S121=S4(30); S031=S4(31); S012=S4(32);
 S112=S4(33); S013=S4(34); S022=S4(35);
-%
+
 %% check univariate moments
 [S300, S400, H200] = enforce_univariate(S300, S400, h2min, s3max);
 [S030, S040, H020] = enforce_univariate(S030, S040, h2min, s3max);
 [S003, S004, H002] = enforce_univariate(S003, S004, h2min, s3max);
-%
+
 %% 4-order moments: check maximum bounds on S220, S202, S022
 A220 = sqrt((H200+S300^2)*(H020+S030^2));
 S220 = realizability('S220',S110,S220,A220);
@@ -63,7 +61,7 @@ A202 = sqrt((H200+S300^2)*(H002+S003^2));
 S202 = realizability('S220',S101,S202,A202);
 A022 = sqrt((H020+S030^2)*(H002+S003^2));
 S022 = realizability('S220',S011,S022,A022);
-%
+
 %% check and correct realizability of 2D moments
 [S300r1,S400r1,S110r,S210r,S310r,S120r,S220r,S030r1,S130r,S040r1, ...
  S300r2,S400r2,S101r,S201r,S301r,S102r,S202r,S003r2,S103r,S004r2, ...
@@ -71,7 +69,7 @@ S022 = realizability('S220',S011,S022,A022);
     diagnostics('check2D_all_planes', S300,S400,S110,S210,S310,S120,S220,S030,S130,S040, ...
                        S101,S201,S301,S102,S202,S003,S103,S004, ...
                        S011,S021,S031,S012,S022,S013);
-%
+
 % store original values
 S111r = S111;
 S211r = S211;
@@ -88,7 +86,7 @@ S004r = S004;
 R110 = 1-S110^2;
 R101 = 1-S101^2;
 R011 = 1-S011^2;
-%
+
 if R110 <= 0 || R101 <= 0 || R011 <= 0
     % treat cases where one or more 2D 2nd-order moments is non-realizable (corners and edges)
     [S110, S101, S011, S300, S030, S003, S400, S040, S004, ...
@@ -157,7 +155,7 @@ end
 hyqmom_3D(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
           S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,...
           S211,S021,S121,S031,S012,S112,S013,S022);
-%
+
 %% 5th-order central moments from corrected standardized moments (using utility)
 sC200 = sqrt(max(eps,C200));
 sC020 = sqrt(max(eps,C020));
@@ -171,7 +169,7 @@ sC002 = sqrt(max(eps,C002));
                             S400,S310,S301,S220,S211,S202,S130,S121,S112,S103,S040,S031,S022,S013,S004,...
                             S500,S410,S401,S320,S311,S302,S230,S221,S212,S203,S140,S131,S122,S113,S104,S050,S041,S032,S023,S014,S005,...
                             sC200,sC020,sC002);
-%
+
 %% 5th-order moments from central moments
 M5 = C5toM5_3D(M000,umean,vmean,wmean,C200,C110,C101,C020,C011,C002,...
                C300,C210,C201,C120,C111,C102,C030,C021,C012,C003,...
@@ -184,7 +182,7 @@ M5 = C5toM5_3D(M000,umean,vmean,wmean,C200,C110,C101,C020,C011,C002,...
  M400, M310, M301, M220, M211, M202, M130, M121, M112, M103, M040, M031, M022, M013, M004, ...
  M500, M410, M320, M230, M140, M401, M302, M203, M104, M311, M221, M131, M212, M113, M122, ...
  M050, M041, M032, M023, M014, M005] = moment_conversion_utils('M5_to_vars', M5);
-%
+
 %% flux closures
 Fx = [M100,M200,M300,M400,M500,M110,M210,M310,M410,M120,M220,M320,M130,M230,M140,...
       M101,M201,M301,M401,M102,M202,M302,M103,M203,M104,M111,M211,M311,M121,M221,...
@@ -195,10 +193,10 @@ Fy = [M010,M110,M210,M310,M410,M020,M120,M220,M320,M030,M130,M230,M040,M140,M050
 Fz = [M001,M101,M201,M301,M401,M011,M111,M211,M311,M021,M121,M221,M031,M131,M041,...
       M002,M102,M202,M302,M003,M103,M203,M004,M104,M005,M012,M112,M212,M022,M122,...
       M032,M013,M113,M014,M023];
-%
+
 % realizable moments
 M4r= [M000,M100,M200,M300,M400,M010,M110,M210,M310,M020,M120,M220,M030,M130,M040,...
       M001,M101,M201,M301,M002,M102,M202,M003,M103,M004,M011,M111,M211,M021,M121,...
       M031,M012,M112,M013,M022];
-%
+
 end

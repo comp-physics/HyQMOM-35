@@ -1,16 +1,16 @@
 function Mnp = apply_flux_update(M, F, vpmin, vpmax, vpmin_ext, vpmax_ext, ...
                                   nx, ny, halo, dt, ds, decomp, axis)
 %APPLY_FLUX_UPDATE Apply flux update with processor boundary handling
-%
+
 % Syntax:
 %   Mnp = apply_flux_update(M, F, vpmin, vpmax, vpmin_ext, vpmax_ext, ...
 %                           nx, ny, halo, dt, ds, decomp, axis)
-%
+
 % Description:
 %   Unified flux update for both X and Y directions using pas_HLL, with 
 %   special handling for processor boundaries. At processor boundaries, 
 %   includes one halo cell so pas_HLL can see neighbor data.
-%
+
 % Inputs:
 %   M          - Moment array with halos (nx+2*halo, ny+2*halo, Nmom)
 %   F          - Flux array with halos (nx+2*halo, ny+2*halo, Nmom)
@@ -25,7 +25,7 @@ function Mnp = apply_flux_update(M, F, vpmin, vpmax, vpmin_ext, vpmax_ext, ...
 %   ds         - Grid spacing (dx for X, dy for Y)
 %   decomp     - Domain decomposition structure with neighbors field
 %   axis       - 1 for X-direction, 2 for Y-direction
-%
+
 % Outputs:
 %   Mnp - Updated moment array after flux update (nx+2*halo, ny+2*halo, Nmom)
 

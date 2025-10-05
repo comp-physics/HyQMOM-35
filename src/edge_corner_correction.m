@@ -11,14 +11,14 @@ function [S110, S101, S011, S300, S030, S003, S400, S040, S004, ...
                            S310r, S301r, S220r, S211r, S202r, S130r, S121r, S112r, S103r, ...
                            S031r, S022r, S013r)
 %EDGE_CORNER_CORRECTION Corrects moments at edges/corners of realizability domain
-%
+
 %   Handles cases where one or more 2D correlations (R110, R101, R011) are
 %   non-realizable (≤ 0), placing the state at edges or corners of the
 %   realizability domain.
 %   Inputs:
 %       R110, R101, R011 - Realizability indicators (1 - S###^2)
 %       S###r            - Corrected moments from check2D_all_planes
-%
+
 %   Outputs:
 %       S###             - Edge/corner-corrected standardized moments
 

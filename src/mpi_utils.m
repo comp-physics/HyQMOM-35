@@ -1,18 +1,15 @@
 function varargout = mpi_utils(operation, varargin)
 %MPI_UTILS Unified MPI utility functions for domain decomposition
-%
 % Syntax:
 %   [Px, Py] = mpi_utils('choose_grid', num_workers)
 %   [n_local, i0, i1] = mpi_utils('partition', n, P, r)
 %   M_full = mpi_utils('gather_M', M_interior, i0i1, j0j1, Np, Nmom)
 %   mpi_utils('send_M', M_interior, i0i1, j0j1, dest_rank)
-%
 % Operations:
 %   'choose_grid' - Choose nearly-square process grid factorization
 %   'partition'   - Compute 1D block decomposition for a rank
 %   'gather_M'    - Gather moment arrays from all ranks (rank 1 only)
 %   'send_M'      - Send moment array to destination rank
-
     switch operation
         case 'choose_grid'
             [varargout{1}, varargout{2}] = choose_process_grid_impl(varargin{:});
@@ -30,7 +27,6 @@ end
 function [Px, Py] = choose_process_grid_impl(nl)
 % Choose nearly-square factorization Px*Py=nl where Px and Py are as 
 % close as possible to sqrt(nl)
-
     bestDiff = inf;
     Px = 1; 
     Py = nl;
@@ -52,7 +48,6 @@ function [n_local, i0, i1] = block_partition_1d_impl(n, P, r)
 % Compute 1D block decomposition for rank r (0-indexed)
 % Divides n points among P processes as evenly as possible
 % First (n mod P) ranks get (floor(n/P) + 1) points each
-
     base = floor(n/P);
     remn = mod(n, P);
     
@@ -70,7 +65,6 @@ end
 function M_full = gather_M_impl(M_interior, i0i1, j0j1, Np, Nmom)
 % Gather moment arrays from all ranks to rank 1
 % Must be called from rank 1 only, inside spmd block
-
     % Initialize full array on rank 1
     M_full = zeros(Np, Np, Nmom);
     
@@ -91,7 +85,6 @@ end
 function send_M_impl(M_interior, i0i1, j0j1, dest_rank)
 % Send moment array to destination rank
 % Must be called from non-rank-1 workers, inside spmd block
-
     % Package data with index information
     data_packet = {M_interior, i0i1, j0j1};
     labSend(data_packet, dest_rank);

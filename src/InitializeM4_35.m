@@ -1,18 +1,14 @@
 function M = InitializeM4_35(M000,umean,vmean,wmean,C200,C110,C101,C020,C011,C002)
 %INITIALIZEM4_35 Computes 3-D fourth-order joint Gaussian moments
-%
 %   Refactored from 172 lines to ~40 lines by eliminating repetitive array extractions.
-%
 %   Input:
 %       M000  - number density 
 %       umean - M100/M000 (mean velocity u)
 %       vmean - M010/M000 (mean velocity v)
 %       wmean - M001/M000 (mean velocity w)
 %       C200, C110, C101, C020, C011, C002 - covariances
-%
 %   Output:
 %       M - 35-element vector of moments
-
 % Standardized moments for Maxwellian (Gaussian)
 % 3rd order: all zero (Gaussian is symmetric)
 S300=0; S210=0; S201=0; S120=0; S111=0; S102=0; S030=0; S021=0; S012=0; S003=0;

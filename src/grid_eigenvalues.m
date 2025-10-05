@@ -1,13 +1,10 @@
 function eig_data = grid_eigenvalues(M, Np, Nmom)
 %GRID_EIGENVALUES Compute all eigenvalues for entire grid in one pass
-%
 %   eig_data = grid_eigenvalues(M, Np, Nmom)
-%
 %   Inputs:
 %       M    - Np x Np x Nmom moment array
 %       Np   - Grid size
 %       Nmom - Number of moments (35)
-%
 %   Outputs:
 %       eig_data - Struct containing:
 %           .lam6x  - Np x Np x 6 eigenvalues for UV plane
@@ -16,17 +13,13 @@ function eig_data = grid_eigenvalues(M, Np, Nmom)
 %           .lam6w  - Np x Np x 6 eigenvalues for VW plane
 %           .v6xmin, .v6xmax - Min/max envelope for X-direction
 %           .v6ymin, .v6ymax - Min/max envelope for Y-direction
-%
 %   This function eliminates duplicate eigenvalue computations in:
 %   - simulation_plots.m (hyperbolicity plots, eigenvalue plots)
 %   - main.m (if eigenvalues are needed for analysis)
-%
 %   Example:
 %       eig = grid_eigenvalues(M_final, Np, 35);
 %       % Use eig.lam6x, eig.v6xmin, etc. directly in plots
-%
 %   See also: axis_moment_slice, compute_jacobian_eigenvalues
-
     % Pre-allocate arrays
     eig_data = struct();
     eig_data.lam6x = zeros(Np, Np, 6);  % UV plane (X-direction primary)

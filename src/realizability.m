@@ -1,7 +1,6 @@
 function varargout = realizability(operation, varargin)
 %REALIZABILITY Consolidated utility functions for moment realizability checks.
 %   This function acts as a dispatcher for various realizability helpers.
-%
 %   Usage:
 %     [S21, S12, S31, S22, S13] = realizability('2D', S30, S40, S11, S21, S31, S12, S22, S03, S13, S04)
 %     [S300,...,flag220] = realizability('3D', S300, ..., S022)
@@ -12,7 +11,6 @@ function varargout = realizability(operation, varargin)
 %     [S310r, S220r] = realizability('S310', S110, S101, S011, S300, S210, S201, S120, S111, S310, S220, H200, beta)
 %     [S220r] = realizability('S310_220', S110, S101, S011, S210, S120, S111, S220)
 %     S220r = realizability('S220', S110, S220, A220)
-%
 %   Operations:
 %     '2D'       : Find realizable moment set in 2D
 %     '3D'       : Check and correct realizability of cross moments in 3D
@@ -23,9 +21,7 @@ function varargout = realizability(operation, varargin)
 %     'S310'     : Check and correct realizability of S310 and S220
 %     'S310_220' : Check and correct realizability of S220 for S310
 %     'S220'     : Check maximum bounds and correct S220
-%
 %   See also: Flux_closure35_and_realizable_3D
-
     switch lower(operation)
         case '2d'
             [varargout{1:5}] = realizable_2D(varargin{:});
@@ -56,7 +52,7 @@ function [S21,S12,S31,S22,S13] = realizable_2D(S30,S40,S11,S21,S31,S12,S22,S03,S
 %   
 % check realizability of S11
 Del1= max(0,1 - S11^2);
-%
+
 H20 = max(eps,S40 - S30^2 - 1);
 H02 = max(eps,S04 - S03^2 - 1);
 % check realizability of S12 and S21
@@ -68,7 +64,7 @@ if S12 <= s12min
 elseif S12 >= s12max
     S12 = s12max;
 end
-%
+
 G1 = sqrt(Del1*H20);
 s21min = S11*S30 - G1;
 s21max = S11*S30 + G1;
@@ -827,13 +823,12 @@ else % treat interior of 2nd-order moment space
     S022 = max([s022mina,s022minb,S022_diag,S022_310,S022_310r,S022_211]);
     S022 = min([S022,S022max,s022maxa,s022maxb]);
 end
-%
+
 end
 
 %% realizability_S111
 function [S111r] = realizability_S111(S110,S101,S011,S210,S201,S120,S021,S102,S012,S111)
 % realizability_S111 checks and corrects realizablity of S111
-%
 S111r = S111;
 A110 = ((S101-S011*S110)*S210+(S011-S101*S110)*S120)/(1-S110^2);
 A101 = ((S110-S011*S101)*S201+(S011-S110*S101)*S102)/(1-S101^2);
@@ -850,7 +845,6 @@ end
 %% realizability_S2
 function [S110r,S101r,S011r,S2r] = realizability_S2(S110,S101,S011)
 % realizability_S2 checks and corrects realizablity of 2nd-order moments
-%
 S2 = 1 + 2*S110*S101*S011 - (S110^2+S101^2+S011^2);
 xr = 1;
 if S2 < 0
@@ -871,7 +865,6 @@ end
 %% realizability_S210
 function [S210r,S201r] = realizability_S210(S110,S101,S011,S300,S210,S201,H200,beta)
 % realizability_S210 checks and corrects realizablity of S210, S201
-%
 xr = 1;
 X = [S210-S110*S300; S201-S101*S300];
 D1 = [1-S101^2, S101*S110-S011; S101*S110-S011, 1-S110^2];
@@ -894,27 +887,24 @@ end
 %% realizability_S211
 function S211r = realizability_S211(e11,e22,e33,e12,e13,d23,S211,beta)
 % realizability_S211
- 
 S211r = S211;
 b211 = e12*e13;
 G211 = max([0 (e11*e22-e13^2)*(e11*e33-e12^2)]);
 sG211 = beta*sqrt(G211);
 s211min = d23+(b211-sG211)/e11;
 s211max = d23+(b211+sG211)/e11;
-%
+
 if S211 <= s211min
     S211r = s211min;
 elseif S211 >= s211max
     S211r = s211max;
 end
-%
+
 end
 
 %% realizability_S310
 function [S310r,S220r] = realizability_S310(S110,S101,S011,S300,S210,S201,S120,S111,S310,S220,H200,beta)
-
 % realizability_S310 checks and corrects realizablity of S310 and S220
- 
 S310r = S310;
 S220r = S220;
  
@@ -954,13 +944,12 @@ if S310 <= s310min
 elseif S310 >= s310max
     S310r = s310max;
 end
-%
+
 end
 
 %% realizability_S310_220
 function [S220r] = realizability_S310_220(S110,S101,S011,S210,S120,S111,S220)
 % realizability_S310_220 checks and corrects realizablity of S220 for S310
-
 S220r = S220;
 D1 = [1-S101^2, S101*S110-S011; S101*S110-S011, 1-S110^2];
 dD1 = det(D1);
@@ -981,7 +970,6 @@ end
 %% realizablity_S220
 function S220r = realizablity_S220(S110,S220,A220)
 % realizablity_S220 checks maximum bounds and corrects S220
-
 S220r = S220;
 s220min = max([S110^2 1-A220]);
 s220max = 1+A220;

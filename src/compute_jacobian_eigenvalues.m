@@ -1,15 +1,12 @@
 function [v6min, v6max, lam6a, lam6b] = compute_jacobian_eigenvalues(moments_a, moments_b)
 % compute_jacobian_eigenvalues computes 6x6 Jacobian eigenvalues for two moment sets
 % This extracts the common pattern from eigenvalues6x and eigenvalues6y
-%
 % Inputs:
 %   moments_a - 15-element vector of moments for first Jacobian
 %   moments_b - 15-element vector of moments for second Jacobian
-%
 % Outputs:
 %   v6min, v6max - min and max eigenvalues across both Jacobians
 %   lam6a, lam6b - full eigenvalue vectors for both Jacobians
-
 % First Jacobian
 J6 = jacobian6(moments_a(1), moments_a(2), moments_a(3), moments_a(4), moments_a(5), ...
                moments_a(6), moments_a(7), moments_a(8), moments_a(9), moments_a(10), ...

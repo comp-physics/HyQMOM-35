@@ -1,5 +1,4 @@
 function tests = test_mpi_goldenfile
-
 tests = functiontests(localfunctions);
 end
 
@@ -59,7 +58,6 @@ end
 
 function test_mpi_2_ranks_vs_golden(testCase)
 % Test MPI with 2 ranks against golden file (40×40 grid)
-    
     if ~testCase.TestData.has_pct
         fprintf('\n=== TEST: MPI 2 Ranks vs Golden ===\n');
         fprintf('SKIPPED: Parallel Computing Toolbox not available\n');

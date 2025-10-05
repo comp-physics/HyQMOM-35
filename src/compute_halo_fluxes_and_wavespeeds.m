@@ -1,17 +1,17 @@
 function [Fx, Fy, vpxmin_ext, vpxmax_ext, vpymin_ext, vpymax_ext] = ...
     compute_halo_fluxes_and_wavespeeds(M, Fx, Fy, vpxmin, vpxmax, vpymin, vpymax, nx, ny, halo, flag2D, Ma)
 %COMPUTE_HALO_FLUXES_AND_WAVESPEEDS Compute fluxes and wave speeds in halo cells
-%
+
 % Syntax:
 %   [Fx, Fy, vpxmin_ext, vpxmax_ext, vpymin_ext, vpymax_ext] = ...
 %       compute_halo_fluxes_and_wavespeeds(M, Fx, Fy, vpxmin, vpxmax, vpymin, vpymax, ...
 %                                          nx, ny, halo, flag2D, Ma)
-%
+
 % Description:
 %   After halo exchange, the moment data M in halo cells is available from neighbors.
 %   This function computes the corresponding fluxes and wave speeds in those halo cells,
 %   which are needed for the pas_HLL stencil at processor boundaries.
-%
+
 % Inputs:
 %   M       - Moment array with halos (nx+2*halo, ny+2*halo, Nmom)
 %   Fx      - X-flux array with halos (nx+2*halo, ny+2*halo, Nmom)
@@ -25,7 +25,7 @@ function [Fx, Fy, vpxmin_ext, vpxmax_ext, vpymin_ext, vpymax_ext] = ...
 %   halo    - Halo width
 %   flag2D  - 2D flag for flux closure
 %   Ma      - Mach number for flux closure
-%
+
 % Outputs:
 %   Fx          - Updated X-flux array with halo values computed
 %   Fy          - Updated Y-flux array with halo values computed

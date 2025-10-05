@@ -1,20 +1,16 @@
 function A = halo_exchange_2d(A, decomp, bc)
 %HALO_EXCHANGE_2D Exchange halos for a 2D subdomain with nv variables.
 %   A = halo_exchange_2d(A, decomp, bc)
-%
 % Inputs:
 %   A      - local array (nx+2h) x (ny+2h) x nv, interior: A(h+1:h+nx, h+1:h+ny, :)
 %   decomp - struct from setup_mpi_cartesian_2d
 %   bc     - (optional) boundary condition struct, default: struct('type','copy')
-%
 % Outputs:
 %   A      - updated array with exchanged halos
-%
 % Notes:
 %   - Performs left/right exchange first, then up/down exchange
 %   - Applies physical BC at global boundaries before exchange
 %   - Corners are filled implicitly after second phase
-
     h  = decomp.halo;
     nx = decomp.local_size(1);
     ny = decomp.local_size(2);

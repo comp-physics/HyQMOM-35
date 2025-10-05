@@ -1,19 +1,14 @@
 function [v6min, v6max, Mr] = eigenvalues6_hyperbolic_3D(M, axis, flag2D, Ma)
 % EIGENVALUES6_HYPERBOLIC_3D Unified eigenvalues of 3-D flux Jacobian
-%
 %   [v6min, v6max, Mr] = eigenvalues6_hyperbolic_3D(M, axis, flag2D, Ma)
-%
 %   Inputs:
 %       M      - 35-element moment vector
 %       axis   - Direction: 1=X direction, 2=Y direction
 %       flag2D - 2D simulation flag
 %       Ma     - Mach number
-%
 %   Outputs:
 %       v6min, v6max - Min/max eigenvalues for hyperbolicity
 %       Mr           - Corrected moment vector
-
-
 Mr = M;
 
 % Compute eigenvalues from current moments

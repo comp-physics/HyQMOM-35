@@ -7,7 +7,6 @@ function simulation_plots(plot_type, varargin)
 %   simulation_plots('time_evolution', S, C, xm, ym, Np, enable_plots)
 %   simulation_plots('final', xm, ym, M, C, S, M5, C5, S5, Np, eig_data, enable_plots)
 %   simulation_plots('final_time', xm, ym, M, Np, Nmom, Nmom5, enable_plots, txt)
-
 switch lower(plot_type)
     case 'initial'
         plot_initial_conditions(varargin{:});
@@ -26,7 +25,6 @@ end
 function plot_initial_conditions(xm, ym, M, C, S, M5, C5, S5, Np, enable_plots)
 % Plot initial conditions for the 3D HyQMOM simulation
 % This function creates figures 1-4 showing the initial state
-
 if nargin < 10 || ~enable_plots
     return
 end
@@ -59,7 +57,6 @@ end
 function plot_time_evolution(S, C, xm, ym, Np, enable_plots)
 % Plot time evolution during simulation (called in main loop)
 % This function creates figure 10 showing current state during time stepping
-
 if nargin < 6 || ~enable_plots
     return
 end
@@ -75,7 +72,6 @@ end
 function plot_final_results(xm, ym, M, C, S, M5, C5, S5, Np, eig_data, enable_plots)
 % Plot final results after simulation completion
 % This function creates figures 2-12 showing the final state and analysis
-
 if nargin < 11 || ~enable_plots
     return
 end
@@ -176,7 +172,6 @@ end
 
 function contour_plots_3D(xm, ym, M, C, S, Np)
 % Contour plots of various quantities (replaces contour3D_plots.m)
-
 subplot(3,4,1)
 [X,Y] = meshgrid(xm,ym);
 Z = M(:,:,1);
@@ -300,7 +295,6 @@ end
 
 function Cmoment_plots_3D(xm, ym, S, Np)
 % C-moment plots (replaces Cmoment3D_plots.m)
-
 subplot(4,4,1)
 [X,Y] = meshgrid(xm,ym);
 Z = S(:,:,17);
@@ -433,7 +427,6 @@ end
 
 function Smoment_plots_3D(xm, ym, S, Np)
 % S-moment plots (replaces Smoment3D_plots.m)
-
 cmin = 0; cmax = 100;
 
 subplot(3,4,1)
@@ -536,7 +529,6 @@ end
 
 function hyperbolic_plots_3D(xm, ym, M, Np)
 % Hyperbolicity plots (replaces hyperbolic3D_plots.m)
-
 % Use grid_eigenvalues to compute all eigenvalues efficiently
 Nmom = size(M,3);
 eig_data = grid_eigenvalues(M, Np, Nmom);
@@ -583,7 +575,6 @@ end
 
 function plot_3Dsym_moments(xm, M, nmin, nmax, cc, Np)
 % Plot moments vs. x at y = NP/2 (replaces plot3Dsym_mom.m)
-
 nc = 4; nl = 3;
 
 % M000
@@ -710,7 +701,6 @@ end
 
 function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
 % Plot central moments vs. x at y = NP/2 (replaces plot3Dsym_C.m)
-
 nl = 3; nc = 4;
 
 % M000
@@ -838,7 +828,6 @@ end
 
 function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
 % Plot standardized moments vs. x at y = NP/2 (replaces plot3Dsym_S.m)
-
 nl = 3; nc = 4;
 
 % S300
@@ -977,7 +966,6 @@ end
 function plot_final_time_standalone(xm, ym, M, Np, Nmom, Nmom5, enable_plots, txt)
 % Standalone final time plotting (replaces plot_final_time.m)
 % This function does postprocessing and creates final plots independently
-
 if nargin < 7 || ~enable_plots
     return
 end

@@ -1,29 +1,22 @@
 function M_slice = axis_moment_slice(M, axis)
 %AXIS_MOMENT_SLICE Extract 15-element moment vector for jacobian6 computation
-%
 %   M_slice = axis_moment_slice(M, axis)
-%
 %   Inputs:
 %       M    - 35-element moment vector
 %       axis - Direction: 1=X (UV plane), 2=Y (VU plane), 3=Z (UW plane), 4=VW plane
-%
 %   Outputs:
 %       M_slice - 15-element moment vector in jacobian6 order:
 %                 [M000, M010, M020, M030, M040, M100, M110, M120, M130,
 %                  M200, M210, M220, M300, M310, M400]
-%
 %   This eliminates repeated index slicing logic in eigenvalue computations
 %   and plotting functions.
-%
 %   Examples:
 %     % X-direction eigenvalues (UV plane)
 %     J6 = jacobian6(axis_moment_slice(M, 1));
 %     
 %     % Y-direction eigenvalues (VU plane)
 %     J6 = jacobian6(axis_moment_slice(M, 2));
-%
 %   See also: eigenvalues6_hyperbolic_3D, compute_jacobian_eigenvalues
-
     % Define moment index mapping for each axis
     switch axis
         case 1  % X direction: UV plane

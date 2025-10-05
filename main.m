@@ -1,26 +1,21 @@
 function [results] = main(varargin)
 % Main solver for 3D HyQMOM with MPI-parallel domain decomposition
-%
 % Parameters:
 %   Np          - GLOBAL grid size (total points in each direction)
 %   tmax        - Final simulation time
 %   enable_plots - Enable/disable plotting (default: false)
 %   num_workers - Number of MPI ranks/workers (default: 4)
-%
 % Usage:
 %   main()                           % Run with defaults
 %   main(Np, tmax)                   % Override Np and tmax
 %   main(Np, tmax, enable_plots)     % Override plotting
 %   main(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
-%
 % Examples:
 %   main()                    % Default: Np=20 (global), tmax=0.1, 4 workers
 %   main(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
 %   main(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
-%
 % Note: Np is the TOTAL grid size. It will be decomposed into subdomains.
 %       Each rank must have at least 10×10 interior points.
-
 % Add src directory to path
 script_dir = fileparts(mfilename('fullpath'));
 setup_paths(script_dir);

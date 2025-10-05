@@ -1,21 +1,16 @@
 function varargout = grid_moment_processor(M, func_handle)
 %GRID_MOMENT_PROCESSOR Apply any moment function to entire grid
-%
 %   This generic utility applies a moment transformation function to every
 %   point in a grid, handling the nested loop and memory allocation automatically.
-%
 %   Syntax:
 %     [C, S] = grid_moment_processor(M, @M2CS4_35)
 %     [M5, C5, S5] = grid_moment_processor(M, @Moments5_3D)
-%
 %   Inputs:
 %     M           - Np x Np x Nmom array of raw moments
 %     func_handle - Function handle to apply at each grid point
 %                   Must accept a vector of moments and return 1-3 outputs
-%
 %   Outputs:
 %     varargout   - Variable number of outputs (1-3), each as Np x Np x N array
-
     [Np, ~, ~] = size(M);
     
     % Call function once to determine output sizes

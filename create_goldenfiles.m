@@ -1,10 +1,10 @@
 % Script to create golden files for MPI regression testing
-%
+
 % Usage:
 %   create_goldenfiles             % CI mode: creates 1 and 2 rank files
 %   create_goldenfiles('local')    % Local mode: creates 4 and 8 rank files
 %   create_goldenfiles('all')      % All: creates 1, 2, 4, and 8 rank files
-%
+
 % The CI-compatible files (1-2 ranks) are smaller and faster.
 % Local files (4-8 ranks) provide comprehensive testing but require more resources.
 
