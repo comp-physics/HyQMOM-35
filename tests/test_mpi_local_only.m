@@ -73,7 +73,7 @@ function test_mpi_4_ranks_vs_golden(testCase)
     
     % Run simulation
     fprintf('  Running simulation with %d ranks (Np=%d)...\n', num_ranks, Np);
-    results = main(Np, golden_data.tmax, false, num_ranks);
+    results = main(Np, golden_data.tmax, false, num_ranks, false);
     
     % Compare results
     fprintf('  Comparing against golden file...\n');
@@ -130,7 +130,7 @@ function test_mpi_8_ranks_vs_golden(testCase)
     
     % Run simulation
     fprintf('  Running simulation with %d ranks (Np=%d)...\n', num_ranks, Np);
-    results = main(Np, golden_data.tmax, false, num_ranks);
+    results = main(Np, golden_data.tmax, false, num_ranks, false);
     
     % Compare results
     fprintf('  Comparing against golden file...\n');
