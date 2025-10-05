@@ -25,7 +25,7 @@ script_dir = fileparts(mfilename('fullpath'));
 setup_paths(script_dir);
 
 % Parse input arguments
-defaults = struct('Np', 100, 'tmax', 0.02, 'enable_plots', false, 'num_workers', 8, 'enable_profile', false);
+defaults = struct('Np', 140, 'tmax', 0.02, 'enable_plots', false, 'num_workers', 6, 'enable_profile', false);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
@@ -325,10 +325,8 @@ spmd
         
         % Print timestep timing and MaxDiff (only from rank 1)
         if labindex == 1
-            fprintf('Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s, MaxDiff = ', ...
-                    nn, t, dt, max_time_per_point);
-            fprintf('%.3e ', MaxDiff);
-            fprintf('\n');
+            fprintf('Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s, MaxDiff = %.3e\n', ...
+                    nn, t, dt, max_time_per_point, max(abs(MaxDiff)));
         end
     end
     
