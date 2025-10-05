@@ -306,17 +306,29 @@ spmd
             
             % Now compute MaxDiff on full global domain
             [~, MaxDiff] = diagnostics('test_symmetry', M_global_temp, Np);
-            
-            % Print timestep timing and MaxDiff
-            step_time = toc(step_start_time);
-            fprintf('Step %4d: t = %.6f, dt = %.6e, wall time = %.4f s, MaxDiff = ', nn, t, dt, step_time);
-            fprintf('%.3e ', MaxDiff);
-            fprintf('\n');
         else
             % All other ranks: send to rank 1
             data_packet = {M_interior_local, i0i1, j0j1};
             labSend(data_packet, 1);
-            step_time = toc(step_start_time);
+            MaxDiff = [];  % Will be broadcast from rank 1
+        end
+        
+        % Compute timing on all ranks
+        step_time = toc(step_start_time);
+        
+        % Compute time per grid point for this rank
+        local_grid_points = nx * ny;
+        time_per_point_local = step_time / local_grid_points;
+        
+        % Gather max time per point across all ranks
+        max_time_per_point = gop(@max, time_per_point_local);
+        
+        % Print timestep timing and MaxDiff (only from rank 1)
+        if labindex == 1
+            fprintf('Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s, MaxDiff = ', ...
+                    nn, t, dt, max_time_per_point);
+            fprintf('%.3e ', MaxDiff);
+            fprintf('\n');
         end
     end
     
