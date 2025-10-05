@@ -14,28 +14,24 @@ function create_goldenfiles(mode)
     end
     
     fprintf('\n');
-    fprintf('╔══════════════════════════════════════════════════════════════╗\n');
-    fprintf('║                                                              ║\n');
     
     switch lower(mode)
         case 'ci'
-            fprintf('║     MPI Golden File Creation (CI Mode)                      ║\n');
-            fprintf('║     Creates files for 1 and 2 MPI ranks                    ║\n');
+            fprintf('MPI Golden File Creation (CI Mode)');
+            fprintf('Creates files for 1 and 2 MPI ranks');
             RANK_COUNTS = [1, 2];
         case 'local'
-            fprintf('║     MPI Golden File Creation (Local Mode)                   ║\n');
-            fprintf('║     Creates files for 4 and 8 MPI ranks                    ║\n');
+            fprintf('MPI Golden File Creation (Local Mode)');
+            fprintf('Creates files for 4 and 8 MPI ranks');
             RANK_COUNTS = [4, 8];
         case 'all'
-            fprintf('║     MPI Golden File Creation (All Modes)                    ║\n');
-            fprintf('║     Creates files for 1, 2, 4, and 8 MPI ranks             ║\n');
+            fprintf('MPI Golden File Creation (All Modes)');
+            fprintf('Creates files for 1, 2, 4, and 8 MPI ranks');
             RANK_COUNTS = [1, 2, 4, 8];
         otherwise
             error('Invalid mode. Use ''ci'', ''local'', or ''all''');
     end
     
-    fprintf('║                                                              ║\n');
-    fprintf('╚══════════════════════════════════════════════════════════════╝\n');
     fprintf('\n');
     
     % Add src directory to path
@@ -66,8 +62,8 @@ function create_goldenfiles(mode)
     GOLDEN_TMAX = 0.1;
     
     % Determine grid sizes based on rank count
-    % CI tests (1-2 ranks): 20×20 grid
-    % Local tests (4-8 ranks): 40×40 grid
+    % CI tests (1-2 ranks): 20x20 grid
+    % Local tests (4-8 ranks): 40x40 grid
     NP_VALUES = zeros(size(RANK_COUNTS));
     for i = 1:length(RANK_COUNTS)
         if RANK_COUNTS(i) <= 2
@@ -91,12 +87,12 @@ function create_goldenfiles(mode)
         min_pts_y = floor(Np / Py);
         
         if min_pts_x < 10 || min_pts_y < 10
-            error(['Grid too small for %d ranks (process grid %dx%d gives %d×%d pts/rank).\n' ...
-                   'Need at least 10×10 per rank.'], ...
+            error(['Grid too small for %d ranks (process grid %dx%d gives %d x %d pts/rank).\n' ...
+                   'Need at least 10x10 per rank.'], ...
                    num_ranks, Px, Py, min_pts_x, min_pts_y);
         end
         
-        fprintf('  %d rank(s): %d×%d grid, process grid %dx%d → %d×%d pts/rank\n', ...
+        fprintf('  %d rank(s): %dx%d grid, process grid %d x %d → %d x %d pts/rank\n', ...
                 num_ranks, Np, Np, Px, Py, min_pts_x, min_pts_y);
     end
     fprintf('\n');
@@ -107,9 +103,7 @@ function create_goldenfiles(mode)
         num_ranks = RANK_COUNTS(i);
         Np = NP_VALUES(i);
         
-        fprintf('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
         fprintf('  Generating golden file for %d rank(s) (Np=%d)\n', num_ranks, Np);
-        fprintf('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
         
         try
             % Run simulation
@@ -118,9 +112,9 @@ function create_goldenfiles(mode)
             results = main(Np, GOLDEN_TMAX, false, num_ranks);
             elapsed = toc;
             
-            fprintf('  Simulation complete in %.1f seconds\n', elapsed);
-            fprintf('    Final time: %.6f\n', results.parameters.final_time);
-            fprintf('    Time steps: %d\n', results.parameters.time_steps);
+            fprintf('Simulation complete in %.1f seconds\n', elapsed);
+            fprintf('Final time: %.6f\n', results.parameters.final_time);
+            fprintf('Time steps: %d\n', results.parameters.time_steps);
             
             % Extract results (handle cell array from parallel pool)
             if iscell(results.moments.M)
@@ -145,7 +139,7 @@ function create_goldenfiles(mode)
             golden_data.num_ranks = num_ranks;
             golden_data.xm = grid_final.xm;
             golden_data.ym = grid_final.ym;
-            golden_data.creation_date = datestr(now);
+            golden_data.creation_date = char(datetime("now", 'Format', 'dd-MMM-yyyy HH:mm:ss'));
             golden_data.matlab_version = version;
             
             % Get git branch if available
@@ -164,8 +158,8 @@ function create_goldenfiles(mode)
             save(golden_path, 'golden_data', '-v7.3');
             
             file_info = dir(golden_path);
-            fprintf('  ✓ Saved: %s (%.1f KB)\n', golden_filename, file_info.bytes/1024);
-            fprintf('    Grid: %dx%d, %d ranks, %.3f final time\n\n', ...
+            fprintf('Saved: %s (%.1f KB)\n', golden_filename, file_info.bytes/1024);
+            fprintf('Grid: %dx%d, %d ranks, %.3f final time\n\n', ...
                     Np, Np, num_ranks, results.parameters.final_time);
             
         catch ME
@@ -179,13 +173,11 @@ function create_goldenfiles(mode)
     end
     
     %% Summary
-    fprintf('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     if all_success
-        fprintf('✅ GOLDEN FILE CREATION COMPLETE\n');
+        fprintf('GOLDEN FILE CREATION COMPLETE\n');
     else
-        fprintf('⚠️  GOLDEN FILE CREATION COMPLETED WITH ERRORS\n');
+        fprintf('GOLDEN FILE CREATION COMPLETED WITH ERRORS\n');
     end
-    fprintf('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
     
     fprintf('Generated %d golden file(s) in %s/:\n', length(RANK_COUNTS), goldenfiles_dir);
     total_size = 0;
@@ -198,9 +190,9 @@ function create_goldenfiles(mode)
         if exist(golden_path, 'file')
             finfo = dir(golden_path);
             total_size = total_size + finfo.bytes;
-            fprintf('  ✓ %s (%.1f KB)\n', golden_filename, finfo.bytes/1024);
+            fprintf('✓ %s (%.1f KB)\n', golden_filename, finfo.bytes/1024);
         else
-            fprintf('  ✗ %s (FAILED)\n', golden_filename);
+            fprintf('✗ %s (FAILED)\n', golden_filename);
         end
     end
     
