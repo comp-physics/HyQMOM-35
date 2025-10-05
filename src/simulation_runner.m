@@ -12,11 +12,8 @@ function [M_final, final_time, time_steps, grid_out] = simulation_runner(params,
 %   time_steps - Number of time steps taken
 %   grid_out   - Grid structure
 
-% Setup grid and initial conditions (outside spmd)
+% Setup grid (outside spmd)
 grid = grid_utils('setup', params.Np, -0.5, 0.5, -0.5, 0.5);
-M_global = grid_utils('crossing_jets_ic', params.Np, params.Nmom, ...
-                      params.rhol, params.rhor, params.Ma, params.T, ...
-                      params.r110, params.r101, params.r011);
 
 % MPI parallel execution
 spmd
@@ -39,6 +36,14 @@ spmd
     Nmom_worker = params.Nmom;
     nnmax_worker = params.nnmax;
     dtmax_worker = params.dtmax;
+    
+    % Unpack IC parameters (needed for local IC generation)
+    rhol_worker = params.rhol;
+    rhor_worker = params.rhor;
+    T_worker = params.T;
+    r110_worker = params.r110;
+    r101_worker = params.r101;
+    r011_worker = params.r011;
     
     % Setup domain decomposition
     decomp = setup_mpi_cartesian_2d(Np, halo);
@@ -65,10 +70,58 @@ spmd
     v6ymin = zeros(nx, ny);
     v6ymax = zeros(nx, ny);
     
-    % Scatter initial conditions to local subdomains
+    % Build initial conditions locally (no M_global broadcast)
     i0i1 = decomp.istart_iend;
     j0j1 = decomp.jstart_jend;
-    M(halo+1:halo+nx, halo+1:halo+ny, :) = M_global(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :);
+    
+    % Background parameters (mean velocities at rest)
+    U0 = 0; V0 = 0; W0 = 0;
+    
+    % Covariance matrix
+    C200 = T_worker;
+    C020 = T_worker;
+    C002 = T_worker;
+    C110 = r110_worker * sqrt(C200 * C020);
+    C101 = r101_worker * sqrt(C200 * C002);
+    C011 = r011_worker * sqrt(C020 * C002);
+    
+    % Background state (low density)
+    Mr_bg = InitializeM4_35(rhor_worker, U0, V0, W0, C200, C110, C101, C020, C011, C002);
+    
+    % Crossing jets states
+    Uc = Ma_worker / sqrt(2);
+    Mt = InitializeM4_35(rhol_worker, -Uc, -Uc, W0, C200, C110, C101, C020, C011, C002);
+    Mb = InitializeM4_35(rhol_worker,  Uc,  Uc, W0, C200, C110, C101, C020, C011, C002);
+    
+    % Jet region bounds (global indices)
+    Csize = floor(0.1 * Np);
+    Mint = Np/2 + 1;
+    Maxt = Np/2 + 1 + Csize;
+    Minb = Np/2 - Csize;
+    Maxb = Np/2;
+    
+    % Fill local subdomain with appropriate IC
+    for ii = 1:nx
+        gi = i0i1(1) + ii - 1;  % global i index
+        for jj = 1:ny
+            gj = j0j1(1) + jj - 1;  % global j index
+            
+            % Default: background
+            Mr = Mr_bg;
+            
+            % Bottom jet (moving up-right)
+            if gi >= Minb && gi <= Maxb && gj >= Minb && gj <= Maxb
+                Mr = Mb;
+            end
+            
+            % Top jet (moving down-left) - overwrites if overlapping
+            if gi >= Mint && gi <= Maxt && gj >= Mint && gj <= Maxt
+                Mr = Mt;
+            end
+            
+            M(ii + halo, jj + halo, :) = Mr;
+        end
+    end
     
     % Initial halo exchange
     M = halo_exchange_2d(M, decomp, bc);

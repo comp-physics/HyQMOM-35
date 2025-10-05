@@ -26,7 +26,7 @@ setup_paths(script_dir);
 
 % Parse input arguments with clean helper
 defaults = struct('Np', 140, 'tmax', 0.02, 'enable_plots', false, ...
-                  'num_workers', 6, 'enable_profile', false);
+                  'num_workers', 6, 'enable_profile', true);
 params = parse_main_args(varargin, defaults);
 
 % Validate grid size for MPI decomposition
