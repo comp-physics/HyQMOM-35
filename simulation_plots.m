@@ -5,7 +5,7 @@ function simulation_plots(plot_type, varargin)
 % Usage:
 %   simulation_plots('initial', xm, ym, M, C, S, M5, C5, S5, Np, enable_plots)
 %   simulation_plots('time_evolution', S, C, xm, ym, Np, enable_plots)
-%   simulation_plots('final', xm, ym, M, C, S, M5, C5, S5, Np, v5xmin, v5xmax, v6xmin, v6xmax, v5ymin, v5ymax, v6ymin, v6ymax, lam6xa, lam6xb, lam6ya, lam6yb, enable_plots)
+%   simulation_plots('final', xm, ym, M, C, S, M5, C5, S5, Np, eig_data, enable_plots)
 %   simulation_plots('final_time', xm, ym, M, Np, Nmom, Nmom5, enable_plots, txt)
 
 switch lower(plot_type)
@@ -72,11 +72,11 @@ hold off
 
 end
 
-function plot_final_results(xm, ym, M, C, S, M5, C5, S5, Np, v5xmin, v5xmax, v6xmin, v6xmax, v5ymin, v5ymax, v6ymin, v6ymax, lam6xa, lam6xb, lam6ya, lam6yb, enable_plots)
+function plot_final_results(xm, ym, M, C, S, M5, C5, S5, Np, eig_data, enable_plots)
 % Plot final results after simulation completion
 % This function creates figures 2-12 showing the final state and analysis
 
-if nargin < 22 || ~enable_plots
+if nargin < 11 || ~enable_plots
     return
 end
 
@@ -103,10 +103,10 @@ Y2 = 0*xm;
 Y3 = 0*xm;
 Y4 = 0*xm;
 for i=1:Np
-    Y1(i) = v5xmin(i,i);
-    Y2(i) = v6xmin(i,i);
-    Y3(i) = v5xmax(i,i);
-    Y4(i) = v6xmax(i,i);
+    Y1(i) = eig_data.v6xmin(i,i);
+    Y2(i) = eig_data.v6xmin(i,i);
+    Y3(i) = eig_data.v6xmax(i,i);
+    Y4(i) = eig_data.v6xmax(i,i);
 end
 plot(xm,Y1,'k',xm,Y2,'r',xm,Y3,'k',xm,Y4,'r')
 
@@ -116,8 +116,8 @@ LAMXa = zeros(Np,6);
 LAMXb = zeros(Np,6);
 for i = 1:Np
     for kk = 1:6
-        LAMXa(i,kk) = real(lam6xa(i,i,kk));
-        LAMXb(i,kk) = real(lam6xb(i,i,kk));
+        LAMXa(i,kk) = real(eig_data.lam6x(i,i,kk));
+        LAMXb(i,kk) = real(eig_data.lam6z(i,i,kk));
     end
 end
 plot(xm,LAMXa,'o',xm,LAMXb,'p')
@@ -129,10 +129,10 @@ Y2 = 0*xm;
 Y3 = 0*xm;
 Y4 = 0*xm;
 for i=1:Np
-    Y1(i) = v5ymin(i,i);
-    Y2(i) = v6ymin(i,i);
-    Y3(i) = v5ymax(i,i);
-    Y4(i) = v6ymax(i,i);
+    Y1(i) = eig_data.v6ymin(i,i);
+    Y2(i) = eig_data.v6ymin(i,i);
+    Y3(i) = eig_data.v6ymax(i,i);
+    Y4(i) = eig_data.v6ymax(i,i);
 end
 plot(xm,Y1,'k',xm,Y2,'r',xm,Y3,'k',xm,Y4,'r')
 
@@ -142,8 +142,8 @@ LAMYa = zeros(Np,6);
 LAMYb = zeros(Np,6);
 for j = 1:Np
     for kk = 1:6
-        LAMYa(j,kk) = real(lam6ya(j,j,kk));
-        LAMYb(j,kk) = real(lam6yb(j,j,kk));
+        LAMYa(j,kk) = real(eig_data.lam6y(j,j,kk));
+        LAMYb(j,kk) = real(eig_data.lam6w(j,j,kk));
     end
 end
 plot(ym,LAMYa,'o',ym,LAMYb,'p')
@@ -270,12 +270,18 @@ subplot(3,4,12)
 dDel2 = zeros(Np,Np);
 for i = 1:Np
     for j = 1:Np
-        S300 = S(i,j,4); S400 = S(i,j,5); S110 = S(i,j,7); S210 = S(i,j,8); S310 = S(i,j,9);
-        S120 = S(i,j,11); S220 = S(i,j,12); S030 = S(i,j,13); S130 = S(i,j,14); S040 = S(i,j,15);
-        S101 = S(i,j,17); S201 = S(i,j,18); S301 = S(i,j,19); S102 = S(i,j,21); S202 = S(i,j,22);
-        S003 = S(i,j,23); S103 = S(i,j,24); S004 = S(i,j,25); S011 = S(i,j,26); S111 = S(i,j,27);
-        S211 = S(i,j,28); S021 = S(i,j,29); S121 = S(i,j,30); S031 = S(i,j,31); S012 = S(i,j,32);
-        S112 = S(i,j,33); S013 = S(i,j,34); S022 = S(i,j,35);
+        % Use moment_idx for cleaner, self-documenting code
+        S300 = S(i,j,moment_idx('M300')); S400 = S(i,j,moment_idx('M400')); 
+        S110 = S(i,j,moment_idx('M110')); S210 = S(i,j,moment_idx('M210')); S310 = S(i,j,moment_idx('M310'));
+        S120 = S(i,j,moment_idx('M120')); S220 = S(i,j,moment_idx('M220')); 
+        S030 = S(i,j,moment_idx('M030')); S130 = S(i,j,moment_idx('M130')); S040 = S(i,j,moment_idx('M040'));
+        S101 = S(i,j,moment_idx('M101')); S201 = S(i,j,moment_idx('M201')); S301 = S(i,j,moment_idx('M301')); 
+        S102 = S(i,j,moment_idx('M102')); S202 = S(i,j,moment_idx('M202'));
+        S003 = S(i,j,moment_idx('M003')); S103 = S(i,j,moment_idx('M103')); S004 = S(i,j,moment_idx('M004')); 
+        S011 = S(i,j,moment_idx('M011')); S111 = S(i,j,moment_idx('M111'));
+        S211 = S(i,j,moment_idx('M211')); S021 = S(i,j,moment_idx('M021')); S121 = S(i,j,moment_idx('M121')); 
+        S031 = S(i,j,moment_idx('M031')); S012 = S(i,j,moment_idx('M012'));
+        S112 = S(i,j,moment_idx('M112')); S013 = S(i,j,moment_idx('M013')); S022 = S(i,j,moment_idx('M022'));
         
         D2 = delta2star3D(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
                           S101,S201,S301,S102,S202,S003,S103,S004,...
@@ -531,38 +537,14 @@ end
 function hyperbolic_plots_3D(xm, ym, M, Np)
 % Hyperbolicity plots (replaces hyperbolic3D_plots.m)
 
+% Use grid_eigenvalues to compute all eigenvalues efficiently
 Nmom = size(M,3);
-lam6x = zeros(Np,Np,6);
-lam6y = zeros(Np,Np,6);
-lam6z = zeros(Np,Np,6);
+eig_data = grid_eigenvalues(M, Np, Nmom);
 
-for i = 1:Np
-    for j = 1:Np
-        M1 = zeros(Nmom,1);
-        for k=1:Nmom
-            M1(k,1) = M(i,j,k);
-        end
-        
-        m000 = M1(1); m100 = M1(2); m200 = M1(3); m300 = M1(4); m400 = M1(5);
-        m010 = M1(6); m110 = M1(7); m210 = M1(8); m310 = M1(9); m020 = M1(10);
-        m120 = M1(11); m220 = M1(12); m030 = M1(13); m130 = M1(14); m040 = M1(15);
-        m001 = M1(16); m101 = M1(17); m201 = M1(18); m301 = M1(19); m002 = M1(20);
-        m102 = M1(21); m202 = M1(22); m003 = M1(23); m103 = M1(24); m004 = M1(25);
-        m011 = M1(26); m021 = M1(29); m031 = M1(31); m012 = M1(32); m013 = M1(34); m022 = M1(35);
-        
-        % UV moments
-        J6 = jacobian6(m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400);
-        lam6x(i,j,:) = sort(real(eig(J6)));
-        
-        % UW moments
-        J6 = jacobian6(m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400);
-        lam6y(i,j,:) = sort(real(eig(J6)));
-        
-        % VW moments
-        J6 = jacobian6(m000,m001,m002,m003,m004,m010,m011,m012,m013,m020,m021,m022,m030,m031,m040);
-        lam6z(i,j,:) = sort(real(eig(J6)));
-    end
-end
+% Extract eigenvalue arrays for plotting
+lam6x = eig_data.lam6x;  % UV plane
+lam6y = eig_data.lam6y;  % VU plane  
+lam6z = eig_data.lam6z;  % UW plane
 
 % Plot eigenvalues for UV moments
 [X,Y] = meshgrid(xm,ym);
@@ -1024,36 +1006,14 @@ for i = 1:Np
     end
 end
 
-% Compute eigenvalues
-lam6xa = zeros(Np,Np,6);
-lam6xb = zeros(Np,Np,6);
-lam6ya = zeros(Np,Np,6);
-lam6yb = zeros(Np,Np,6);
+% Compute eigenvalues using grid_eigenvalues utility
+eig_data = grid_eigenvalues(M, Np, Nmom);
 
-for i = 1:Np
-    for j = 1:Np
-        M1 = zeros(Nmom,1);
-        for k=1:Nmom
-            M1(k,1) = M(i,j,k);
-        end
-        
-        m000 = M1(1); m100 = M1(2); m200 = M1(3); m300 = M1(4); m400 = M1(5);
-        m010 = M1(6); m110 = M1(7); m210 = M1(8); m310 = M1(9); m020 = M1(10);
-        m120 = M1(11); m220 = M1(12); m030 = M1(13); m130 = M1(14); m040 = M1(15);
-        m001 = M1(16); m101 = M1(17); m201 = M1(18); m301 = M1(19); m002 = M1(20);
-        m102 = M1(21); m202 = M1(22); m003 = M1(23); m103 = M1(24); m004 = M1(25);
-        m011 = M1(26); m021 = M1(29); m031 = M1(31); m012 = M1(32); m013 = M1(34); m022 = M1(35);
-        
-        J6 = jacobian6(m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400);
-        lam6xa(i,j,:) = eig(J6);
-        J6 = jacobian6(m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400);
-        lam6xb(i,j,:) = eig(J6);
-        J6 = jacobian6(m000,m100,m200,m300,m400,m010,m110,m210,m310,m020,m120,m220,m030,m130,m040);
-        lam6ya(i,j,:) = eig(J6);
-        J6 = jacobian6(m000,m001,m002,m003,m004,m010,m011,m012,m013,m020,m021,m022,m030,m031,m040);
-        lam6yb(i,j,:) = eig(J6);
-    end
-end
+% Extract eigenvalue arrays
+lam6xa = eig_data.lam6x;   % UV plane (X-direction primary)
+lam6xb = eig_data.lam6z;   % UW plane (X-direction secondary)
+lam6ya = eig_data.lam6y;   % VU plane (Y-direction primary)
+lam6yb = eig_data.lam6w;   % VW plane (Y-direction secondary)
 
 % Save data if filename provided
 if nargin >= 8 && ~isempty(txt)

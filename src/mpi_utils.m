@@ -4,16 +4,24 @@ function varargout = mpi_utils(operation, varargin)
 % Syntax:
 %   [Px, Py] = mpi_utils('choose_grid', num_workers)
 %   [n_local, i0, i1] = mpi_utils('partition', n, P, r)
+%   M_full = mpi_utils('gather_M', M_interior, i0i1, j0j1, Np, Nmom)
+%   mpi_utils('send_M', M_interior, i0i1, j0j1, dest_rank)
 %
 % Operations:
 %   'choose_grid' - Choose nearly-square process grid factorization
 %   'partition'   - Compute 1D block decomposition for a rank
+%   'gather_M'    - Gather moment arrays from all ranks (rank 1 only)
+%   'send_M'      - Send moment array to destination rank
 
     switch operation
         case 'choose_grid'
             [varargout{1}, varargout{2}] = choose_process_grid_impl(varargin{:});
         case 'partition'
             [varargout{1}, varargout{2}, varargout{3}] = block_partition_1d_impl(varargin{:});
+        case 'gather_M'
+            varargout{1} = gather_M_impl(varargin{:});
+        case 'send_M'
+            send_M_impl(varargin{:});
         otherwise
             error('mpi_utils:unknownOp', 'Unknown operation: %s', operation);
     end
@@ -59,3 +67,32 @@ function [n_local, i0, i1] = block_partition_1d_impl(n, P, r)
     i1 = i0 + n_local - 1;
 end
 
+function M_full = gather_M_impl(M_interior, i0i1, j0j1, Np, Nmom)
+% Gather moment arrays from all ranks to rank 1
+% Must be called from rank 1 only, inside spmd block
+
+    % Initialize full array on rank 1
+    M_full = zeros(Np, Np, Nmom);
+    
+    % Place rank 1's data
+    M_full(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = M_interior;
+    
+    % Receive from all other ranks
+    for src = 2:numlabs
+        % Receive data packet: {M_interior, i0i1, j0j1}
+        data_packet = labReceive(src);
+        blk = data_packet{1};
+        i_range = data_packet{2};
+        j_range = data_packet{3};
+        M_full(i_range(1):i_range(2), j_range(1):j_range(2), :) = blk;
+    end
+end
+
+function send_M_impl(M_interior, i0i1, j0j1, dest_rank)
+% Send moment array to destination rank
+% Must be called from non-rank-1 workers, inside spmd block
+
+    % Package data with index information
+    data_packet = {M_interior, i0i1, j0j1};
+    labSend(data_packet, dest_rank);
+end

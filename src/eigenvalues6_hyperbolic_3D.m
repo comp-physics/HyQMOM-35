@@ -32,29 +32,13 @@ end
 
 %% Helper: Compute eigenvalues for given axis
 function [v6min, v6max, lam6a, lam6b] = compute_eigenvalues_for_axis(M, axis)
-    % Extract common base moments (always needed)
-    m000 = M(1);  m100 = M(2);  m200 = M(3);  m300 = M(4);  m400 = M(5);
-    m010 = M(6);  m020 = M(10); m030 = M(13); m040 = M(15);
-    m001 = M(16); m002 = M(20); m003 = M(23); m004 = M(25);
-    
-    % Extract cross moments based on axis
-    m110 = M(7);  m210 = M(8);  m310 = M(9);
-    m120 = M(11); m220 = M(12); m130 = M(14);
-    
-    if axis == 1  % X direction
-        % UV and UW moments
-        m101 = M(17); m201 = M(18); m301 = M(19);
-        m102 = M(21); m202 = M(22); m103 = M(24);
-        
-        moments_uv = [m000,m010,m020,m030,m040,m100,m110,m120,m130,m200,m210,m220,m300,m310,m400];
-        moments_uw = [m000,m001,m002,m003,m004,m100,m101,m102,m103,m200,m201,m202,m300,m301,m400];
-    else  % Y direction
-        % VU and VW moments
-        m011 = M(26); m021 = M(29); m031 = M(31);
-        m012 = M(32); m022 = M(35); m013 = M(34);
-        
-        moments_vu = [m000,m100,m200,m300,m400,m010,m110,m210,m310,m020,m120,m220,m030,m130,m040];
-        moments_vw = [m000,m001,m002,m003,m004,m010,m011,m012,m013,m020,m021,m022,m030,m031,m040];
+    % Use axis_moment_slice to extract the right moment vectors
+    if axis == 1  % X direction: UV and UW planes
+        moments_uv = axis_moment_slice(M, 1);  % UV plane
+        moments_uw = axis_moment_slice(M, 3);  % UW plane
+    else  % Y direction: VU and VW planes
+        moments_vu = axis_moment_slice(M, 2);  % VU plane
+        moments_vw = axis_moment_slice(M, 4);  % VW plane
     end
     
     % Compute Jacobian eigenvalues

@@ -39,8 +39,7 @@ function create_goldenfiles(mode)
     fprintf('\n');
     
     % Add src directory to path
-    addpath('src');
-    addpath('src/autogen');
+    setup_paths();
     
     % Check required files
     required_files = {'main.m', 'src/setup_mpi_cartesian_2d.m', 'src/halo_exchange_2d.m'};
