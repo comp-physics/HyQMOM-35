@@ -1,11 +1,9 @@
 function decomp = setup_mpi_cartesian_2d(np, halo)
 %SETUP_MPI_CARTESIAN_2D Create a 2D Cartesian domain decomposition over labs
 %   decomp = setup_mpi_cartesian_2d(np, halo)
-%
 % Inputs:
 %   np   - global grid size along x and y (np x np)
 %   halo - halo width in cells (typically 1)
-%
 % Output struct fields:
 %   .np_global   - scalar, global grid size
 %   .halo        - scalar, halo width
@@ -16,11 +14,9 @@ function decomp = setup_mpi_cartesian_2d(np, halo)
 %   .local_size  - [nx_local, ny_local] interior size (without halos)
 %   .istart_iend - [i0, i1] global inclusive interior index range for x
 %   .jstart_jend - [j0, j1] global inclusive interior index range for y
-%
 % Notes:
 % - Uses an approximately square process grid [Px, Py] with Px*Py=numlabs.
 % - Uses block decomposition with remainder cells assigned to lower coords.
-
     arguments
         np (1,1) {mustBeInteger, mustBePositive}
         halo (1,1) {mustBeInteger, mustBeNonnegative}

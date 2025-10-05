@@ -1,9 +1,7 @@
 function tests = test_edge_corner_correction
 %TEST_EDGE_CORNER_CORRECTION Unit tests for edge_corner_correction function
-%
 %   Tests the refactored edge_corner_correction against the original script
 %   by creating synthetic edge/corner cases.
-
 tests = functiontests(localfunctions);
 end
 
@@ -20,7 +18,6 @@ end
 
 function test_edge_S110_boundary(testCase)
 %TEST_EDGE_S110_BOUNDARY Test edge case where S110 = ±1 (R110 ≤ 0)
-
 % Create a case where S110 is at boundary
 S110r = 0.99;  % Very close to 1
 S101r = 0.3;
@@ -74,7 +71,6 @@ end
 
 function test_edge_S101_boundary(testCase)
 %TEST_EDGE_S101_BOUNDARY Test edge case where S101 = ±1 (R101 ≤ 0)
-
 S110r = 0.3;
 S101r = 0.99;
 S011r = 0.4;
@@ -114,7 +110,6 @@ end
 
 function test_edge_S011_boundary(testCase)
 %TEST_EDGE_S011_BOUNDARY Test edge case where S011 = ±1 (R011 ≤ 0)
-
 S110r = 0.3;
 S101r = 0.4;
 S011r = 0.99;
@@ -153,7 +148,6 @@ end
 
 function test_corner_case(testCase)
 %TEST_CORNER_CASE Test corner case where all R110, R101, R011 ≤ 0
-
 S110r = 0.99;
 S101r = 0.99;
 S011r = 0.99;
@@ -201,7 +195,6 @@ end
 
 function test_output_consistency(testCase)
 %TEST_OUTPUT_CONSISTENCY Verify outputs are averaged correctly
-
 S110r = 0.99;
 S101r = 0.3;
 S011r = 0.4;

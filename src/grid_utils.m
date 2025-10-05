@@ -1,16 +1,13 @@
 function varargout = grid_utils(operation, varargin)
 %GRID_UTILS Unified grid and initial condition utilities
-%
 % Syntax:
 %   grid = grid_utils('setup', Np, xmin, xmax, ymin, ymax)
 %   M = grid_utils('crossing_jets_ic', Np, Nmom, rhol, rhor, Ma, T, r110, r101, r011)
 %   arrays = grid_utils('init_arrays', Np, Nmom, Nmom5)
-%
 % Operations:
 %   'setup'           - Initialize 2D spatial grid
 %   'crossing_jets_ic' - Create crossing jets initial conditions
 %   'init_arrays'     - Pre-allocate moment arrays
-
     switch operation
         case 'setup'
             varargout{1} = setup_grid_impl(varargin{:});
@@ -25,7 +22,6 @@ end
 
 function grid = setup_grid_impl(Np, xmin, xmax, ymin, ymax)
 % Initialize a 2D spatial grid for simulation
-
     grid = struct();
     
     % Generate cell edges
@@ -43,7 +39,6 @@ end
 
 function M = crossing_jets_ic_impl(Np, Nmom, rhol, rhor, Ma, T, r110, r101, r011)
 % Create initial conditions for crossing jets problem
-
     % Initialize moment array
     M = zeros(Np, Np, Nmom);
     
@@ -97,7 +92,6 @@ end
 
 function arrays = init_arrays_impl(Np, Nmom, Nmom5)
 % Pre-allocate moment arrays for simulation
-
     arrays = struct();
     
     % 4th-order moment arrays

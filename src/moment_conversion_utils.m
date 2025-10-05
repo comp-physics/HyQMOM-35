@@ -1,22 +1,17 @@
 function varargout = moment_conversion_utils(operation, varargin)
 %MOMENT_CONVERSION_UTILS Utilities for moment array conversions
-%
 %   Eliminates repetitive moment packing/unpacking code
-%
 %   Operations:
 %     'S_to_C'      : Convert standardized to central moments (vectorized)
 %     'S_to_C_batch': Batch convert S→C for individual variables
 %     'M5_to_vars'  : Extract M5 3D array to individual variables
 %     'M4_to_vars'  : Extract M4 3D array to individual variables
 %     'C_to_S'      : Convert central to standardized moments (inverse)
-%
 %   Examples:
 %     C = moment_conversion_utils('S_to_C', S, sC200, sC020, sC002)
 %     [M000, M100, ...] = moment_conversion_utils('M5_to_vars', M5)
-%
 %   Note: For struct-based interfaces, use moment_struct() instead.
 %         This utility focuses on mathematical transformations and array operations.
-
     switch lower(operation)
         case 's_to_c'
             varargout{1} = standardized_to_central(varargin{:});
@@ -37,18 +32,14 @@ end
 %% Convert standardized to central moments (vectorized)
 function C = standardized_to_central(S, sC200, sC020, sC002)
 %STANDARDIZED_TO_CENTRAL Vectorized S→C conversion
-%
 %   C### = S### * sC200^i * sC020^j * sC002^k  where i+j+k = moment order
-%
 %   Input:
 %     S      - Structure or vector of standardized moments
 %     sC200  - sqrt(C200)
 %     sC020  - sqrt(C020)
 %     sC002  - sqrt(C002)
-%
 %   Output:
 %     C - Structure with central moments
-
 % If S is a vector, assume it's ordered like the standard 35-moment vector
 if isnumeric(S)
     S_struct = unpack_moments_to_struct(S);
@@ -105,7 +96,7 @@ function [M000, M100, M010, M001, M200, M110, M101, M020, M011, M002, ...
           M500, M410, M320, M230, M140, M401, M302, M203, M104, M311, M221, M131, M212, M113, M122, ...
           M050, M041, M032, M023, M014, M005] = extract_M5_array(M5)
 %EXTRACT_M5_ARRAY Extract 5th-order moment array to individual variables
-%
+
 %   Replaces ~60 lines of M### = M5(i,j,k) assignments
 
 % Order 0-1
@@ -182,7 +173,6 @@ end
 function S = central_to_standardized(C, sC200, sC020, sC002)
 %CENTRAL_TO_STANDARDIZED Vectorized C→S conversion (inverse of S→C)
 % For completeness - same logic but inverted
-
 if isnumeric(C)
     C_struct = unpack_moments_to_struct(C);
 else

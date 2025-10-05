@@ -1,16 +1,12 @@
 function varargout = diagnostics(operation, varargin)
 %DIAGNOSTICS Unified diagnostic and checking utilities
-%
 % Syntax:
-%   [S30,S40,S11,S21,S31,S12,S22,S03,S13,S04] = diagnostics('check2D', S30,S40,S11,S21,S31,S12,S22,S03,S13,S04)
-%   [S300r1, S400r1, ...] = diagnostics('check2D_all_planes', S300, S400, S110, ...)
+%   e.g., diagnostics('check2D_all_planes', S300, S400, S110, ...)
 %   [Diff, MaxDiff] = diagnostics('test_symmetry', M, Np)
-%
 % Operations:
 %   'check2D'           - Check and correct 2D moments in 3D code
 %   'check2D_all_planes' - Apply check2D to all three coordinate planes
 %   'test_symmetry'     - Check symmetry of moment matrix
-
     switch operation
         case 'check2D'
             [varargout{1:10}] = check2D_impl(varargin{:});
@@ -25,7 +21,6 @@ end
 
 function [S30,S40,S11,S21,S31,S12,S22,S03,S13,S04] = check2D_impl(S30,S40,S11,S21,S31,S12,S22,S03,S13,S04)
 % Check and correct 2D moments in 3D code
-
     h2min = 1000*eps;
     if abs(S11) >= 1
         % Collapse both S11 >= 1 and S11 <= -1 branches
@@ -72,7 +67,6 @@ end
 
 function [Diff, MaxDiff] = test_symmetry_impl(M, Np)
 % Check symmetry of moment matrix
-
     Diff = zeros(Np,5);
     for i = 1:Np
         Diff(i,1) = M(i,i,1) - M(Np+1-i,Np+1-i,1);

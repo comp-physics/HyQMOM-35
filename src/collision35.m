@@ -1,15 +1,12 @@
 function Mout = collision35(M, dt, Kn)
 % COLLISION35 Applies elastic BGK collision operator to moments
-%
 %   Mout = collision35(M, dt, Kn) relaxes moments toward Maxwellian equilibrium
-%
 %   Input: 
 %       M  - 35-element moment vector
 %       dt - Time step
 %       Kn - Knudsen number
 %   Output:
 %       Mout - Updated moments after collision
-
 % Extract conserved quantities and compute temperature
 rho = M(1);
 umean = M(2) / rho;

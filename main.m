@@ -1,36 +1,24 @@
 function [results] = main(varargin)
 % Main solver for 3D HyQMOM with MPI-parallel domain decomposition
-%
 % Parameters:
 %   Np          - GLOBAL grid size (total points in each direction)
 %   tmax        - Final simulation time
 %   enable_plots - Enable/disable plotting (default: false)
 %   num_workers - Number of MPI ranks/workers (default: 4)
-%
 % Usage:
 %   main()                           % Run with defaults
 %   main(Np, tmax)                   % Override Np and tmax
 %   main(Np, tmax, enable_plots)     % Override plotting
 %   main(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
-%
 % Examples:
 %   main()                    % Default: Np=20 (global), tmax=0.1, 4 workers
 %   main(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
 %   main(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
-%
 % Note: Np is the TOTAL grid size. It will be decomposed into subdomains.
 %       Each rank must have at least 10×10 interior points.
-
 % Add src directory to path
 script_dir = fileparts(mfilename('fullpath'));
-src_dir = fullfile(script_dir, 'src');
-if exist(src_dir, 'dir')
-    addpath(src_dir);
-    autogen_dir = fullfile(src_dir, 'autogen');
-    if exist(autogen_dir, 'dir')
-        addpath(autogen_dir);
-    end
-end
+setup_paths(script_dir);
 
 % Parse input arguments
 defaults = struct('Np', 20, 'tmax', 0.1, 'enable_plots', true, 'num_workers', 2);
@@ -115,15 +103,7 @@ script_dir_for_workers = script_dir;
 % MPI parallel execution
 spmd
     % Workers need src/ directory in their path
-    % Use the script directory passed from client
-    src_dir_worker = fullfile(script_dir_for_workers, 'src');
-    if exist(src_dir_worker, 'dir')
-        addpath(src_dir_worker);
-        autogen_dir_worker = fullfile(src_dir_worker, 'autogen');
-        if exist(autogen_dir_worker, 'dir')
-            addpath(autogen_dir_worker);
-        end
-    end
+    setup_paths(script_dir_for_workers);
     
     % Define all constants directly inside spmd block
     halo = 2;  % Required for pas_HLL stencil
@@ -323,26 +303,13 @@ spmd
     M_interior = M(halo+1:halo+nx, halo+1:halo+ny, :);
     
     if labindex == 1
-        % Rank 1: collect from all workers (including self)
-        M_final = zeros(Np, Np, Nmom);
-        M_final(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = M_interior;
-        
-        % Receive from all other ranks
-        for src = 2:numlabs
-            % Receive data packet: {M_interior, i0i1, j0j1}
-            data_packet = labReceive(src);
-            blk = data_packet{1};
-            i_range = data_packet{2};
-            j_range = data_packet{3};
-            M_final(i_range(1):i_range(2), j_range(1):j_range(2), :) = blk;
-        end
-        
+        % Rank 1: gather from all ranks using mpi_utils
+        M_final = mpi_utils('gather_M', M_interior, i0i1, j0j1, Np, Nmom);
         final_time = t;
         time_steps = nn;
     else
-        % All other ranks: send to rank 1 with index information
-        data_packet = {M_interior, i0i1, j0j1};
-        labSend(data_packet, 1);
+        % All other ranks: send to rank 1 using mpi_utils
+        mpi_utils('send_M', M_interior, i0i1, j0j1, 1);
         M_final = [];
         final_time = [];
         time_steps = [];
@@ -365,28 +332,9 @@ end
 
 % Plot results if requested using comprehensive plotting functions
 if enable_plots
-    % Note: simulation_plots expects moment arrays with structure (Np x Np x Nmom)
-    % and produces comprehensive visualization (Figures 2-12)
-    
-    % Compute eigenvalues for plotting (dummy zeros if not needed)
-    v5xmin = zeros(Np, Np);
-    v5xmax = zeros(Np, Np);
-    v6xmin = zeros(Np, Np);
-    v6xmax = zeros(Np, Np);
-    v5ymin = zeros(Np, Np);
-    v5ymax = zeros(Np, Np);
-    v6ymin = zeros(Np, Np);
-    v6ymax = zeros(Np, Np);
-    lam6xa = zeros(Np, Np, 6);
-    lam6xb = zeros(Np, Np, 6);
-    lam6ya = zeros(Np, Np, 6);
-    lam6yb = zeros(Np, Np, 6);
-    
-    % Call comprehensive plotting function
+    eig_data = grid_eigenvalues(M_final, Np, Nmom);
     simulation_plots('final', grid_worker.xm, grid_worker.ym, M_final, C, S, M5, C5, S5, ...
-                     Np, v5xmin, v5xmax, v6xmin, v6xmax, v5ymin, v5ymax, v6ymin, v6ymax, ...
-                     lam6xa, lam6xb, lam6ya, lam6yb, enable_plots);
-    
+                     Np, eig_data, enable_plots);
     drawnow;
 end
 

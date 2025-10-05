@@ -1,9 +1,10 @@
 function [Mp,vpmin,vpmax] = closure_and_eigenvalues(mom)
-% mom(1:2N+1): moments of order 0 to 2N
-% Mp: moment of order 2N+1
-% 
+    % mom(1:2N+1): moments of order 0 to 2N
+    % Mp: moment of order 2N+1
+
     N = (size(mom,2)-1)/2;
-% recurrence coefficients
+
+    % recurrence coefficients
     sig = zeros(N+2,2*N+3);
     a = zeros(N+1,1) ;
     b = zeros(N+2,1) ;
@@ -21,9 +22,11 @@ function [Mp,vpmin,vpmax] = closure_and_eigenvalues(mom)
     k = N+2;
     sig(k,k) = sig(k-1,k+1)-a(k-2)*sig(k-1,k)-b(k-2)*sig(k-2,k) ;
     b(k-1) = sig(k,k)/sig(k-1,k-1) ;
-%     closure
+
+    % closure
     a(N+1) = sum(a(1:N))/N;
-% moment of order 2N+1
+
+    % moment of order 2N+1
     sig(N+2,N+3) = sig(N+2,N+2)*(a(N+1)+sig(N+1,N+2)/sig(N+1,N+1));
     for k = N+2:-1:3
         l = 2*N-k+5;
@@ -35,7 +38,9 @@ function [Mp,vpmin,vpmax] = closure_and_eigenvalues(mom)
         b
         mom
     end
-% computation of the maximal and minimal values of the eigenvalues
+
+    % Computation of the maximal and minimal values of the eigenvalues
+    
     % Setup Jacobi matrix to find roots of R_{n+1}
     b(N+1) = b(N+1)*(2*N+1)/N;
     z = zeros(N+1,N+1) ;
@@ -45,10 +50,9 @@ function [Mp,vpmin,vpmax] = closure_and_eigenvalues(mom)
         z(i+1,i) = z(i,i+1) ;
     end
     z(N+1,N+1) = a(N+1) ;
-    %
+
     % Compute weights and abscissas
     vp = eig(z) ;
     vpmin = min(vp);
     vpmax = max(vp);
-    %
 end

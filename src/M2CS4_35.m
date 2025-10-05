@@ -2,11 +2,9 @@ function [C4,S4] = M2CS4_35(M4)
 % M2CS4_35 Computes central and standardized moments from raw moments
 %   [C4,S4] = M2CS4_35(M4) converts 35 raw moments to central (C4) and
 %   standardized (S4) moments
-%
 % Input:  M4 - 35-element vector of raw moments
 % Output: C4 - 35-element vector of central moments
 %         S4 - 35-element vector of standardized moments
-
 C4 = zeros(size(M4));
 S4 = zeros(size(M4));
 

@@ -1,15 +1,12 @@
 function A = apply_physical_bc_2d(A, decomp, bc)
 %APPLY_PHYSICAL_BC_2D Fill halos at global boundaries based on bc.type.
 %   A = apply_physical_bc_2d(A, decomp, bc)
-%
 % Inputs:
 %   A      - local array (nx+2h) x (ny+2h) x nv
 %   decomp - domain decomposition struct
 %   bc     - boundary condition struct with field 'type'
-%
 % Supported bc.type:
 %   'copy' - Neumann-like (copy nearest interior cell)
-
     h  = decomp.halo;
     nx = decomp.local_size(1);
     ny = decomp.local_size(2);
