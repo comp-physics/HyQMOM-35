@@ -1,4 +1,4 @@
-function varargout = profiling_utils(action, varargin)
+function profiling_utils(action, varargin)
 % Utilities for MPI profiling management
 % Handles initialization, data collection, and reporting
 %

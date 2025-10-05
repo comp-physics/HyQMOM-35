@@ -15,9 +15,6 @@ if isempty(idx_c)
              41, 56, 57, 81, 61];
 end
 
-C4 = zeros(size(M4));
-S4 = zeros(size(M4));
-
 % Extract moments (unpacking for readability in symbolic function call)
 m = moment_struct('from_vector', M4);
 
@@ -33,7 +30,8 @@ sC020 = sqrt(max(C(1,3,1), eps));
 sC002 = sqrt(max(C(1,1,3), eps));
 
 % Compute standardized moments efficiently using array operations
-% Zero-th to second order moments (fixed values)
+% Preallocate central and standardized moment arrays
+C4 = zeros(size(M4));
 S = zeros(5,5,5);
 S(1,1,1) = 1;  % S000 = 1
 S(3,1,1) = 1;  % S200 = 1
@@ -74,7 +72,8 @@ S(1,3,3) = C(1,3,3)/(sC020^2*sC002^2);  % S022
 S(1,2,4) = C(1,2,4)/(sC020*sC002^3);  % S013
 S(1,1,5) = C(1,1,5)/sC002^4;  % S004
 
-C4 = C(idx_c);
+% Extract 35 moments using precomputed indices
+C4(:) = C(idx_c);
 S4 = S(idx_c);
 
 end

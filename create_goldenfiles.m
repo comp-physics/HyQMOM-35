@@ -17,16 +17,16 @@ function create_goldenfiles(mode)
     
     switch lower(mode)
         case 'ci'
-            fprintf('MPI Golden File Creation (CI Mode)');
-            fprintf('Creates files for 1 and 2 MPI ranks');
+            fprintf('MPI Golden File Creation (CI Mode)\n');
+            fprintf('Creates files for 1 and 2 MPI ranks\n');
             RANK_COUNTS = [1, 2];
         case 'local'
-            fprintf('MPI Golden File Creation (Local Mode)');
-            fprintf('Creates files for 4 and 8 MPI ranks');
+            fprintf('MPI Golden File Creation (Local Mode)\n');
+            fprintf('Creates files for 4 and 8 MPI ranks\n');
             RANK_COUNTS = [4, 8];
         case 'all'
-            fprintf('MPI Golden File Creation (All Modes)');
-            fprintf('Creates files for 1, 2, 4, and 8 MPI ranks');
+            fprintf('MPI Golden File Creation (All Modes)\n');
+            fprintf('Creates files for 1, 2, 4, and 8 MPI ranks\n');
             RANK_COUNTS = [1, 2, 4, 8];
         otherwise
             error('Invalid mode. Use ''ci'', ''local'', or ''all''');
@@ -174,9 +174,9 @@ function create_goldenfiles(mode)
     
     %% Summary
     if all_success
-        fprintf('GOLDEN FILE CREATION COMPLETE\n');
+        fprintf('\nGOLDEN FILE CREATION COMPLETE\n');
     else
-        fprintf('GOLDEN FILE CREATION COMPLETED WITH ERRORS\n');
+        fprintf('\nGOLDEN FILE CREATION COMPLETED WITH ERRORS\n');
     end
     
     fprintf('Generated %d golden file(s) in %s/:\n', length(RANK_COUNTS), goldenfiles_dir);
@@ -213,7 +213,7 @@ function create_goldenfiles(mode)
             fprintf('     git add goldenfiles/goldenfile_mpi_8ranks*.mat\n');
             fprintf('     git commit -m "Update local MPI golden files"\n');
         case 'all'
-            fprintf('  1. Run: cd tests && runtests  % Runs all tests\n');
+            fprintf('  1. Run: cd tests && runtests  %% Runs all tests\n');
             fprintf('  2. Commit updated files to git if intentionally changed\n');
     end
     

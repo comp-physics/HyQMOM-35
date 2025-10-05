@@ -1,6 +1,6 @@
-function E = delta2star3D(s300,s400,s110,s210,s310,s120,s220,s030,s130,s040,s101,s201,s301,s102,s202,s003,s103,s004,s011,s111,s211,s021,s121,s031,s012,s112,s013,s022)
-%delta2star3D - Optimized version eliminating cell array overhead
-%    E = delta2star3D(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,S211,S021,S121,S031,S012,S112,S013,S022)
+function E = delta2star3D_matlab(s300,s400,s110,s210,s310,s120,s220,s030,s130,s040,s101,s201,s301,s102,s202,s003,s103,s004,s011,s111,s211,s021,s121,s031,s012,s112,s013,s022)
+%delta2star3D_matlab - Optimized version eliminating cell array overhead
+%    E = delta2star3D_matlab(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,S211,S021,S121,S031,S012,S112,S013,S022)
 
 % Pre-compute powers (hot path optimization)
 t41 = s003*s003;  t42 = s011*s011;  t43 = t42*s011;
