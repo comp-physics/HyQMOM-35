@@ -37,7 +37,6 @@ spmd
     dx_worker = params.dx;
     dy_worker = params.dy;
     Nmom_worker = params.Nmom;
-    Nmom5_worker = params.Nmom5;
     nnmax_worker = params.nnmax;
     dtmax_worker = params.dtmax;
     
@@ -122,7 +121,7 @@ spmd
         
         % Global reduction for time step (all ranks need same dt)
         vmax_local = max([abs(vpxmax(:)); abs(vpxmin(:)); abs(vpymax(:)); abs(vpymin(:))]);
-        vmax = max(gcat(vmax_local, 1));  % Global max across all ranks
+        vmax = max(spmdCat(vmax_local, 1));  % Global max across all ranks
         dt = min(CFL_worker*dx_worker/vmax, dtmax_worker);
         dt = min(dt, tmax-t);
         t = t + dt;
@@ -210,7 +209,7 @@ spmd
         time_per_point_local = step_time / local_grid_points;
         
         % Gather max time per point across all ranks
-        max_time_per_point = gop(@max, time_per_point_local);
+        max_time_per_point = spmdReduce(@max, time_per_point_local);
         
         % Print timestep timing and MaxDiff (only from rank 1)
         if spmdIndex == 1

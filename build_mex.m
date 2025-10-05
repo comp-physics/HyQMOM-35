@@ -50,7 +50,7 @@ if clean_only
         fprintf('  Removing: %s\n', mex_files(i).name);
         delete(mex_file);
     end
-    fprintf('✓ Clean complete\n');
+    fprintf('Clean complete\n');
     return;
 end
 
@@ -207,26 +207,26 @@ if run_tests
     
     % Warmup
     for i = 1:10
-        E = delta2star3D_mex(s(1),s(2),s(3),s(4),s(5),s(6),s(7),s(8),s(9),s(10),...
-                            s(11),s(12),s(13),s(14),s(15),s(16),s(17),s(18),s(19),s(20),...
-                            s(21),s(22),s(23),s(24),s(25),s(26),s(27),s(28));
+        delta2star3D_mex(s(1),s(2),s(3),s(4),s(5),s(6),s(7),s(8),s(9),s(10),...
+                         s(11),s(12),s(13),s(14),s(15),s(16),s(17),s(18),s(19),s(20),...
+                         s(21),s(22),s(23),s(24),s(25),s(26),s(27),s(28));
     end
     
     % Benchmark MEX
     tic;
     for i = 1:n_iter
-        E = delta2star3D_mex(s(1),s(2),s(3),s(4),s(5),s(6),s(7),s(8),s(9),s(10),...
-                            s(11),s(12),s(13),s(14),s(15),s(16),s(17),s(18),s(19),s(20),...
-                            s(21),s(22),s(23),s(24),s(25),s(26),s(27),s(28));
+        delta2star3D_mex(s(1),s(2),s(3),s(4),s(5),s(6),s(7),s(8),s(9),s(10),...
+                         s(11),s(12),s(13),s(14),s(15),s(16),s(17),s(18),s(19),s(20),...
+                         s(21),s(22),s(23),s(24),s(25),s(26),s(27),s(28));
     end
     time_mex = toc;
     
     % Benchmark MATLAB
     tic;
     for i = 1:n_iter
-        E = delta2star3D_matlab(s(1),s(2),s(3),s(4),s(5),s(6),s(7),s(8),s(9),s(10),...
-                               s(11),s(12),s(13),s(14),s(15),s(16),s(17),s(18),s(19),s(20),...
-                               s(21),s(22),s(23),s(24),s(25),s(26),s(27),s(28));
+        delta2star3D_matlab(s(1),s(2),s(3),s(4),s(5),s(6),s(7),s(8),s(9),s(10),...
+                            s(11),s(12),s(13),s(14),s(15),s(16),s(17),s(18),s(19),s(20),...
+                            s(21),s(22),s(23),s(24),s(25),s(26),s(27),s(28));
     end
     time_matlab = toc;
     

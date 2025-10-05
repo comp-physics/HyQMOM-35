@@ -1,6 +1,7 @@
 function varargout = realizability(operation, varargin)
 %REALIZABILITY Consolidated utility functions for moment realizability checks.
 %   This function acts as a dispatcher for various realizability helpers.
+%#ok<*NASGU> % Suppress unused variable warnings - matrix elements extracted for readability
 %   Usage:
 %     [S21, S12, S31, S22, S13] = realizability('2D', S30, S40, S11, S21, S31, S12, S22, S03, S13, S04)
 %     [S300,...,flag220] = realizability('3D', S300, ..., S022)
