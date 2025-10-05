@@ -69,9 +69,4 @@ function Mp = pas_HLL(M,F,dt,dx,vpmin,vpmax,apply_bc_left,apply_bc_right)
         Mp(Np,:) = Mp(Np-1,:);
     end
 
-    % figure(20)
-    % plot(lleft,'o')
-    % hold on
-    % plot(lright,'p')
-
 end

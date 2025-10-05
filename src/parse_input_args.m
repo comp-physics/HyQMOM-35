@@ -1,18 +1,5 @@
 function [Np, tmax, enable_plots, save_output] = parse_input_args(nargin_val, varargin_cell, defaults)
 % PARSE_INPUT_ARGS Parses command-line arguments for main simulation
-%
-%   [Np, tmax, enable_plots, save_output] = parse_input_args(nargin, varargin, defaults)
-%
-%   Inputs:
-%       nargin_val - Number of input arguments
-%       varargin_cell - Cell array of input arguments
-%       defaults - Structure with default values
-%
-%   Outputs:
-%       Np - Grid points per dimension
-%       tmax - Maximum simulation time
-%       enable_plots - Boolean for plotting
-%       save_output - Boolean for saving results
 
 switch nargin_val
     case 0

@@ -2,8 +2,7 @@ function varargout = diagnostics(operation, varargin)
 %DIAGNOSTICS Unified diagnostic and checking utilities
 %
 % Syntax:
-%   [S30,S40,S11,S21,S31,S12,S22,S03,S13,S04] = diagnostics('check2D', S30,S40,S11,S21,S31,S12,S22,S03,S13,S04)
-%   [S300r1, S400r1, ...] = diagnostics('check2D_all_planes', S300, S400, S110, ...)
+%   e.g., diagnostics('check2D_all_planes', S300, S400, S110, ...)
 %   [Diff, MaxDiff] = diagnostics('test_symmetry', M, Np)
 %
 % Operations:

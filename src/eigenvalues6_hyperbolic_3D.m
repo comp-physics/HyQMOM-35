@@ -12,13 +12,7 @@ function [v6min, v6max, Mr] = eigenvalues6_hyperbolic_3D(M, axis, flag2D, Ma)
 %   Outputs:
 %       v6min, v6max - Min/max eigenvalues for hyperbolicity
 %       Mr           - Corrected moment vector
-%
-% This function unifies eigenvalues6x_hyperbolic_3D and eigenvalues6y_hyperbolic_3D
-% which were 95% identical code, eliminating ~170 lines of duplication.
-%
-% M = [M000,M100,M200,M300,M400,M010,M110,M210,M310,M020,M120,M220,M030,M130,M040,...
-%      M001,M101,M201,M301,M002,M102,M202,M003,M103,M004,M011,M111,M211,M021,M121,...
-%      M031,M012,M112,M013,M022]
+
 
 Mr = M;
 

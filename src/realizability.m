@@ -78,7 +78,7 @@ elseif S21 >= s21max
     S21 = s21max;
 end
 % at this point first minor is nonnegative
-%
+
 % check realizability of S22
 G22 = sqrt((H20+S30^2)*(H02+S03^2));
 s22min = max(S11^2,1-G22);
@@ -89,6 +89,7 @@ if S22 < s22min
 elseif S22 > s22max
     S22 = s22max;
 end
+
 % given s22, check realizability of S13 and S31
 G31 = (Del1*S22 - Del1*S11^2 - S12^2 + 2*S11*S12*S21 - S21^2)*(Del1*H20 - (S21 - S11*S30)^2);
 G13 = (Del1*S22 - Del1*S11^2 - S12^2 + 2*S11*S12*S21 - S21^2)*(Del1*H02 - (S12 - S11*S03)^2);
@@ -99,6 +100,7 @@ else
     G13 = sqrt(G13);
     G31 = sqrt(G31);
 end
+
 s31min = S11 + (S12*S21 + S21*S30 - S11*S21^2 - S11*S12*S30 - G31)/(Del1+eps);
 s31max = S11 + (S12*S21 + S21*S30 - S11*S21^2 - S11*S12*S30 + G31)/(Del1+eps);
 if S31 <= s31min
@@ -106,7 +108,7 @@ if S31 <= s31min
 elseif S31 >= s31max
     S31 = s31max;
 end
-%
+ 
 s13min = S11 + (S12*S21 + S12*S03 - S11*S12^2 - S11*S21*S03 - G13)/(Del1+eps);
 s13max = S11 + (S12*S21 + S12*S03 - S11*S12^2 - S11*S21*S03 + G13)/(Del1+eps);
 if S13 <= s13min
@@ -114,6 +116,7 @@ if S13 <= s13min
 elseif S13 >= s13max
     S13 = s13max;
 end
+
 % at this point second minor is nonnegative, check third for S22
 L3 = delta2starchol_L3(S03,S04,S11,S12,S13,S21,S22,S30,S31,S40);
 if L3 < 0
@@ -148,16 +151,16 @@ function [S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
                  S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,...
                  S211,S021,S121,S031,S012,S112,S013,S022)
 % realizable_3D checks and correct realizability of cross moments
-%
+ 
 flag220 = 0;
 diagmin = 1.d-10;
 h2min = 1.d-10;
 S2min = 1.d-12;
-%
+ 
 H200 = max([eps S400-S300^2-1]);
 H020 = max([eps S040-S030^2-1]);
 H002 = max([eps S004-S003^2-1]);
-%
+ 
 % 4-order moments: check maximum bounds on S220, S202, S022
 A220 = sqrt((H200+S300^2)*(H020+S030^2));
 S220max = realizablity_S220(S110,S220,A220);
@@ -168,7 +171,7 @@ S022max = realizablity_S220(S011,S022,A022);
 S220 = min(S220,S220max);
 S202 = min(S202,S202max);
 S022 = min(S022,S022max);
-%
+ 
 % check and correct realizability of S110, S101, S011
 [S110,S101,S011,S2] = realizability_S2(S110,S101,S011);
 % S2 = max(0,S2);
@@ -253,15 +256,15 @@ if S2 <= S2min % treat faces
         %
         S400= gam6^4*S004 + 4*gam5*gam6^3*S013 + 6*gam5^2*gam6^2*S022 + 4*gam5^3*gam6*S031 + gam5^4*S040;
     end
-    %
+     
 else % treat interior of 2nd-order moment space
     beta = 1;
-    %
+     
     %% check for for too small diagonal elements
     E1 = delta2star3D(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
                       S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,...
                       S211,S021,S121,S031,S012,S112,S013,S022);
-    %
+     
     % 3-order moments: first check and correct realizability of S210, etc.
     flagE11 = 0;
     if E1(1,1) < 0
@@ -294,9 +297,9 @@ else % treat interior of 2nd-order moment space
     S220_diag = S220;
     S202_diag = S202;
     S022_diag = S022;
-    %
+     
     S22min = lower_bound_S220(S011,S012,S021,S101,S102,S110,S111,S120,S201,S210);
-    %
+     
     flagE22 = 0;
     if S220 < S22min(1)
         S220_diag = S22min(1);
@@ -315,12 +318,12 @@ else % treat interior of 2nd-order moment space
         flagE55 = 1;
         flag220 = 1;
     end
-    %
+     
     % recheck for for negative diagonal elements
     E1 = delta2star3D(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
                       S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,...
                       S211,S021,S121,S031,S012,S112,S013,S022);
-    %
+     
     % check for too small diagonal elements
     if E1(1,1) < diagmin
         flagE11 = 1;
@@ -340,10 +343,11 @@ else % treat interior of 2nd-order moment space
     if E1(6,6) < diagmin
         flagE66 = 1;
     end
-    %%
+    
     % compute bound values for non-diagonal moments
     if flagE11 == 1 || flagE22 == 1 || flagE33 == 1 || flagE44 == 1 || flagE55 == 1 || flagE66 == 1
         Mbound = bound_minor1(S003,S011,S012,S021,S030,S101,S102,S110,S111,S120,S201,S210,S300);
+
         % 4th-order cross moments to 3rd-order boundary values
         S310b = Mbound(1);
         S301b = Mbound(2);
@@ -354,6 +358,7 @@ else % treat interior of 2nd-order moment space
         S211b = Mbound(10);
         S121b = Mbound(11); 
         S112b = Mbound(12);
+
         % treat cases where a diagonal element is near of below diagmin
         if flagE11 == 1
             S310 = S310b;
@@ -392,18 +397,18 @@ else % treat interior of 2nd-order moment space
             S112 = S112b;
         end
     end
+
     % return if all off-diagonal terms have been fixed
     if flagE11 == 1 && flagE22 == 1 && flagE33 == 1 && flagE44 == 1 && flagE55 == 1 && flagE66 == 1
         disp('all flags are 1')
         return
     end
-    %%
+    
     % Move to fourth-order moments
-    %
     % compute varDelta_2^* matrices
     [E1,E2,E3,E4,E5,E6] = delta2star3D_permutation(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
        S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,S211,S021,S121,S031,S012,S112,S013,S022);
-    %
+     
     % check and correct realizability of S310, etc. if they are still free
     flag310 = 0;
     S220a = S220;
@@ -469,7 +474,7 @@ else % treat interior of 2nd-order moment space
         S202_310r = S202r;
         flag220 = 1;
     end
-    %
+     
     % if moments have been corrected, recompute matrices
     if flag310 == 1
         [E1,E2,E3,E4,E5,E6] = delta2star3D_permutation(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
@@ -478,13 +483,14 @@ else % treat interior of 2nd-order moment space
             flag220 = 1;
         end
     end
-    %%
+    
     S220a=S220;
     S220b=S220;
     S202a=S202;
     S202c=S202;
     S022b=S022;
     S022c=S022;
+
     % check and correct realizability of S211, etc. if they are still free
     if flagE11 == 0 && flagE22 == 0 && flagE33 == 0 && flagE55 == 0  
         if det(E1(1:3,1:3)) <= h2min || det(E2(1:3,1:3)) <= h2min
@@ -546,21 +552,21 @@ else % treat interior of 2nd-order moment space
             flag220 = 1;
         end
     end
-    %
+     
     S220_211 = max(S220a,S220b);
     S202_211 = max(S202a,S202c);
     S022_211 = max(S022b,S022c);
-    %
+     
     %% CONTINUE FOR 4TH MINOR to correct S220, etc.
-    %
+     
     E1 = delta2star3D(S300,S400,S110,S210,S310,S120,S220,S030,S130,S040,...
                       S101,S201,S301,S102,S202,S003,S103,S004,S011,S111,...
                       S211,S021,S121,S031,S012,S112,S013,S022);
-    %
+     
     E3 = delta2star3D(S030,S040,S110,S120,S130,S210,S220,S300,S310,S400,...
                       S011,S021,S031,S012,S022,S003,S013,S004,S101,S111,...
                       S121,S201,S211,S301,S102,S112,S103,S202);
-    %
+     
     s220mina = S220;
     s220maxa = S220;
     if det(E1(1:4,1:4)) < 0
@@ -627,10 +633,10 @@ else % treat interior of 2nd-order moment space
         e55=E(5,5);
         e56=E(5,6);
         e66=E(6,6);
-        %
+         
         ex = -e22+e14;
         d22 = S220-e22;
-        %
+         
         Y = e33;
         Ra = rootsR_X_Y(Y,e11,e12,e13,e23,e24,e34,e44,ex);
         Rr = sort(real(Ra));
@@ -639,21 +645,21 @@ else % treat interior of 2nd-order moment space
             s220maxb = Rr(3)+d22;
         end
     end
-    %
+     
     E2 = delta2star3D(S300,S400,S101,S201,S301,S102,S202,S003,S103,S004,...
                   S110,S210,S310,S120,S220,S030,S130,S040,S011,S111,...
                   S211,S012,S112,S013,S021,S121,S031,S022);
-    %
+     
     E4 = delta2star3D(S003,S004,S101,S102,S103,S201,S202,S300,S301,S400,...
                   S011,S012,S013,S021,S022,S030,S031,S040,S110,S111,...
                   S112,S210,S211,S310,S120,S121,S130,S220);
-    %
+     
     s202mina = S202;
     s202maxa = S202;
     if det(E2(1:4,1:4)) < 0
         flag220 = 1;
         E = E2;
-        %
+         
         e11=E(1,1);
         e12=E(1,2);
         e13=E(1,3);
@@ -675,10 +681,10 @@ else % treat interior of 2nd-order moment space
         e55=E(5,5);
         e56=E(5,6);
         e66=E(6,6);
-        %
+         
         ex = -e22+e14;
         d22 = S202-e22;
-        %
+         
         Y = e33;
         Ra = rootsR_X_Y(Y,e11,e12,e13,e23,e24,e34,e44,ex);
         Rr = sort(real(Ra));
@@ -714,10 +720,10 @@ else % treat interior of 2nd-order moment space
         e55=E(5,5);
         e56=E(5,6);
         e66=E(6,66);
-        %
+         
         ex = -e22+e14;
         d22 = S202-e22;
-        %
+         
         Y = e33;
         Ra = rootsR_X_Y(Y,e11,e12,e13,e23,e24,e34,e44,ex);
         Rr = sort(real(Ra));
@@ -888,7 +894,7 @@ end
 %% realizability_S211
 function S211r = realizability_S211(e11,e22,e33,e12,e13,d23,S211,beta)
 % realizability_S211
-%
+ 
 S211r = S211;
 b211 = e12*e13;
 G211 = max([0 (e11*e22-e13^2)*(e11*e33-e12^2)]);
@@ -906,46 +912,43 @@ end
 
 %% realizability_S310
 function [S310r,S220r] = realizability_S310(S110,S101,S011,S300,S210,S201,S120,S111,S310,S220,H200,beta)
+
 % realizability_S310 checks and corrects realizablity of S310 and S220
-%
+ 
 S310r = S310;
 S220r = S220;
-%
+ 
 b310 = S111*((1 - S110^2)*S201 + (S101*S110 - S011)*S210 + (S011*S110 - S101)*S300) ...
      + S120*((1 - S101^2)*S210 + (S011*S101 - S110)*S300 + (S101*S110 - S011)*S201) ...
      + S210*((1 - S011^2)*S300 + (S011*S101 - S110)*S210 + (S011*S110 - S101)*S201);
-%
+ 
 D1 = [1-S101^2, S101*S110-S011;S101*S110-S011, 1-S110^2];
 dD1 = det(D1);
 V1 = [S210-S110*S300; S201-S101*S300];
 L1 = V1'*D1*V1/dD1;
-%
+ 
 G310b = H200 - L1;
 if G310b < 0
-    warning('G310b < 0')
     G310b = 0;
 end
-%
+ 
 D2 = [1-S011^2, S011*S101-S110, S011*S110-S101;...
       S011*S101-S110, 1-S101^2, S101*S110-S011;...
       S011*S110-S101, S101*S110-S011, 1-S110^2];
 V2 = [S210; S120; S111];
 L2 = V2'*D2*V2/dD1;
-%
+ 
 G310a = S220 - S110^2 - L2 + 1000*eps;
 if G310a < 0 || L2 < 0
-    warning('G310a < 0 || L2 < 0')
-    % [G310a L2 b310/dD1]
-    % S220r = S110^2 + L2 + 1000*eps;
     G310a = 0;
 end
-%
+
 G310 = G310a*G310b;
 sG310 = beta*sqrt(G310);
-%
+
 s310min = S110 + b310/dD1 - sG310;
 s310max = S110 + b310/dD1 + sG310;
-%
+
 if S310 <= s310min
     S310r = s310min;
 elseif S310 >= s310max
@@ -957,28 +960,28 @@ end
 %% realizability_S310_220
 function [S220r] = realizability_S310_220(S110,S101,S011,S210,S120,S111,S220)
 % realizability_S310_220 checks and corrects realizablity of S220 for S310
-%
+
 S220r = S220;
 D1 = [1-S101^2, S101*S110-S011; S101*S110-S011, 1-S110^2];
 dD1 = det(D1);
-%
+ 
 D2 = [1-S011^2, S011*S101-S110, S011*S110-S101;...
       S011*S101-S110, 1-S101^2, S101*S110-S011;...
       S011*S110-S101, S101*S110-S011, 1-S110^2];
 V2 = [S210; S120; S111];
 L2 = V2'*D2*V2/dD1;
 S220 = S110^2 + L2 + 1000*eps;
-%
+ 
 if S220 > S220r
     S220r = S220;
 end
-%
+ 
 end
 
 %% realizablity_S220
 function S220r = realizablity_S220(S110,S220,A220)
 % realizablity_S220 checks maximum bounds and corrects S220
-%
+
 S220r = S220;
 s220min = max([S110^2 1-A220]);
 s220max = 1+A220;

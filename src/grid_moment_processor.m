@@ -15,20 +15,6 @@ function varargout = grid_moment_processor(M, func_handle)
 %
 %   Outputs:
 %     varargout   - Variable number of outputs (1-3), each as Np x Np x N array
-%
-%   Examples:
-%     % Compute central and standardized moments for entire grid
-%     [C, S] = grid_moment_processor(M, @M2CS4_35);
-%
-%     % Compute 5th-order moments for entire grid
-%     [M5, C5, S5] = grid_moment_processor(M, @Moments5_3D);
-%
-%   Benefits:
-%     - Generic: works with ANY moment function
-%     - Efficient: pre-allocates memory
-%     - Clean: eliminates repetitive nested loops
-%
-%   See also: M2CS4_35, Moments5_3D
 
     [Np, ~, ~] = size(M);
     
