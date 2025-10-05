@@ -19,12 +19,13 @@ function [results] = main(varargin)
 %   main(40, 0.1, false, 4, true) % Same as above with MPI profiling enabled
 % Note: Np is the TOTAL grid size. It will be decomposed into subdomains.
 %       Each rank must have at least 10×10 interior points.
+
 % Add src directory to path
 script_dir = fileparts(mfilename('fullpath'));
 setup_paths(script_dir);
 
 % Parse input arguments
-defaults = struct('Np', 70, 'tmax', 0.02, 'enable_plots', false, 'num_workers', 4, 'enable_profile', false);
+defaults = struct('Np', 100, 'tmax', 0.02, 'enable_plots', false, 'num_workers', 8, 'enable_profile', true);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
