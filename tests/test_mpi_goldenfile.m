@@ -90,7 +90,7 @@ end
 %% Helper Functions
 
 function mpi_data = run_mpi_simulation(Np, tmax, num_ranks)
-    mpi_data = main(Np, tmax, false, num_ranks);
+    mpi_data = main(Np, tmax, false, num_ranks, false);
 end
 
 function compare_results(testCase, data1, data2, tolerance, description)

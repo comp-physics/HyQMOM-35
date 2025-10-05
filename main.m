@@ -25,7 +25,7 @@ script_dir = fileparts(mfilename('fullpath'));
 setup_paths(script_dir);
 
 % Parse input arguments
-defaults = struct('Np', 100, 'tmax', 0.02, 'enable_plots', false, 'num_workers', 8, 'enable_profile', true);
+defaults = struct('Np', 100, 'tmax', 0.02, 'enable_plots', false, 'num_workers', 8, 'enable_profile', false);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
