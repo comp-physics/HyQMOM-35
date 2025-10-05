@@ -1,19 +1,22 @@
 function [results] = main(varargin)
 % Main solver for 3D HyQMOM with MPI-parallel domain decomposition
 % Parameters:
-%   Np          - GLOBAL grid size (total points in each direction)
-%   tmax        - Final simulation time
+%   Np           - GLOBAL grid size (total points in each direction)
+%   tmax         - Final simulation time
 %   enable_plots - Enable/disable plotting (default: false)
-%   num_workers - Number of MPI ranks/workers (default: 4)
+%   num_workers  - Number of MPI ranks/workers (default: 2)
+%   enable_profile - Enable MPI profiling (default: false)
 % Usage:
 %   main()                           % Run with defaults
 %   main(Np, tmax)                   % Override Np and tmax
 %   main(Np, tmax, enable_plots)     % Override plotting
 %   main(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
+%   main(Np, tmax, enable_plots, num_workers, enable_profile) % Enable profiling
 % Examples:
-%   main()                    % Default: Np=20 (global), tmax=0.1, 4 workers
+%   main()                    % Default: Np=20 (global), tmax=0.05, 2 workers
 %   main(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
 %   main(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
+%   main(40, 0.1, false, 4, true) % Same as above with MPI profiling enabled
 % Note: Np is the TOTAL grid size. It will be decomposed into subdomains.
 %       Each rank must have at least 10×10 interior points.
 % Add src directory to path
@@ -21,32 +24,43 @@ script_dir = fileparts(mfilename('fullpath'));
 setup_paths(script_dir);
 
 % Parse input arguments
-defaults = struct('Np', 20, 'tmax', 0.1, 'enable_plots', true, 'num_workers', 2);
+defaults = struct('Np', 70, 'tmax', 0.02, 'enable_plots', false, 'num_workers', 4, 'enable_profile', false);
 if nargin == 0
     Np = defaults.Np;
     tmax = defaults.tmax;
     enable_plots = defaults.enable_plots;
     num_workers = defaults.num_workers;
+    enable_profile = defaults.enable_profile;
 elseif nargin == 1
     Np = varargin{1};
     tmax = defaults.tmax;
     enable_plots = defaults.enable_plots;
     num_workers = defaults.num_workers;
+    enable_profile = defaults.enable_profile;
 elseif nargin == 2
     Np = varargin{1};
     tmax = varargin{2};
     enable_plots = defaults.enable_plots;
     num_workers = defaults.num_workers;
+    enable_profile = defaults.enable_profile;
 elseif nargin == 3
     Np = varargin{1};
     tmax = varargin{2};
     enable_plots = varargin{3};
     num_workers = defaults.num_workers;
+    enable_profile = defaults.enable_profile;
+elseif nargin == 4
+    Np = varargin{1};
+    tmax = varargin{2};
+    enable_plots = varargin{3};
+    num_workers = varargin{4};
+    enable_profile = defaults.enable_profile;
 else
     Np = varargin{1};
     tmax = varargin{2};
     enable_plots = varargin{3};
     num_workers = varargin{4};
+    enable_profile = varargin{5};
 end
 
 % Physical parameters
@@ -95,6 +109,12 @@ if isempty(pool)
 elseif pool.NumWorkers ~= num_workers
     delete(pool);
     parpool('local', num_workers);
+end
+
+% Initialize MPI profiler if enabled
+if enable_profile
+    fprintf('MPI profiling enabled. Starting mpiprofile...\n');
+    mpiprofile on;
 end
 
 % Pass script directory to workers (determine before spmd)
@@ -316,6 +336,32 @@ spmd
     end
 end
 
+% Collect and display MPI profiling results if enabled
+if enable_profile
+    fprintf('\nCollecting MPI profile data...\n');
+    profile_stats = mpiprofile('info');
+    
+    % Save profile data to file
+    profile_filename = sprintf('mpi_profile_%dranks_Np%d.mat', num_workers, Np);
+    save(profile_filename, 'profile_stats');
+    fprintf('Profile data saved to: %s\n', profile_filename);
+    fprintf('To view later, use: load(''%s''); mpiprofile(''viewer'', profile_stats)\n', profile_filename);
+    
+    % Open profile viewer
+    fprintf('Opening MPI profile viewer...\n');
+    mpiprofile viewer;
+    
+    % Display summary statistics
+    fprintf('\n=== MPI Profile Summary ===\n');
+    for w = 1:length(profile_stats)
+        if ~isempty(profile_stats(w).FunctionTable)
+            worker_time = sum([profile_stats(w).FunctionTable.TotalTime]);
+            fprintf('Worker %d: Total time = %.2f s\n', w, worker_time);
+        end
+    end
+    fprintf('===========================\n\n');
+end
+
 % Extract from composite
 if isa(M_final, 'Composite')
     M_final = M_final{1};
@@ -345,6 +391,7 @@ if nargout > 0
     results.parameters.tmax = tmax;
     results.parameters.enable_plots = enable_plots;
     results.parameters.num_workers = num_workers;
+    results.parameters.enable_profile = enable_profile;
     results.parameters.Kn = Kn;
     results.parameters.Ma = Ma;
     results.parameters.CFL = CFL;
