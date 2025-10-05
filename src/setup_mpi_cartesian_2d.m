@@ -15,7 +15,7 @@ function decomp = setup_mpi_cartesian_2d(np, halo)
 %   .istart_iend - [i0, i1] global inclusive interior index range for x
 %   .jstart_jend - [j0, j1] global inclusive interior index range for y
 % Notes:
-% - Uses an approximately square process grid [Px, Py] with Px*Py=numlabs.
+% - Uses an approximately square process grid [Px, Py] with Px*Py=spmdSize.
 % - Uses block decomposition with remainder cells assigned to lower coords.
     arguments
         np (1,1) {mustBeInteger, mustBePositive}
@@ -23,7 +23,7 @@ function decomp = setup_mpi_cartesian_2d(np, halo)
     end
 
     % Discover parallel environment
-    nl = numlabs;
+    nl = spmdSize;
     if nl < 1
         error('setup_mpi_cartesian_2d:parallelRequired', 'This function must run inside an spmd block.');
     end
@@ -32,7 +32,7 @@ function decomp = setup_mpi_cartesian_2d(np, halo)
     [Px, Py] = mpi_utils('choose_grid', nl);
 
     % Rank coordinates (0-based)
-    r = labindex - 1;
+    r = spmdIndex - 1;
     rx = mod(r, Px);
     ry = floor(r / Px);
 
@@ -60,7 +60,7 @@ function decomp = setup_mpi_cartesian_2d(np, halo)
     decomp.halo = halo;
     decomp.dims = [Px, Py];
     decomp.coords = [rx, ry];
-    decomp.rank = labindex;
+    decomp.rank = spmdIndex;
     decomp.neighbors = neighbors;
     decomp.local_size = [nx_local, ny_local];
     decomp.istart_iend = [i0, i1];

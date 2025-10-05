@@ -72,9 +72,9 @@ function M_full = gather_M_impl(M_interior, i0i1, j0j1, Np, Nmom)
     M_full(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = M_interior;
     
     % Receive from all other ranks
-    for src = 2:numlabs
+    for src = 2:spmdSize
         % Receive data packet: {M_interior, i0i1, j0j1}
-        data_packet = labReceive(src);
+        data_packet = spmdReceive(src);
         blk = data_packet{1};
         i_range = data_packet{2};
         j_range = data_packet{3};
@@ -87,5 +87,5 @@ function send_M_impl(M_interior, i0i1, j0j1, dest_rank)
 % Must be called from non-rank-1 workers, inside spmd block
     % Package data with index information
     data_packet = {M_interior, i0i1, j0j1};
-    labSend(data_packet, dest_rank);
+    spmdSend(data_packet, dest_rank);
 end

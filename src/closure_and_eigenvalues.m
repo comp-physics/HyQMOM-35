@@ -33,11 +33,6 @@ function [Mp,vpmin,vpmax] = closure_and_eigenvalues(mom)
         sig(k-1,l+1) = sig(k,l) +a(k-2)*sig(k-1,l)+b(k-2)*sig(k-2,l) ;
     end
     Mp = sig(2,2*N+3);
-    if any(b<0)
-        disp('pb realizabilite')
-        b
-        mom
-    end
 
     % Computation of the maximal and minimal values of the eigenvalues
     
