@@ -290,14 +290,14 @@ spmd
         % Gather interior data from all ranks to rank 1
         M_interior_local = M(halo+1:halo+nx, halo+1:halo+ny, :);
         
-        if labindex == 1
+        if spmdIndex == 1
             % Rank 1: collect from all workers to reconstruct global array
             M_global_temp = zeros(Np, Np, Nmom);
             M_global_temp(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = M_interior_local;
             
             % Receive from all other ranks
-            for src = 2:numlabs
-                data_packet = labReceive(src);
+            for src = 2:spmdSize
+                data_packet = spmdReceive(src);
                 blk = data_packet{1};
                 i_range = data_packet{2};
                 j_range = data_packet{3};
@@ -309,7 +309,7 @@ spmd
         else
             % All other ranks: send to rank 1
             data_packet = {M_interior_local, i0i1, j0j1};
-            labSend(data_packet, 1);
+            spmdSend(data_packet, 1);
             MaxDiff = [];  % Will be broadcast from rank 1
         end
         
@@ -324,7 +324,7 @@ spmd
         max_time_per_point = gop(@max, time_per_point_local);
         
         % Print timestep timing and MaxDiff (only from rank 1)
-        if labindex == 1
+        if spmdIndex == 1
             fprintf('Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s, MaxDiff = %.3e\n', ...
                     nn, t, dt, max_time_per_point, max(abs(MaxDiff)));
         end
@@ -333,7 +333,7 @@ spmd
     % Gather results to rank 1 using asynchronous send/receive
     M_interior = M(halo+1:halo+nx, halo+1:halo+ny, :);
     
-    if labindex == 1
+    if spmdIndex == 1
         % Rank 1: gather from all ranks using mpi_utils
         M_final = mpi_utils('gather_M', M_interior, i0i1, j0j1, Np, Nmom);
         final_time = t;
