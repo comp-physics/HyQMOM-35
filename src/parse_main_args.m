@@ -19,6 +19,7 @@ addOptional(p, 'enable_plots', defaults.enable_plots, @islogical);
 addOptional(p, 'num_workers', defaults.num_workers, @(x) isnumeric(x) && isscalar(x) && x > 0);
 addOptional(p, 'enable_profile', defaults.enable_profile, @islogical);
 addOptional(p, 'symmetry_check_interval', defaults.symmetry_check_interval, @(x) isnumeric(x) && isscalar(x) && x > 0);
+addOptional(p, 'enable_memory_tracking', defaults.enable_memory_tracking, @islogical);
 
 % Parse input
 parse(p, args{:});

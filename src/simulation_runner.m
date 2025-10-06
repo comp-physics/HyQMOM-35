@@ -44,6 +44,7 @@ spmd
     
     % Unpack diagnostic parameters
     symmetry_check_interval = params.symmetry_check_interval;
+    enable_memory_tracking = params.enable_memory_tracking;
     
     % Setup domain decomposition
     decomp = setup_mpi_cartesian_2d(Np, halo);
@@ -144,6 +145,11 @@ spmd
     
     % Initial halo exchange
     M = halo_exchange_2d(M, decomp, bc);
+    
+    % Initialize memory tracking if enabled
+    if enable_memory_tracking
+        memory_utils('init');
+    end
     
     % Time evolution
     t = 0.0;
@@ -246,6 +252,11 @@ spmd
         % Exchange halos for next iteration
         M = halo_exchange_2d(M, decomp, bc);
         
+        % Record memory usage for this time step if enabled
+        if enable_memory_tracking
+            memory_utils('record', nn);
+        end
+        
         % Compute MaxDiff for symmetry check over GLOBAL domain
         % Only check every symmetry_check_interval steps to reduce overhead
         % OPTIMIZATION: Gather only diagonal entries (not full field) to minimize memory
@@ -331,6 +342,11 @@ spmd
         end
     end
     
+    % Report memory usage statistics if enabled
+    if enable_memory_tracking
+        memory_utils('report', spmdSize);
+    end
+    
     % Gather results to rank 1 using asynchronous send/receive
     M_interior = M(halo+1:halo+nx, halo+1:halo+ny, :);
     
@@ -340,8 +356,7 @@ spmd
         final_time = t;
         time_steps = nn;
         
-        % Rank 1 creates the GLOBAL grid structure for output
-        % (Only rank 1 needs this for post-processing/plotting)
+        % Rank 1 creates the global grid structure for output
         grid_out_local = struct();
         grid_out_local.x = linspace(xmin, xmax, Np+1)';
         grid_out_local.y = linspace(ymin, ymax, Np+1)';
