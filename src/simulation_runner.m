@@ -12,9 +12,6 @@ function [M_final, final_time, time_steps, grid_out] = simulation_runner(params,
 %   time_steps - Number of time steps taken
 %   grid_out   - Grid structure
 
-% Setup grid (outside spmd)
-grid = grid_utils('setup', params.Np, -0.5, 0.5, -0.5, 0.5);
-
 % MPI parallel execution
 spmd
     % Workers need src/ directory in their path
@@ -45,10 +42,34 @@ spmd
     r101_worker = params.r101;
     r011_worker = params.r011;
     
+    % Unpack diagnostic parameters
+    symmetry_check_interval = params.symmetry_check_interval;
+    
     % Setup domain decomposition
     decomp = setup_mpi_cartesian_2d(Np, halo);
     nx = decomp.local_size(1);
     ny = decomp.local_size(2);
+    
+    % Create local grid structure
+    xmin = -0.5; xmax = 0.5; ymin = -0.5; ymax = 0.5;
+    dx_global = (xmax - xmin) / Np;
+    dy_global = (ymax - ymin) / Np;
+    
+    % Local grid coordinates (only for this rank's subdomain)
+    i0i1 = decomp.istart_iend;
+    j0j1 = decomp.jstart_jend;
+    
+    % Cell edges for local subdomain
+    x_local = xmin + (i0i1(1)-1:i0i1(2)) * dx_global;
+    y_local = ymin + (j0j1(1)-1:j0j1(2)) * dy_global;
+    
+    % Cell centers for local subdomain
+    xm_local = x_local(1:end-1) + dx_global/2;
+    ym_local = y_local(1:end-1) + dy_global/2;
+    
+    grid_local = struct('dx', dx_global, 'dy', dy_global, ...
+                        'x', x_local', 'y', y_local', ...
+                        'xm', xm_local', 'ym', ym_local');
     
     % Allocate local arrays with halos
     M = zeros(nx+2*halo, ny+2*halo, Nmom_worker);
@@ -71,8 +92,6 @@ spmd
     v6ymax = zeros(nx, ny);
     
     % Build initial conditions locally (no M_global broadcast)
-    i0i1 = decomp.istart_iend;
-    j0j1 = decomp.jstart_jend;
     
     % Background parameters (mean velocities at rest)
     U0 = 0; V0 = 0; W0 = 0;
@@ -228,30 +247,66 @@ spmd
         M = halo_exchange_2d(M, decomp, bc);
         
         % Compute MaxDiff for symmetry check over GLOBAL domain
-        % Gather interior data from all ranks to rank 1
-        M_interior_local = M(halo+1:halo+nx, halo+1:halo+ny, :);
-        
-        if spmdIndex == 1
-            % Rank 1: collect from all workers to reconstruct global array
-            M_global_temp = zeros(Np, Np, Nmom_worker);
-            M_global_temp(i0i1(1):i0i1(2), j0j1(1):j0j1(2), :) = M_interior_local;
+        % Only check every symmetry_check_interval steps to reduce overhead
+        % OPTIMIZATION: Gather only diagonal entries (not full field) to minimize memory
+        if mod(nn, symmetry_check_interval) == 0 || nn == 1
+            % Find global diagonal indices present on this rank
+            % Diagonal: global indices where i == j
+            diag_i_global = max(i0i1(1), j0j1(1)) : min(i0i1(2), j0j1(2));
+            ndiag = numel(diag_i_global);
             
-            % Receive from all other ranks
-            for src = 2:spmdSize
-                data_packet = spmdReceive(src);
-                blk = data_packet{1};
-                i_range = data_packet{2};
-                j_range = data_packet{3};
-                M_global_temp(i_range(1):i_range(2), j_range(1):j_range(2), :) = blk;
+            % Extract the 5 moment components needed for symmetry test from diagonal cells
+            diag5_local = zeros(ndiag, 5);
+            for idx = 1:ndiag
+                gi = diag_i_global(idx);
+                ii = gi - i0i1(1) + 1;  % local i index (interior, 1-based)
+                jj = gi - j0j1(1) + 1;  % local j index (interior, 1-based)
+                ih = ii + halo;
+                jh = jj + halo;
+                diag5_local(idx, 1) = M(ih, jh, 1);
+                diag5_local(idx, 2) = M(ih, jh, 2);
+                diag5_local(idx, 3) = M(ih, jh, 3);
+                diag5_local(idx, 4) = M(ih, jh, 4);
+                diag5_local(idx, 5) = M(ih, jh, 5);
             end
             
-            % Now compute MaxDiff on full global domain
-            [~, MaxDiff] = diagnostics('test_symmetry', M_global_temp, Np);
+            if spmdIndex == 1
+                % Rank 1: assemble full diagonal from all ranks
+                diag5_global = zeros(Np, 5);
+                diag5_global(diag_i_global, :) = diag5_local;
+                
+                % Receive diagonal slices from other ranks
+                for src = 2:spmdSize
+                    pkt = spmdReceive(src);  % {gi_range, diag5_vals}
+                    gi_range = pkt{1};
+                    vals = pkt{2};
+                    diag5_global(gi_range, :) = vals;
+                end
+                
+                % Compute Diff and MaxDiff using only diagonal entries
+                % This is the core of test_symmetry: M(i,i,k) vs M(Np+1-i,Np+1-i,k)
+                Diff = zeros(Np, 5);
+                for i = 1:Np
+                    j = Np + 1 - i;
+                    Diff(i, 1) = diag5_global(i, 1) - diag5_global(j, 1);
+                    Diff(i, 2) = diag5_global(i, 2) + diag5_global(j, 2);
+                    Diff(i, 3) = diag5_global(i, 3) - diag5_global(j, 3);
+                    Diff(i, 4) = diag5_global(i, 4) + diag5_global(j, 4);
+                    Diff(i, 5) = diag5_global(i, 5) - diag5_global(j, 5);
+                end
+                MaxDiff = zeros(5, 1);
+                for k = 1:5
+                    Normk = norm(Diff(:, k));
+                    MaxDiff(k) = max(Diff(:, k)) / (Normk + 1);
+                end
+            else
+                % Non-root ranks: send diagonal slice to rank 1
+                spmdSend({diag_i_global, diag5_local}, 1);
+                MaxDiff = [];
+            end
         else
-            % All other ranks: send to rank 1
-            data_packet = {M_interior_local, i0i1, j0j1};
-            spmdSend(data_packet, 1);
-            MaxDiff = [];  % Will be broadcast from rank 1
+            % Skip symmetry check this step
+            MaxDiff = 0;
         end
         
         % Compute timing on all ranks
@@ -266,8 +321,13 @@ spmd
         
         % Print timestep timing and MaxDiff (only from rank 1)
         if spmdIndex == 1
-            fprintf('Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s, MaxDiff = %.3e\n', ...
-                    nn, t, dt, max_time_per_point, max(abs(MaxDiff)));
+            if mod(nn, symmetry_check_interval) == 0 || nn == 1
+                fprintf('Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s, MaxDiff = %.3e\n', ...
+                        nn, t, dt, max_time_per_point, max(abs(MaxDiff)));
+            else
+                fprintf('Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s\n', ...
+                        nn, t, dt, max_time_per_point);
+            end
         end
     end
     
@@ -279,12 +339,23 @@ spmd
         M_final = mpi_utils('gather_M', M_interior, i0i1, j0j1, Np, Nmom_worker);
         final_time = t;
         time_steps = nn;
+        
+        % Rank 1 creates the GLOBAL grid structure for output
+        % (Only rank 1 needs this for post-processing/plotting)
+        grid_out_local = struct();
+        grid_out_local.x = linspace(xmin, xmax, Np+1)';
+        grid_out_local.y = linspace(ymin, ymax, Np+1)';
+        grid_out_local.dx = dx_global;
+        grid_out_local.dy = dy_global;
+        grid_out_local.xm = grid_out_local.x(1:Np) + dx_global/2;
+        grid_out_local.ym = grid_out_local.y(1:Np) + dy_global/2;
     else
         % All other ranks: send to rank 1 using mpi_utils
         mpi_utils('send_M', M_interior, i0i1, j0j1, 1);
         M_final = [];
         final_time = [];
         time_steps = [];
+        grid_out_local = [];
     end
 end
 
@@ -293,9 +364,9 @@ if isa(M_final, 'Composite')
     M_final = M_final{1};
     final_time = final_time{1};
     time_steps = time_steps{1};
+    grid_out = grid_out_local{1};
+else
+    grid_out = grid_out_local;
 end
-
-% Grid was created outside spmd, so it's not a Composite
-grid_out = grid;
 
 end

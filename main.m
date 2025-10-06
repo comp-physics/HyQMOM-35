@@ -6,17 +6,21 @@ function [results] = main(varargin)
 %   enable_plots - Enable/disable plotting (default: false)
 %   num_workers  - Number of MPI ranks/workers (default: 6)
 %   enable_profile - Enable MPI profiling (default: false)
+%   symmetry_check_interval - Check symmetry every N steps (default: 1)
+%                             Set to 100 for large problems to improve performance
 % Usage:
 %   main()                           % Run with defaults
 %   main(Np, tmax)                   % Override Np and tmax
 %   main(Np, tmax, enable_plots)     % Override plotting
 %   main(Np, tmax, enable_plots, num_workers) % Specify number of MPI ranks
 %   main(Np, tmax, enable_plots, num_workers, enable_profile) % Enable profiling
+%   main(Np, tmax, enable_plots, num_workers, enable_profile, symmetry_check_interval) % Set check interval
 % Examples:
 %   main()                    % Default: Np=140 (global), tmax=0.02, 6 workers
 %   main(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
 %   main(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
 %   main(40, 0.1, false, 4, true) % Same as above with MPI profiling enabled
+%   main(200, 0.1, false, 4, false, 100) % Check symmetry every 100 steps (faster!)
 % Note: Np is the TOTAL grid size. It will be decomposed into subdomains.
 %       Each rank must have at least 10×10 interior points.
 
@@ -25,8 +29,9 @@ script_dir = fileparts(mfilename('fullpath'));
 setup_paths(script_dir);
 
 % Parse input arguments with clean helper
-defaults = struct('Np', 140, 'tmax', 0.02, 'enable_plots', false, ...
-                  'num_workers', 6, 'enable_profile', true);
+defaults = struct('Np', 120, 'tmax', 0.02, 'enable_plots', false, ...
+                  'num_workers', 6, 'enable_profile', false, ...
+                  'symmetry_check_interval', 10);
 params = parse_main_args(varargin, defaults);
 
 % Validate grid size for MPI decomposition
@@ -89,6 +94,7 @@ if nargout > 0
     results.parameters.CFL = params.CFL;
     results.parameters.Nmom = params.Nmom;
     results.parameters.N = params.N;
+    results.parameters.symmetry_check_interval = params.symmetry_check_interval;
     results.parameters.final_time = final_time;
     results.parameters.time_steps = time_steps;
     
