@@ -34,7 +34,27 @@ jobs:
           cache: true
           products: Parallel_Computing_Toolbox
 
-      - name: Run tests
+      - name: Generate golden files
+        uses: matlab-actions/run-command@v2
+        with:
+          command: |
+            cd tests
+            if ~exist('goldenfiles/test_initialization_golden.mat', 'file')
+                fprintf('Generating golden files...\n');
+                create_test_goldenfiles
+            else
+                fprintf('Golden files already exist, skipping generation.\n');
+            end
+
+      - name: Run comprehensive test suite
+        uses: matlab-actions/run-command@v2
+        with:
+          command: |
+            cd tests
+            exit_code = run_all_tests();
+            exit(exit_code)
+
+      - name: Run existing MATLAB tests
         uses: matlab-actions/run-tests@v2
         with:
           test-results-junit: test-results/results.xml
