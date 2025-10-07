@@ -64,7 +64,7 @@ end
 
 function M_full = gather_M_impl(M_interior, i0i1, j0j1, Np, Nmom)
 % Gather moment arrays from all ranks to rank 1
-% Must be called from rank 1 only, inside spmd block
+
     % Initialize full array on rank 1
     M_full = zeros(Np, Np, Nmom);
     

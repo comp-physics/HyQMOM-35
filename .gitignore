@@ -1,6 +1,6 @@
 # Ignore all .mat files except golden files
 *.mat
-!goldenfiles/*.mat
+!tests/goldenfiles/*.mat
 
 # System files
 .DS_Store

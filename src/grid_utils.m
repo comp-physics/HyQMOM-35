@@ -91,7 +91,7 @@ function M = crossing_jets_ic_impl(Np, Nmom, rhol, rhor, Ma, T, r110, r101, r011
 end
 
 function arrays = init_arrays_impl(Np, Nmom, Nmom5)
-% Pre-allocate moment arrays for simulation
+    % Pre-allocate moment arrays for simulation
     arrays = struct();
     
     % 4th-order moment arrays
