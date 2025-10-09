@@ -44,7 +44,8 @@ params = (
     r101 = 0.0,
     r011 = 0.0,
     symmetry_check_interval = 10,
-    enable_memory_tracking = false
+    enable_memory_tracking = false,
+    debug_output = false
 )
 
 println("\nSimulation parameters:")

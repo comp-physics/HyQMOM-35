@@ -167,7 +167,8 @@ function main()
               dx=dx, dy=dy, Nmom=Nmom, nnmax=nnmax, dtmax=dtmax,
               rhol=rhol, rhor=rhor, T=T, r110=r110, r101=r101, r011=r011,
               symmetry_check_interval=symmetry_check_interval,
-              enable_memory_tracking=false)
+              enable_memory_tracking=false,
+              debug_output=false)
     
     if rank == 0
         println("="^70)

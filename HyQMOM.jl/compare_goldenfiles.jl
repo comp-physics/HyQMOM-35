@@ -60,7 +60,8 @@ params = (Np=Np, tmax=t_matlab, Kn=Kn, Ma=Ma, flag2D=flag2D, CFL=CFL,
           dx=dx, dy=dy, Nmom=Nmom, nnmax=nnmax, dtmax=dtmax,
           rhol=rhol, rhor=rhor, T=T, r110=r110, r101=r101, r011=r011,
           symmetry_check_interval=symmetry_check_interval,
-          enable_memory_tracking=false)
+          enable_memory_tracking=false,
+          debug_output=false)
 
 M_julia, t_julia, steps_julia, grid_julia = HyQMOM.simulation_runner(params)
 result_julia = Dict(:M => M_julia, :final_time => t_julia, :time_steps => steps_julia)
