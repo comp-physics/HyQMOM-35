@@ -2,13 +2,10 @@ name: Comprehensive Validation (MATLAB + Julia)
 
 on:
   push:
-    branches: [main, julia, develop]
+    branches: [main, master, julia, develop]
   pull_request:
-    branches: [main, julia, develop]
+    branches: [main, master, julia, develop]
   workflow_dispatch:
-  schedule:
-    # Run weekly to catch any environment changes
-    - cron: '0 0 * * 0'  # Every Sunday at midnight
 
 jobs:
   # Job 1: Ensure MATLAB golden files are up to date

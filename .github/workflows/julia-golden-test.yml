@@ -2,18 +2,18 @@ name: Julia Golden File Tests
 
 on:
   push:
-    branches: [main, julia, develop]
+    branches: [main, master, julia, develop]
     paths:
       - 'RodneyHQMOM.jl/**'
       - 'goldenfiles/**'
       - '.github/workflows/julia-golden-test.yml'
   pull_request:
-    branches: [main, julia, develop]
+    branches: [main, master, julia, develop]
     paths:
       - 'RodneyHQMOM.jl/**'
       - 'goldenfiles/**'
       - '.github/workflows/julia-golden-test.yml'
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch:
 
 jobs:
   test:
