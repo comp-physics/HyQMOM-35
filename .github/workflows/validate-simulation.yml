@@ -38,7 +38,7 @@ jobs:
         uses: matlab-actions/run-command@v2
         with:
           command: |
-            cd tests
+            addpath('tests');
             exit_code = run_all_tests();
             exit(exit_code)
 
