@@ -1,0 +1,178 @@
+name: Julia Golden File Tests
+
+on:
+  push:
+    branches: [main, julia, develop]
+    paths:
+      - 'RodneyHQMOM.jl/**'
+      - 'goldenfiles/**'
+      - '.github/workflows/julia-golden-test.yml'
+  pull_request:
+    branches: [main, julia, develop]
+    paths:
+      - 'RodneyHQMOM.jl/**'
+      - 'goldenfiles/**'
+      - '.github/workflows/julia-golden-test.yml'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test:
+    name: Julia ${{ matrix.julia-version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        julia-version: ['1.9', '1.10', '1']  # 1.9 (min), 1.10 (stable), 1 (latest)
+        os: [ubuntu-latest]
+        # Optional: Add macOS for development testing
+        # os: [ubuntu-latest, macos-latest]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true  # Ensure golden files are downloaded if using Git LFS
+      
+      - name: Check golden files exist
+        run: |
+          echo "Checking for MATLAB golden files..."
+          ls -lh goldenfiles/
+          if [ ! -f "goldenfiles/goldenfile_mpi_1ranks_Np20_tmax100.mat" ]; then
+            echo "❌ Golden file not found!"
+            exit 1
+          fi
+          echo "✅ Golden files found"
+      
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.julia-version }}
+          arch: x64
+      
+      - name: Cache Julia packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/compiled
+          key: ${{ runner.os }}-julia-${{ matrix.julia-version }}-${{ hashFiles('RodneyHQMOM.jl/Project.toml', 'RodneyHQMOM.jl/Manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-${{ matrix.julia-version }}-
+            ${{ runner.os }}-julia-
+      
+      - name: Install MPI (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mpich libmpich-dev
+          which mpiexec
+          mpiexec --version
+      
+      - name: Install MPI (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install mpich
+          which mpiexec
+          mpiexec --version
+      
+      - name: Install Julia dependencies
+        working-directory: RodneyHQMOM.jl
+        run: |
+          julia --project -e '
+            using Pkg
+            Pkg.instantiate()
+            Pkg.status()
+          '
+      
+      - name: Build MPI.jl
+        working-directory: RodneyHQMOM.jl
+        run: |
+          julia --project -e '
+            using Pkg
+            Pkg.build("MPI")
+            using MPI
+            println("MPI initialized successfully")
+          '
+      
+      - name: Run unit tests
+        working-directory: RodneyHQMOM.jl
+        run: |
+          julia --project --color=yes -e '
+            using Pkg
+            Pkg.test(coverage=true)
+          '
+      
+      - name: Run golden file test (1 rank)
+        working-directory: RodneyHQMOM.jl
+        run: |
+          echo "=================================================================="
+          echo "Testing Julia against MATLAB golden file (1 MPI rank)"
+          echo "=================================================================="
+          julia --project test/test_matlab_golden.jl
+      
+      - name: Run golden file comparison script
+        working-directory: RodneyHQMOM.jl
+        run: |
+          echo "=================================================================="
+          echo "Running comparison script"
+          echo "=================================================================="
+          julia --project compare_goldenfiles.jl
+      
+      - name: Test MPI execution (1 rank)
+        working-directory: RodneyHQMOM.jl
+        run: |
+          echo "=================================================================="
+          echo "Testing with MPI (1 rank)"
+          echo "=================================================================="
+          mpiexec -n 1 julia --project test/test_matlab_golden.jl
+      
+      - name: Generate test report
+        if: always()
+        working-directory: RodneyHQMOM.jl
+        run: |
+          julia --project -e '
+            println("="^70)
+            println("JULIA GOLDEN FILE TEST SUMMARY")
+            println("="^70)
+            println("Julia version: ", VERSION)
+            println("OS: ", Sys.KERNEL)
+            println("Architecture: ", Sys.ARCH)
+            
+            # Check if test passed by looking for output file
+            if isfile("test_results.txt")
+              println("\n✅ Tests completed successfully")
+              println(read("test_results.txt", String))
+            else
+              println("\n⚠️  Test results not found")
+            end
+            println("="^70)
+          '
+      
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-julia-${{ matrix.julia-version }}-${{ matrix.os }}
+          path: |
+            RodneyHQMOM.jl/test_results.txt
+            RodneyHQMOM.jl/test/*.log
+          if-no-files-found: ignore
+      
+      - name: Process coverage
+        if: matrix.julia-version == '1' && matrix.os == 'ubuntu-latest'
+        working-directory: RodneyHQMOM.jl
+        run: |
+          julia --project -e '
+            using Pkg
+            Pkg.add("Coverage")
+            using Coverage
+            coverage = process_folder()
+            covered_lines, total_lines = get_summary(coverage)
+            percentage = covered_lines / total_lines * 100
+            println("Coverage: ", round(percentage, digits=2), "%")
+            println("Covered lines: ", covered_lines, " / ", total_lines)
+          '
+
