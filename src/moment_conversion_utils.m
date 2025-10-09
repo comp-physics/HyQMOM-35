@@ -3,7 +3,7 @@ function varargout = moment_conversion_utils(operation, varargin)
 %   Eliminates repetitive moment packing/unpacking code
 %   Operations:
 %     'S_to_C'      : Convert standardized to central moments (vectorized)
-%     'S_to_C_batch': Batch convert S→C for individual variables
+%     'S_to_C_batch': Batch convert S->C for individual variables
 %     'M5_to_vars'  : Extract M5 3D array to individual variables
 %     'M4_to_vars'  : Extract M4 3D array to individual variables
 %     'C_to_S'      : Convert central to standardized moments (inverse)
@@ -31,7 +31,7 @@ end
 
 %% Convert standardized to central moments (vectorized)
 function C = standardized_to_central(S, sC200, sC020, sC002)
-%STANDARDIZED_TO_CENTRAL Vectorized S→C conversion
+%STANDARDIZED_TO_CENTRAL Vectorized S->C conversion
 %   C### = S### * sC200^i * sC020^j * sC002^k  where i+j+k = moment order
 %   Input:
 %     S      - Structure or vector of standardized moments
@@ -79,7 +79,7 @@ for i = 1:size(moment_list, 1)
     name = moment_list{i,1};
     idx = moment_list{i,2};
     
-    % For S→C: C_ijk = S_ijk * sC200^i * sC020^j * sC002^k
+    % For S->C: C_ijk = S_ijk * sC200^i * sC020^j * sC002^k
     s_name = strrep(name, 'M', 'S');
     if isfield(S_struct, s_name)
         power_factor = (sC200^idx(1)) * (sC020^idx(2)) * (sC002^idx(3));
@@ -164,14 +164,14 @@ names = moment_names(4);  % Always 35 moments for S/C conversions
 % Convert M names to S names (for standardized moments)
 S = struct();
 for i = 1:min(length(M_vec), length(names))
-    s_name = strrep(names{i}, 'M', 'S');  % M000 → S000
+    s_name = strrep(names{i}, 'M', 'S');  % M000 -> S000
     S.(s_name) = M_vec(i);
 end
 end
 
 %% Central to standardized (inverse operation)
 function S = central_to_standardized(C, sC200, sC020, sC002)
-%CENTRAL_TO_STANDARDIZED Vectorized C→S conversion (inverse of S→C)
+%CENTRAL_TO_STANDARDIZED Vectorized C->S conversion (inverse of S->C)
 % For completeness - same logic but inverted
 if isnumeric(C)
     C_struct = unpack_moments_to_struct(C);
@@ -202,7 +202,7 @@ end
 
 end
 
-%% Batch S→C conversion for individual variables (convenience function)
+%% Batch S->C conversion for individual variables (convenience function)
 function [C110,C101,C011,C300,C210,C201,C120,C111,C102,C030,C021,C012,C003,...
           C400,C310,C301,C220,C211,C202,C130,C121,C112,C103,C040,C031,C022,C013,C004,...
           C500,C410,C401,C320,C311,C302,C230,C221,C212,C203,C140,C131,C122,C113,C104,C050,C041,C032,C023,C014,C005] = ...

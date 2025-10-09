@@ -17,7 +17,7 @@ end
 end
 
 function test_edge_S110_boundary(testCase)
-%TEST_EDGE_S110_BOUNDARY Test edge case where S110 = ±1 (R110 ≤ 0)
+%TEST_EDGE_S110_BOUNDARY Test edge case where S110 = +/-1 (R110 <= 0)
 % Create a case where S110 is at boundary
 S110r = 0.99;  % Very close to 1
 S101r = 0.3;
@@ -57,7 +57,7 @@ R110 = -0.01;  % Force edge case
                            S031r, S022r, S013r);
 
 % Verify outputs are reasonable
-verifyEqual(testCase, abs(S110), 1, 'AbsTol', 0.01, 'S110 should be ±1 at edge');
+verifyEqual(testCase, abs(S110), 1, 'AbsTol', 0.01, 'S110 should be +/-1 at edge');
 verifyGreaterThanOrEqual(testCase, S300, 0, 'S300 should be non-negative');
 verifyGreaterThanOrEqual(testCase, S030, 0, 'S030 should be non-negative');
 verifyTrue(testCase, isfinite(S210), 'S210 should be finite');
@@ -66,11 +66,11 @@ verifyTrue(testCase, isfinite(S210), 'S210 should be finite');
 S2 = 1 + 2*S110*S101*S011 - (S110^2 + S101^2 + S011^2);
 verifyGreaterThanOrEqual(testCase, S2, -1e-6, 'S2 realizability should hold');
 
-fprintf('✓ Edge S110 test passed\n');
+fprintf('OK Edge S110 test passed\n');
 end
 
 function test_edge_S101_boundary(testCase)
-%TEST_EDGE_S101_BOUNDARY Test edge case where S101 = ±1 (R101 ≤ 0)
+%TEST_EDGE_S101_BOUNDARY Test edge case where S101 = +/-1 (R101 <= 0)
 S110r = 0.3;
 S101r = 0.99;
 S011r = 0.4;
@@ -101,15 +101,15 @@ R011 = 1 - S011r^2;
                            S310r, S301r, S220r, S211r, S202r, S130r, S121r, S112r, S103r, ...
                            S031r, S022r, S013r);
 
-verifyEqual(testCase, abs(S101), 1, 'AbsTol', 0.01, 'S101 should be ±1 at edge');
+verifyEqual(testCase, abs(S101), 1, 'AbsTol', 0.01, 'S101 should be +/-1 at edge');
 S2 = 1 + 2*S110*S101*S011 - (S110^2 + S101^2 + S011^2);
 verifyGreaterThanOrEqual(testCase, S2, -1e-6, 'S2 realizability should hold');
 
-fprintf('✓ Edge S101 test passed\n');
+fprintf('OK Edge S101 test passed\n');
 end
 
 function test_edge_S011_boundary(testCase)
-%TEST_EDGE_S011_BOUNDARY Test edge case where S011 = ±1 (R011 ≤ 0)
+%TEST_EDGE_S011_BOUNDARY Test edge case where S011 = +/-1 (R011 <= 0)
 S110r = 0.3;
 S101r = 0.4;
 S011r = 0.99;
@@ -139,15 +139,15 @@ R011 = -0.01;  % Force edge case
                            S310r, S301r, S220r, S211r, S202r, S130r, S121r, S112r, S103r, ...
                            S031r, S022r, S013r);
 
-verifyEqual(testCase, abs(S011), 1, 'AbsTol', 0.01, 'S011 should be ±1 at edge');
+verifyEqual(testCase, abs(S011), 1, 'AbsTol', 0.01, 'S011 should be +/-1 at edge');
 S2 = 1 + 2*S110*S101*S011 - (S110^2 + S101^2 + S011^2);
 verifyGreaterThanOrEqual(testCase, S2, -1e-6, 'S2 realizability should hold');
 
-fprintf('✓ Edge S011 test passed\n');
+fprintf('OK Edge S011 test passed\n');
 end
 
 function test_corner_case(testCase)
-%TEST_CORNER_CASE Test corner case where all R110, R101, R011 ≤ 0
+%TEST_CORNER_CASE Test corner case where all R110, R101, R011 <= 0
 S110r = 0.99;
 S101r = 0.99;
 S011r = 0.99;
@@ -178,10 +178,10 @@ R011 = -0.01;
                            S310r, S301r, S220r, S211r, S202r, S130r, S121r, S112r, S103r, ...
                            S031r, S022r, S013r);
 
-% At corner, all three should be ±1
-verifyEqual(testCase, abs(S110), 1, 'AbsTol', 0.01, 'S110 should be ±1 at corner');
-verifyEqual(testCase, abs(S101), 1, 'AbsTol', 0.01, 'S101 should be ±1 at corner');
-verifyEqual(testCase, abs(S011), 1, 'AbsTol', 0.01, 'S011 should be ±1 at corner');
+% At corner, all three should be +/-1
+verifyEqual(testCase, abs(S110), 1, 'AbsTol', 0.01, 'S110 should be +/-1 at corner');
+verifyEqual(testCase, abs(S101), 1, 'AbsTol', 0.01, 'S101 should be +/-1 at corner');
+verifyEqual(testCase, abs(S011), 1, 'AbsTol', 0.01, 'S011 should be +/-1 at corner');
 
 % Product should be 1
 product = S110 * S101 * S011;
@@ -190,7 +190,7 @@ verifyEqual(testCase, product, 1, 'AbsTol', 0.01, 'Product should be 1 at corner
 S2 = 1 + 2*S110*S101*S011 - (S110^2 + S101^2 + S011^2);
 verifyGreaterThanOrEqual(testCase, S2, -1e-6, 'S2 realizability should hold');
 
-fprintf('✓ Corner case test passed\n');
+fprintf('OK Corner case test passed\n');
 end
 
 function test_output_consistency(testCase)
@@ -228,6 +228,6 @@ all_outputs = [S210, S201, S120, S111, S102, S021, S012, ...
                S310, S301, S220, S211, S202, S130, S121, S112, S103, S031, S022, S013];
 verifyTrue(testCase, all(isfinite(all_outputs)), 'All outputs should be finite');
 
-fprintf('✓ Output consistency test passed\n');
+fprintf('OK Output consistency test passed\n');
 end
 

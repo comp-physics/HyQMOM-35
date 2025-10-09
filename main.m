@@ -19,12 +19,12 @@ function [results] = main(varargin)
 %   main(Np, tmax, enable_plots, num_workers, enable_profile, symmetry_check_interval, enable_memory_tracking) % Control memory tracking
 % Examples:
 %   main()                    % Default: Np=140 (global), tmax=0.02, 6 workers
-%   main(40, 0.1, false, 2)   % 40×40 GLOBAL grid, 2 MPI ranks (each gets 40×20)
-%   main(40, 0.1, false, 4)   % 40×40 GLOBAL grid, 4 MPI ranks (each gets 20×20)
+%   main(40, 0.1, false, 2)   % 40x40 GLOBAL grid, 2 MPI ranks (each gets 40x20)
+%   main(40, 0.1, false, 4)   % 40x40 GLOBAL grid, 4 MPI ranks (each gets 20x20)
 %   main(40, 0.1, false, 4, true) % Same as above with MPI profiling enabled
 %   main(200, 0.1, false, 4, false, 100) % Check symmetry every 100 steps (faster!)
 % Note: Np is the total grid size. It will be decomposed into subdomains.
-%       Each rank must have at least 10×10 interior points.
+%       Each rank must have at least 10x10 interior points.
 
 % Add src directory to path
 script_dir = fileparts(mfilename('fullpath'));

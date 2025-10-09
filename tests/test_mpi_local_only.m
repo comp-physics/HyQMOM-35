@@ -31,9 +31,9 @@ function setupOnce(testCase)
     testCase.TestData.is_ci = is_ci_environment();
     
     if testCase.TestData.is_ci
-        fprintf('\n╔══════════════════════════════════════════════════════════════╗\n');
-        fprintf('║  CI ENVIRONMENT DETECTED - SKIPPING LOCAL-ONLY TESTS        ║\n');
-        fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
+        fprintf('\n+==============================================================+\n');
+        fprintf('|  CI ENVIRONMENT DETECTED - SKIPPING LOCAL-ONLY TESTS        |\n');
+        fprintf('+==============================================================+\n\n');
     end
     
     if ~testCase.TestData.has_pct
@@ -42,7 +42,7 @@ function setupOnce(testCase)
 end
 
 function test_mpi_4_ranks_vs_golden(testCase)
-    % Test MPI with 4 ranks against golden file (40×40 grid)
+    % Test MPI with 4 ranks against golden file (40x40 grid)
     
     % Skip in CI
     if testCase.TestData.is_ci
@@ -57,7 +57,7 @@ function test_mpi_4_ranks_vs_golden(testCase)
         return;
     end
     
-    fprintf('\n=== TEST: MPI 4 Ranks (40×40 grid) [LOCAL ONLY] ===\n');
+    fprintf('\n=== TEST: MPI 4 Ranks (40x40 grid) [LOCAL ONLY] ===\n');
     
     num_ranks = 4;
     Np = 40;
@@ -95,11 +95,11 @@ function test_mpi_4_ranks_vs_golden(testCase)
     verifyLessThanOrEqual(testCase, diff_M, testCase.TestData.tolerance, ...
         sprintf('Moment differences exceed tolerance for %d ranks', num_ranks));
     
-    fprintf('  ✓ 4-rank test PASSED\n');
+    fprintf('  OK 4-rank test PASSED\n');
 end
 
 function test_mpi_8_ranks_vs_golden(testCase)
-    % Test MPI with 8 ranks against golden file (40×40 grid)
+    % Test MPI with 8 ranks against golden file (40x40 grid)
     
     % Skip in CI
     if testCase.TestData.is_ci
@@ -114,7 +114,7 @@ function test_mpi_8_ranks_vs_golden(testCase)
         return;
     end
     
-    fprintf('\n=== TEST: MPI 8 Ranks (40×40 grid) [LOCAL ONLY] ===\n');
+    fprintf('\n=== TEST: MPI 8 Ranks (40x40 grid) [LOCAL ONLY] ===\n');
     
     num_ranks = 8;
     Np = 40;
@@ -152,7 +152,7 @@ function test_mpi_8_ranks_vs_golden(testCase)
     verifyLessThanOrEqual(testCase, diff_M, testCase.TestData.tolerance, ...
         sprintf('Moment differences exceed tolerance for %d ranks', num_ranks));
     
-    fprintf('  ✓ 8-rank test PASSED\n');
+    fprintf('  OK 8-rank test PASSED\n');
 end
 
 %% Helper function to detect CI environment

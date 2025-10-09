@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, julia ]
+  pull_request:
+    branches: [ main, master, julia ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        julia-version: ['1.9', '1.10']
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Julia
+      uses: julia-actions/setup-julia@v1
+      with:
+        version: ${{ matrix.julia-version }}
+    
+    - name: Install MPI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mpich libmpich-dev
+    
+    - name: Cache Julia packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.julia
+        key: ${{ runner.os }}-julia-${{ matrix.julia-version }}-${{ hashFiles('**/Project.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-julia-${{ matrix.julia-version }}-
+    
+    - name: Install dependencies
+      run: |
+        julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("MPI")'
+    
+    - name: Run unit tests
+      run: |
+        TEST_GOLDEN_SIMULATION=false CI=true julia --project=. --color=yes -e 'using Pkg; Pkg.test()'
+      env:
+        CI: true
+    
+    - name: Run MPI golden file tests
+      run: |
+        ./test/test_mpi_goldenfiles.sh
+    
+    - name: Run MPI integration tests
+      run: |
+        ./test/run_mpi_tests.sh
+

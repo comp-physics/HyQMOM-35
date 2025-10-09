@@ -69,9 +69,9 @@ for i = 1:length(test_files)
         
         % Report results for this file
         if num_failed == 0 && num_incomplete == 0
-            fprintf('✓ PASSED: %d/%d tests\n', num_passed, length(result));
+            fprintf('OK PASSED: %d/%d tests\n', num_passed, length(result));
         else
-            fprintf('✗ FAILED: %d passed, %d failed, %d incomplete\n', ...
+            fprintf('X FAILED: %d passed, %d failed, %d incomplete\n', ...
                     num_passed, num_failed, num_incomplete);
             failed_tests{end+1} = test_name;
             
@@ -84,7 +84,7 @@ for i = 1:length(test_files)
         end
         
     catch ME
-        fprintf('✗ ERROR running %s:\n', test_name);
+        fprintf('X ERROR running %s:\n', test_name);
         fprintf('  %s\n', ME.message);
         failed_tests{end+1} = test_name;
         total_failed = total_failed + 1;
@@ -105,10 +105,10 @@ fprintf('Time elapsed:     %.2f seconds\n', elapsed_time);
 fprintf('\n');
 
 if total_failed == 0
-    fprintf('✓✓✓ ALL TESTS PASSED ✓✓✓\n');
+    fprintf('OKOKOK ALL TESTS PASSED OKOKOK\n');
     exit_code = 0;
 else
-    fprintf('✗✗✗ SOME TESTS FAILED ✗✗✗\n');
+    fprintf('XXX SOME TESTS FAILED XXX\n');
     fprintf('\nFailed test files:\n');
     for i = 1:length(failed_tests)
         fprintf('  - %s\n', failed_tests{i});

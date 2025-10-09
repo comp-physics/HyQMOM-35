@@ -2,8 +2,8 @@ function varargout = moment_struct(operation, varargin)
 %MOMENT_STRUCT Create and manipulate moment structures
 %   Provides a clean struct-based interface for moments, eliminating
 %   the need for crazy-long argument lists.
-%   This utility focuses on DATA STRUCTURE management (vector↔struct).
-%   For mathematical transformations (S→C, array extraction), use moment_conversion_utils().
+%   This utility focuses on DATA STRUCTURE management (vector<->struct).
+%   For mathematical transformations (S->C, array extraction), use moment_conversion_utils().
 %   Operations:
 %     'from_vector' - Create struct from 35 or 56-element vector
 %     'to_vector'   - Convert struct to vector
@@ -19,7 +19,7 @@ function varargout = moment_struct(operation, varargin)
 %     % Pass to functions (much cleaner):
 %     [Fx, Fy, Fz] = compute_fluxes(M);
 %   Complementary Tools:
-%     - moment_conversion_utils: Mathematical transformations (S→C, C→M, etc.)
+%     - moment_conversion_utils: Mathematical transformations (S->C, C->M, etc.)
 %     - moment_struct: Data structure management (this file)
     switch lower(operation)
         case 'from_vector'
