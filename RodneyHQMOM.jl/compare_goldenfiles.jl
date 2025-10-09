@@ -62,7 +62,7 @@ params = (Np=Np, tmax=t_matlab, Kn=Kn, Ma=Ma, flag2D=flag2D, CFL=CFL,
           symmetry_check_interval=symmetry_check_interval,
           enable_memory_tracking=false)
 
-M_julia, t_julia, steps_julia, grid_julia = simulation_runner(params)
+M_julia, t_julia, steps_julia, grid_julia = RodneyHQMOM.simulation_runner(params)
 result_julia = Dict(:M => M_julia, :final_time => t_julia, :time_steps => steps_julia)
 
 M_julia = result_julia[:M]
