@@ -116,7 +116,8 @@ function run_julia_simulation_exact_matlab_params(Np, tmax, num_workers=1)
         r101=r101, 
         r011=r011,
         symmetry_check_interval=symmetry_check_interval,
-        enable_memory_tracking=false
+        enable_memory_tracking=false,
+        debug_output=false
     )
     
     # Run simulation
