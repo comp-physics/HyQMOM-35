@@ -8,6 +8,10 @@ making it suitable for Pkg.test(). For full MPI testing, use test_matlab_golden.
 using MAT
 using Printf
 
+# Test tolerances (must be at module level, not in testset)
+const TOLERANCE_ABS = 1e-8
+const TOLERANCE_REL = 1e-6
+
 # Load MATLAB golden file
 const GOLDEN_FILE_PATH = joinpath(@__DIR__, "..", "..", "goldenfiles", 
                                    "goldenfile_mpi_1ranks_Np20_tmax100.mat")
@@ -107,15 +111,26 @@ end
     mean_rel_diff = sum(rel_diff) / length(rel_diff)
     
     # Check for NaN/Inf
-    @test !any(isnan, M_julia) "Julia results contain NaN"
-    @test !any(isinf, M_julia) "Julia results contain Inf"
+    @test !any(isnan, M_julia)
+    @test !any(isinf, M_julia)
     
-    # Test against tolerances
-    const TOLERANCE_ABS = 1e-8
-    const TOLERANCE_REL = 1e-6
+    if any(isnan, M_julia)
+        @warn "Julia results contain NaN"
+    end
+    if any(isinf, M_julia)
+        @warn "Julia results contain Inf"
+    end
     
-    @test max_abs_diff < TOLERANCE_ABS "Max abs diff $(max_abs_diff) exceeds tolerance"
-    @test max_rel_diff < TOLERANCE_REL "Max rel diff $(max_rel_diff) exceeds tolerance"
+    # Test against tolerances (use global constants defined at module level)
+    @test max_abs_diff < TOLERANCE_ABS
+    @test max_rel_diff < TOLERANCE_REL
+    
+    if max_abs_diff >= TOLERANCE_ABS
+        @warn "Max abs diff $max_abs_diff exceeds tolerance $TOLERANCE_ABS"
+    end
+    if max_rel_diff >= TOLERANCE_REL
+        @warn "Max rel diff $max_rel_diff exceeds tolerance $TOLERANCE_REL"
+    end
     
     println()
     println("  Comparison Results:")

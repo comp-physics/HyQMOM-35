@@ -5,6 +5,11 @@ using LinearAlgebra
 # Test tolerance
 const TOL = 1e-10
 
+# Golden file configuration (must be at module level, not in testset)
+const GOLDEN_FILE = joinpath(@__DIR__, "..", "..", "goldenfiles", 
+                              "goldenfile_mpi_1ranks_Np20_tmax100.mat")
+const RUN_GOLDEN_TEST = get(ENV, "TEST_GOLDEN_SIMULATION", "true") != "false"
+
 @testset "RodneyHQMOM.jl" begin
     # Unit tests
     include("test_autogen.jl")
@@ -18,10 +23,6 @@ const TOL = 1e-10
     
     # Full simulation golden file test (Julia vs MATLAB)
     # Only run if golden file exists and TEST_GOLDEN_SIMULATION is not set to "false"
-    const GOLDEN_FILE = joinpath(@__DIR__, "..", "..", "goldenfiles", 
-                                  "goldenfile_mpi_1ranks_Np20_tmax100.mat")
-    const RUN_GOLDEN_TEST = get(ENV, "TEST_GOLDEN_SIMULATION", "true") != "false"
-    
     if RUN_GOLDEN_TEST && isfile(GOLDEN_FILE)
         @testset "MATLAB Golden File (Full Simulation)" begin
             println("\n" * "="^70)
