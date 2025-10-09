@@ -70,7 +70,8 @@ end
         dx=dx, dy=dy, Nmom=Nmom, nnmax=nnmax, dtmax=dtmax,
         rhol=rhol, rhor=rhor, T=T, r110=r110, r101=r101, r011=r011,
         symmetry_check_interval=symmetry_check_interval,
-        enable_memory_tracking=false
+        enable_memory_tracking=false,
+        debug_output=false
     )
     
     println("  Running Julia simulation with MATLAB parameters:")
