@@ -1,12 +1,12 @@
 """
-    RodneyHQMOM
+    HyQMOM
 
 3D Hyperbolic Quadrature Method of Moments (HyQMOM) solver with MPI parallelization.
 
 This package implements a moment-based kinetic solver for the Boltzmann equation 
 with BGK collision operator, using domain decomposition for parallel execution.
 """
-module RodneyHQMOM
+module HyQMOM
 
 using LinearAlgebra
 using StaticArrays

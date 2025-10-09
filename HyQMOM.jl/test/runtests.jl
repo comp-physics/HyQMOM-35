@@ -1,5 +1,5 @@
 using Test
-using RodneyHQMOM
+using HyQMOM
 using LinearAlgebra
 
 # Test tolerance
@@ -10,7 +10,7 @@ const GOLDEN_FILE = joinpath(@__DIR__, "..", "..", "goldenfiles",
                               "goldenfile_mpi_1ranks_Np20_tmax100.mat")
 const RUN_GOLDEN_TEST = get(ENV, "TEST_GOLDEN_SIMULATION", "true") != "false"
 
-@testset "RodneyHQMOM.jl" begin
+@testset "HyQMOM.jl" begin
     # Unit tests
     include("test_autogen.jl")
     include("test_moment_conversions.jl")

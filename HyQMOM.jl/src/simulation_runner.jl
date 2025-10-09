@@ -528,7 +528,7 @@ function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_out
     
     if verbose && rank == 0
         println("="^60)
-        println("RodneyHQMOM Simulation")
+        println("HyQMOM Simulation")
         println("="^60)
         println("Grid: $(Np)×$(Np)")
         println("MPI ranks: $nprocs")

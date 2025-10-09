@@ -19,7 +19,7 @@ using MPI
 
 # Add parent directory to load path
 push!(LOAD_PATH, joinpath(@__DIR__, ".."))
-using RodneyHQMOM
+using HyQMOM
 
 function load_matlab_golden(golden_file)
     """Load MATLAB golden file and extract data."""
@@ -121,7 +121,7 @@ function run_julia_simulation_exact_matlab_params(Np, tmax, num_workers=1)
     
     # Run simulation
     start_time = time()
-    M_final, final_time, time_steps, grid_out = RodneyHQMOM.simulation_runner(params)
+    M_final, final_time, time_steps, grid_out = HyQMOM.simulation_runner(params)
     elapsed = time() - start_time
     
     println("  ✓ Julia simulation complete in $(round(elapsed, digits=2))s")

@@ -7,7 +7,7 @@ This validates the entire solver pipeline end-to-end.
 
 using Test
 using MAT
-using RodneyHQMOM
+using HyQMOM
 using MPI
 
 const INTEGRATION_TOL = 1e-8  # Slightly relaxed tolerance for full simulation

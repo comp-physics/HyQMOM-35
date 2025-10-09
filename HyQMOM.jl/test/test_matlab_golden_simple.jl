@@ -83,7 +83,7 @@ end
     end
     
     global M_julia, final_time_julia, time_steps_julia, grid_julia = 
-        RodneyHQMOM.simulation_runner(params)
+        HyQMOM.simulation_runner(params)
     
     @test M_julia !== nothing
     @test size(M_julia) == size(M_matlab)

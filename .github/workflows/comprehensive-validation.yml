@@ -123,12 +123,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.julia
-          key: ${{ runner.os }}-julia-1-${{ hashFiles('RodneyHQMOM.jl/Project.toml') }}
+          key: ${{ runner.os }}-julia-1-${{ hashFiles('HyQMOM.jl/Project.toml') }}
           restore-keys: |
             ${{ runner.os }}-julia-1-
       
       - name: Install dependencies
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           # Retry logic for robustness
           for i in {1..3}; do
@@ -209,13 +209,13 @@ jobs:
       
       - name: Run unit tests
         if: matrix.test-type == 'unit'
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           julia --project --color=yes -e 'using Pkg; Pkg.test()'
       
       - name: Run golden file test
         if: matrix.test-type == 'golden'
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           echo "=================================================================="
           echo "GOLDEN FILE TEST: Julia vs MATLAB"
@@ -232,7 +232,7 @@ jobs:
       
       - name: Run MPI golden file test
         if: matrix.test-type == 'mpi'
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           echo "=================================================================="
           echo "MPI GOLDEN FILE TEST: Julia vs MATLAB (1 rank)"
@@ -249,7 +249,7 @@ jobs:
       
       - name: Generate comparison report
         if: always() && matrix.test-type == 'golden'
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           julia --project -e '
             println("="^70)
@@ -278,7 +278,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: julia-test-results-${{ matrix.test-type }}
-          path: RodneyHQMOM.jl/test/*.log
+          path: HyQMOM.jl/test/*.log
           if-no-files-found: ignore
 
   # Job 3: Final validation report

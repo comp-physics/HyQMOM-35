@@ -27,7 +27,7 @@ mpiexec -n 8 julia --project src/main.jl --Np 240 --tmax 0.04
 using MPI
 using Printf
 using JLD2
-using RodneyHQMOM
+using HyQMOM
 
 function parse_args()
     # Default parameters

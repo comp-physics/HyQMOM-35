@@ -4,13 +4,13 @@ on:
   push:
     branches: [main, master, julia, develop]
     paths:
-      - 'RodneyHQMOM.jl/**'
+      - 'HyQMOM.jl/**'
       - 'goldenfiles/**'
       - '.github/workflows/julia-golden-test.yml'
   pull_request:
     branches: [main, master, julia, develop]
     paths:
-      - 'RodneyHQMOM.jl/**'
+      - 'HyQMOM.jl/**'
       - 'goldenfiles/**'
       - '.github/workflows/julia-golden-test.yml'
   workflow_dispatch:
@@ -65,7 +65,7 @@ jobs:
             ~/.julia/packages
             ~/.julia/artifacts
             ~/.julia/compiled
-          key: ${{ runner.os }}-julia-${{ matrix.julia-version }}-${{ hashFiles('RodneyHQMOM.jl/Project.toml', 'RodneyHQMOM.jl/Manifest.toml') }}
+          key: ${{ runner.os }}-julia-${{ matrix.julia-version }}-${{ hashFiles('HyQMOM.jl/Project.toml', 'HyQMOM.jl/Manifest.toml') }}
           restore-keys: |
             ${{ runner.os }}-julia-${{ matrix.julia-version }}-
             ${{ runner.os }}-julia-
@@ -86,7 +86,7 @@ jobs:
           mpiexec --version
       
       - name: Install Julia dependencies
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           # Retry logic for package installation (handles transient network issues)
           for i in {1..3}; do
@@ -161,7 +161,7 @@ jobs:
           done
       
       - name: Build MPI.jl
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           julia --project -e '
             using Pkg
@@ -178,7 +178,7 @@ jobs:
           '
       
       - name: Run unit tests
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           julia --project --color=yes -e '
             using Pkg
@@ -186,7 +186,7 @@ jobs:
           '
       
       - name: Run golden file test (1 rank)
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           echo "=================================================================="
           echo "Testing Julia against MATLAB golden file (1 MPI rank)"
@@ -194,7 +194,7 @@ jobs:
           julia --project test/test_matlab_golden.jl
       
       - name: Run golden file comparison script
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           echo "=================================================================="
           echo "Running comparison script"
@@ -202,7 +202,7 @@ jobs:
           julia --project compare_goldenfiles.jl
       
       - name: Test MPI execution (1 rank)
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           echo "=================================================================="
           echo "Testing with MPI (1 rank)"
@@ -211,7 +211,7 @@ jobs:
       
       - name: Generate test report
         if: always()
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           julia --project -e '
             println("="^70)
@@ -237,13 +237,13 @@ jobs:
         with:
           name: test-results-julia-${{ matrix.julia-version }}-${{ matrix.os }}
           path: |
-            RodneyHQMOM.jl/test_results.txt
-            RodneyHQMOM.jl/test/*.log
+            HyQMOM.jl/test_results.txt
+            HyQMOM.jl/test/*.log
           if-no-files-found: ignore
       
       - name: Process coverage
         if: matrix.julia-version == '1' && matrix.os == 'ubuntu-latest'
-        working-directory: RodneyHQMOM.jl
+        working-directory: HyQMOM.jl
         run: |
           julia --project -e '
             using Pkg
