@@ -85,12 +85,12 @@ const INTEGRATION_TOL = 1e-8  # Slightly relaxed tolerance for full simulation
             ym = results[:ym]
             
             # Test grid coordinates
-            @test xm ~= expected_xm atol=INTEGRATION_TOL
-            @test ym ~= expected_ym atol=INTEGRATION_TOL
+            @test xm ≈ expected_xm atol=INTEGRATION_TOL
+            @test ym ≈ expected_ym atol=INTEGRATION_TOL
             
             # Test moment field
             @test size(M_final) == size(expected_M)
-            @test M_final ~= expected_M atol=INTEGRATION_TOL
+            @test M_final ≈ expected_M atol=INTEGRATION_TOL
             
             # Compute relative error
             rel_error = maximum(abs.(M_final .- expected_M) ./ (abs.(expected_M) .+ 1e-10))

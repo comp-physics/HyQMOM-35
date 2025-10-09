@@ -75,9 +75,9 @@ const TOL = 1e-10
         S110r, S101r, S011r, S2r = realizability(:S2, S110, S101, S011)
         
         # Should not change for Gaussian
-        @test S110r ~= S110 atol=TOL
-        @test S101r ~= S101 atol=TOL
-        @test S011r ~= S011 atol=TOL
+        @test S110r ≈ S110 atol=TOL
+        @test S101r ≈ S101 atol=TOL
+        @test S011r ≈ S011 atol=TOL
     end
     
     @testset "Realizability preserves finiteness" begin

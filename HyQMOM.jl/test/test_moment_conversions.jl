@@ -11,13 +11,13 @@ const TOL = 1e-10
         
         C4, S4 = M2CS4_35(M)
         
-        @test C4[3] ~= T atol=TOL  # C200 should equal T
-        @test C4[10] ~= T atol=TOL  # C020 should equal T
-        @test C4[20] ~= T atol=TOL  # C002 should equal T
+        @test C4[3] ≈ T atol=TOL  # C200 should equal T
+        @test C4[10] ≈ T atol=TOL  # C020 should equal T
+        @test C4[20] ≈ T atol=TOL  # C002 should equal T
         
-        @test S4[5] ~= 3.0 atol=TOL  # S400 should be 3 for Gaussian
-        @test S4[15] ~= 3.0 atol=TOL  # S040 should be 3 for Gaussian
-        @test S4[25] ~= 3.0 atol=TOL  # S004 should be 3 for Gaussian
+        @test S4[5] ≈ 3.0 atol=TOL  # S400 should be 3 for Gaussian
+        @test S4[15] ≈ 3.0 atol=TOL  # S040 should be 3 for Gaussian
+        @test S4[25] ≈ 3.0 atol=TOL  # S004 should be 3 for Gaussian
     end
     
     @testset "M4toC4_3D produces correct output" begin

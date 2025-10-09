@@ -33,9 +33,9 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                     C4, S4 = M2CS4_35(M)
                     
                     # Compare
-                    @test M ~= vec(expected["M"]) atol=GOLDEN_TOL
-                    @test C4 ~= vec(expected["C4"]) atol=GOLDEN_TOL
-                    @test S4 ~= vec(expected["S4"]) atol=GOLDEN_TOL
+                    @test M ≈ vec(expected["M"]) atol=GOLDEN_TOL
+                    @test C4 ≈ vec(expected["C4"]) atol=GOLDEN_TOL
+                    @test S4 ≈ vec(expected["S4"]) atol=GOLDEN_TOL
                     
                     println("  OK Gaussian case matches golden file")
                 end
@@ -51,9 +51,9 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                                         input["C020"], input["C011"], input["C002"])
                     C4, S4 = M2CS4_35(M)
                     
-                    @test M ~= vec(expected["M"]) atol=GOLDEN_TOL
-                    @test C4 ~= vec(expected["C4"]) atol=GOLDEN_TOL
-                    @test S4 ~= vec(expected["S4"]) atol=GOLDEN_TOL
+                    @test M ≈ vec(expected["M"]) atol=GOLDEN_TOL
+                    @test C4 ≈ vec(expected["C4"]) atol=GOLDEN_TOL
+                    @test S4 ≈ vec(expected["S4"]) atol=GOLDEN_TOL
                     
                     println("  OK Correlated case matches golden file")
                 end
@@ -92,7 +92,7 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                                                 C200, C110, C101, C020, C011, C002)
                         end
                         
-                        @test M ~= expected atol=GOLDEN_TOL
+                        @test M ≈ expected atol=GOLDEN_TOL
                         println("  OK $case_name matches golden file")
                     end
                 end
@@ -121,10 +121,10 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                         S110r, S101r, S011r, S2r = realizability(:S2, input["S110"], 
                                                                    input["S101"], input["S011"])
                         
-                        @test S110r ~= expected["S110r"] atol=GOLDEN_TOL
-                        @test S101r ~= expected["S101r"] atol=GOLDEN_TOL
-                        @test S011r ~= expected["S011r"] atol=GOLDEN_TOL
-                        @test S2r ~= expected["S2r"] atol=GOLDEN_TOL
+                        @test S110r ≈ expected["S110r"] atol=GOLDEN_TOL
+                        @test S101r ≈ expected["S101r"] atol=GOLDEN_TOL
+                        @test S011r ≈ expected["S011r"] atol=GOLDEN_TOL
+                        @test S2r ≈ expected["S2r"] atol=GOLDEN_TOL
                         
                         println("  OK $case_name matches golden file")
                     end
@@ -153,9 +153,9 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                     # Run Julia version
                     M5, C5, S5 = Moments5_3D(input)
                     
-                    @test M5 ~= vec(expected["M5"]) atol=GOLDEN_TOL
-                    @test C5 ~= vec(expected["C5"]) atol=GOLDEN_TOL
-                    @test S5 ~= vec(expected["S5"]) atol=GOLDEN_TOL
+                    @test M5 ≈ vec(expected["M5"]) atol=GOLDEN_TOL
+                    @test C5 ≈ vec(expected["C5"]) atol=GOLDEN_TOL
+                    @test S5 ≈ vec(expected["S5"]) atol=GOLDEN_TOL
                     
                     println("  OK Gaussian Moments5_3D matches golden file")
                 end
@@ -177,9 +177,9 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                         expected_Mp = Float64(expected_Mp)
                     end
                     
-                    @test Mp ~= expected_Mp atol=GOLDEN_TOL
-                    @test vpmin ~= Float64(expected["vpmin"]) atol=GOLDEN_TOL
-                    @test vpmax ~= Float64(expected["vpmax"]) atol=GOLDEN_TOL
+                    @test Mp ≈ expected_Mp atol=GOLDEN_TOL
+                    @test vpmin ≈ Float64(expected["vpmin"]) atol=GOLDEN_TOL
+                    @test vpmax ≈ Float64(expected["vpmax"]) atol=GOLDEN_TOL
                     
                     println("  OK 1D closure matches golden file")
                 end
@@ -207,10 +207,10 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                     # Run Julia version
                     Fx, Fy, Fz, M_real = Flux_closure35_and_realizable_3D(input, 1, 0.5)
                     
-                    @test Fx ~= vec(expected["Fx"]) atol=GOLDEN_TOL
-                    @test Fy ~= vec(expected["Fy"]) atol=GOLDEN_TOL
-                    @test Fz ~= vec(expected["Fz"]) atol=GOLDEN_TOL
-                    @test M_real ~= vec(expected["M_real"]) atol=GOLDEN_TOL
+                    @test Fx ≈ vec(expected["Fx"]) atol=GOLDEN_TOL
+                    @test Fy ≈ vec(expected["Fy"]) atol=GOLDEN_TOL
+                    @test Fz ≈ vec(expected["Fz"]) atol=GOLDEN_TOL
+                    @test M_real ≈ vec(expected["M_real"]) atol=GOLDEN_TOL
                     
                     println("  OK Flux computation matches golden file")
                 end
@@ -225,10 +225,10 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                     v6min_x, v6max_x = eigenvalues6_hyperbolic_3D(input, 1, 1, 0.5)
                     v6min_y, v6max_y = eigenvalues6_hyperbolic_3D(input, 2, 1, 0.5)
                     
-                    @test v6min_x ~= Float64(expected["v6min_x"]) atol=GOLDEN_TOL
-                    @test v6max_x ~= Float64(expected["v6max_x"]) atol=GOLDEN_TOL
-                    @test v6min_y ~= Float64(expected["v6min_y"]) atol=GOLDEN_TOL
-                    @test v6max_y ~= Float64(expected["v6max_y"]) atol=GOLDEN_TOL
+                    @test v6min_x ≈ Float64(expected["v6min_x"]) atol=GOLDEN_TOL
+                    @test v6max_x ≈ Float64(expected["v6max_x"]) atol=GOLDEN_TOL
+                    @test v6min_y ≈ Float64(expected["v6min_y"]) atol=GOLDEN_TOL
+                    @test v6max_y ≈ Float64(expected["v6max_y"]) atol=GOLDEN_TOL
                     
                     println("  OK Eigenvalues match golden file")
                 end
@@ -258,7 +258,7 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                                  vec(input["vpmin"]), vec(input["vpmax"]);
                                  apply_bc_left=true, apply_bc_right=true)
                     
-                    @test Mp ~= expected atol=GOLDEN_TOL
+                    @test Mp ≈ expected atol=GOLDEN_TOL
                     
                     println("  OK pas_HLL matches golden file")
                 end
@@ -286,7 +286,7 @@ const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
                     # Run Julia version
                     M_out = collision35(vec(input["M"]), input["dt"], input["Kn"])
                     
-                    @test M_out ~= expected atol=GOLDEN_TOL
+                    @test M_out ≈ expected atol=GOLDEN_TOL
                     
                     println("  OK collision35 matches golden file")
                 end
