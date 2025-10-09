@@ -448,6 +448,9 @@ High-level wrapper for running simulations with sensible defaults.
 - `num_workers`: Number of MPI ranks (must match mpiexec -n), default 1
 - `verbose`: Print progress information, default true
 - `save_output`: Save output to file, default false
+- `enable_plots`: Generate PyPlot visualization after simulation, default false
+- `save_figures`: Save figures to disk (requires enable_plots=true), default false
+- `output_dir`: Directory for saved figures, default "."
 - `Kn`: Knudsen number, default 1.0
 - `Ma`: Mach number, default 0.0
 - `flag2D`: 2D flag (1 for 2D, 0 for 3D), default 1
@@ -469,9 +472,13 @@ results = run_simulation(Np=20, tmax=0.1)
 
 # Multi-rank (run with: mpiexec -n 4 julia script.jl)
 results = run_simulation(Np=40, tmax=0.2, num_workers=4)
+
+# With visualization
+results = run_simulation(Np=40, tmax=0.1, enable_plots=true)
 ```
 """
 function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_output=false,
+                          enable_plots=false, save_figures=false, output_dir=".",
                           Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5)
     # Initialize MPI if not already done
     if !MPI.Initialized()
@@ -547,6 +554,16 @@ function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_out
         println("Final time: $final_time")
         println("Time steps: $time_steps")
         println("="^60)
+    end
+    
+    # Generate plots if requested (only on rank 0)
+    if enable_plots && rank == 0 && !isnothing(M_final)
+        try
+            plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35; 
+                             save_figures=save_figures, output_dir=output_dir)
+        catch e
+            @warn "Plotting failed (PyPlot may not be available)" exception=(e, catch_backtrace())
+        end
     end
     
     # Package results

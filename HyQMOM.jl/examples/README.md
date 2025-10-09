@@ -17,6 +17,25 @@ With MPI (2 ranks):
 mpiexec -n 2 julia --project=.. run_simple.jl
 ```
 
+### Visualization Example
+Run a simulation with PyPlot visualization (equivalent to MATLAB's plotting):
+
+```bash
+cd examples
+julia --project=.. run_with_plots.jl
+```
+
+This example generates all final result plots (Figures 2-12):
+- Figure 2: Moment line plots along diagonal
+- Figure 3: Central moment line plots
+- Figure 4: Standardized moment line plots
+- Figure 9: Contour plots (12 panels)
+- Figure 10: C-moment contour plots (16 panels)
+- Figure 11: S-moment contour plots (12 panels)
+- Figure 12: Hyperbolicity plots (9 panels)
+
+**Requirements**: PyPlot must be installed (`using Pkg; Pkg.add("PyPlot")`)
+
 ## Using the Top-Level main.jl
 
 The repository includes a convenient top-level `main.jl` file (similar to MATLAB's `main.m`) that you can run from the repository root:
