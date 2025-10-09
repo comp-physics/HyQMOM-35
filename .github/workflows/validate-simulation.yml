@@ -37,10 +37,7 @@ jobs:
       - name: Run comprehensive test suite
         uses: matlab-actions/run-command@v2
         with:
-          command: |
-            addpath('tests');
-            exit_code = run_all_tests();
-            exit(exit_code)
+          command: "addpath('tests'); exit_code = run_all_tests(); exit(exit_code)"
 
       - name: Run existing MATLAB tests
         uses: matlab-actions/run-tests@v2
