@@ -6,6 +6,7 @@ simulation_plots.m, for visualizing final simulation results.
 """
 
 using PyPlot
+using PyCall
 using ColorSchemes
 using Printf
 
@@ -43,6 +44,9 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     println("Generating visualization of final results...")
     println("="^70)
     
+    # Set up the custom sky colormap
+    set_sky_colormap()
+    
     # Compute C and S moments from M
     println("Computing central and standardized moments...")
     C = zeros(Np, Np, Nmom)
@@ -58,7 +62,7 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     
     # Compute 5th order moments
     println("Computing 5th order moments...")
-    Nmom5 = 3  # C500, C410, C320
+    Nmom5 = 21  # Full 5th order moments (21 elements)
     M5 = zeros(Np, Np, Nmom5)
     C5 = zeros(Np, Np, Nmom5)
     S5 = zeros(Np, Np, Nmom5)
@@ -458,7 +462,6 @@ function plot_3Dsym_moments(xm, M, nmin, nmax, cc, Np)
     
     for (panel_idx, (moment_idx, label)) in enumerate(moments)
         subplot(nl, nc, panel_idx)
-        hold(true)
         
         # Extract diagonal values
         Y = [M[i, i, moment_idx] for i = 1:Np]
@@ -485,7 +488,6 @@ function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
     
     # Panel 1: M_000 (density)
     subplot(nl, nc, 1)
-    hold(true)
     Y = [M[i, i, 1] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
     xlabel("x")
@@ -496,7 +498,6 @@ function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
     
     # Panel 2: u_1 (mean velocity)
     subplot(nl, nc, 2)
-    hold(true)
     umean = M[:, :, 2] ./ M[:, :, 1]
     Y = [umean[i, i] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
@@ -514,7 +515,6 @@ function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
     
     for (panel_idx, (c_idx, label)) in enumerate(c_moments)
         subplot(nl, nc, panel_idx + 2)
-        hold(true)
         Y = [C[i, i, c_idx] for i = 1:Np]
         plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
         xlabel("x")
@@ -529,7 +529,6 @@ function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
     
     for (panel_idx, (c5_idx, label)) in enumerate(c5_moments)
         subplot(nl, nc, panel_idx + 9)
-        hold(true)
         Y = [C5[i, i, c5_idx] for i = 1:Np]
         plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
         xlabel("x")
@@ -553,7 +552,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     # Panel 1: S_300
     subplot(nl, nc, 1)
-    hold(true)
     Y = [S[i, i, 4] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
     xlabel("x")
@@ -564,7 +562,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     # Panel 2: S_400
     subplot(nl, nc, 2)
-    hold(true)
     Y = [S[i, i, 5] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
     xlabel("x")
@@ -575,7 +572,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     # Panel 3: H_400
     subplot(nl, nc, 3)
-    hold(true)
     H40 = S[:, :, 5] .- S[:, :, 4].^2 .- 1
     Y = [H40[i, i] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
@@ -587,7 +583,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     # Panel 4: S_500
     subplot(nl, nc, 4)
-    hold(true)
     Y = [S5[i, i, 1] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
     xlabel("x")
@@ -603,7 +598,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     for (panel_idx, (s_idx, label)) in enumerate(s_moments)
         subplot(nl, nc, panel_idx + 4)
-        hold(true)
         Y = [S[i, i, s_idx] for i = 1:Np]
         plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
         xlabel("x")
@@ -615,7 +609,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     # Panel 9: S_410
     subplot(nl, nc, 9)
-    hold(true)
     Y = [S5[i, i, 2] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
     xlabel("x")
@@ -626,7 +619,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     # Panel 10: S_320
     subplot(nl, nc, 10)
-    hold(true)
     Y = [S5[i, i, 3] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
     xlabel("x")
@@ -637,7 +629,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     # Panel 11: |Delta_1|
     subplot(nl, nc, 11)
-    hold(true)
     Y = [1 + 2*S[i, i, 7]*S[i, i, 17]*S[i, i, 26] - 
          S[i, i, 7]^2 - S[i, i, 17]^2 - S[i, i, 26]^2 for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
@@ -649,7 +640,6 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     
     # Panel 12: |Delta_2*|
     subplot(nl, nc, 12)
-    hold(true)
     Y = zeros(Np)
     for i = 1:Np
         S300 = S[i, i, 4]; S400 = S[i, i, 5]; S110 = S[i, i, 7]
@@ -696,15 +686,39 @@ end
     set_sky_colormap()
 
 Set colormap to match MATLAB's 'sky' colormap.
+Note: Using 'viridis' as a replacement since 'sky' is not available in all matplotlib versions.
 """
 function set_sky_colormap()
-    # Register custom 'sky' colormap if not already done
-    # MATLAB 'sky' goes from dark blue to light blue/cyan
+    # Create a custom 'sky' colormap that matches MATLAB's sky colormap
+    # Sky colormap goes from dark blue -> blue -> light blue -> white
+    
+    # Import matplotlib.colors for creating custom colormap
+    matplotlib = pyimport("matplotlib")
+    colors_module = pyimport("matplotlib.colors")
+    
+    # Check if 'sky' colormap is already registered
     try
-        PyPlot.register_cmap("sky", ColorSchemes.ice)
+        # Try to get the existing colormap
+        existing_cmap = matplotlib.colormaps.get_cmap("sky")
+        return existing_cmap
     catch
-        # If registration fails, just use a similar blue colormap
-        nothing
+        # If it doesn't exist, create and register it
+        # Define the sky colormap colors (RGB values)
+        sky_colors = [
+            (0.0, 0.0, 0.5),    # Dark blue
+            (0.0, 0.3, 0.8),    # Blue  
+            (0.3, 0.7, 1.0),    # Light blue
+            (0.7, 0.9, 1.0),    # Very light blue
+            (1.0, 1.0, 1.0)     # White
+        ]
+        
+        # Create the custom colormap
+        sky_cmap = colors_module.LinearSegmentedColormap.from_list("sky", sky_colors, N=256)
+        
+        # Register the colormap so it can be used by name
+        matplotlib.colormaps.register(sky_cmap, name="sky")
+        
+        return sky_cmap
     end
 end
 

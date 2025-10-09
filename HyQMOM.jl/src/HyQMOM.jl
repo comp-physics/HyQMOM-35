@@ -79,7 +79,23 @@ include("utils/diagnostics.jl")
 # Main simulation
 include("simulation_runner.jl")
 
-# Visualization (requires PyPlot and ColorSchemes)
-include("visualization/plotting.jl")
+# Visualization (requires PyPlot and ColorSchemes) - optional
+# Skip in CI or if PyPlot is not available
+const SKIP_PLOTTING = get(ENV, "HYQMOM_SKIP_PLOTTING", "false") == "true" || 
+                      get(ENV, "CI", "false") == "true"
+
+if !SKIP_PLOTTING
+    try
+        include("visualization/plotting.jl")
+    catch e
+        if e isa ErrorException && occursin("PyPlot", string(e))
+            @warn "PyPlot not available - plotting functions disabled"
+        else
+            rethrow(e)
+        end
+    end
+else
+    @info "Plotting disabled (CI mode or HYQMOM_SKIP_PLOTTING=true)"
+end
 
 end # module

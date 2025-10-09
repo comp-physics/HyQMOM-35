@@ -70,6 +70,7 @@ function simulation_runner(params)
     
     # Diagnostic parameters
     symmetry_check_interval = params.symmetry_check_interval
+    debug_output = params.debug_output
     
     # Setup domain decomposition
     decomp = setup_mpi_cartesian_2d(Np, halo, comm)
@@ -189,15 +190,6 @@ function simulation_runner(params)
         nn += 1
         step_start_time = time()
         
-        # DEBUG: Track cell (7,13) - M[3]
-        debug_cell_i = 7
-        debug_cell_j = 13
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            debug_ih = debug_cell_i + halo
-            debug_jh = debug_cell_j + halo
-            @printf("\n[Step %d] Cell (%d,%d) M[3] tracking:\n", nn, debug_cell_i, debug_cell_j)
-            @printf("  Start: M[3] = %.6e\n", M[debug_ih, debug_jh, 3])
-        end
         
         # Compute fluxes and wave speeds for interior cells
         for i in 1:nx
@@ -206,13 +198,10 @@ function simulation_runner(params)
                 jh = j + halo
                 MOM = M[ih, jh, :]
                 
-                # Debug label for cell (7,13)
-                cell_label_flux = (i == debug_cell_i && j == debug_cell_j) ? " @cell(7,13)" : ""
-                
-                _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma, debug_label="[flux_comp1]$(cell_label_flux)")
+                _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma)
                 v6xmin[i,j], v6xmax[i,j], Mr = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D, Ma)
                 v6ymin[i,j], v6ymax[i,j], Mr = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D, Ma)
-                Mx, My, _, Mr = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma, debug_label="[flux_comp2]$(cell_label_flux)")
+                Mx, My, _, Mr = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma)
                 
                 Fx[ih, jh, :] = Mx
                 Fy[ih, jh, :] = My
@@ -229,11 +218,6 @@ function simulation_runner(params)
         end
         M[halo+1:halo+nx, halo+1:halo+ny, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :]
         
-        # DEBUG: After flux computation
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After flux computation: M[3] = %.6e\n", M[debug_ih, debug_jh, 3])
-        end
-        
         # Exchange M, Fx, Fy from neighbors
         halo_exchange_2d!(M, decomp, bc)
         halo_exchange_2d!(Fx, decomp, bc)
@@ -242,7 +226,7 @@ function simulation_runner(params)
         # Compute fluxes and wave speeds in halo cells
         vpxmin_ext, vpxmax_ext, vpymin_ext, vpymax_ext =
             compute_halo_fluxes_and_wavespeeds!(M, Fx, Fy, vpxmin, vpxmax, vpymin, vpymax,
-                                               nx, ny, halo, flag2D, Ma)
+                                               nx, ny, halo, flag2D, Ma, decomp)
         
         # Global reduction for time step
         vmax_local = maximum([abs.(vpxmax); abs.(vpxmin); abs.(vpymax); abs.(vpymin)])
@@ -278,19 +262,9 @@ function simulation_runner(params)
         Mnpx = apply_flux_update(M, Fx, vpxmin, vpxmax, vpxmin_ext, vpxmax_ext,
                                  nx, ny, halo, dt, dx, decomp, 1)
         
-        # DEBUG: After X-flux update
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After X-flux update: Mnpx[3] = %.6e\n", Mnpx[debug_ih, debug_jh, 3])
-        end
-        
         # Y-direction flux update
         Mnpy = apply_flux_update(M, Fy, vpymin, vpymax, vpymin_ext, vpymax_ext,
                                  nx, ny, halo, dt, dy, decomp, 2)
-        
-        # DEBUG: After Y-flux update
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After Y-flux update: Mnpy[3] = %.6e\n", Mnpy[debug_ih, debug_jh, 3])
-        end
         
         # Combine updates (Strang splitting) - INTERIOR ONLY
         M[halo+1:halo+nx, halo+1:halo+ny, :] =
@@ -298,18 +272,8 @@ function simulation_runner(params)
             Mnpy[halo+1:halo+nx, halo+1:halo+ny, :] -
             M[halo+1:halo+nx, halo+1:halo+ny, :]
         
-        # DEBUG: After combining updates
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After combining (Mnpx+Mnpy-M): M[3] = %.6e\n", M[debug_ih, debug_jh, 3])
-        end
-        
         # Exchange halos before realizability enforcement
         halo_exchange_2d!(M, decomp, bc)
-        
-        # DEBUG: After halo exchange
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After halo exchange: M[3] = %.6e\n", M[debug_ih, debug_jh, 3])
-        end
         
         # Enforce realizability
         for i in 1:nx
@@ -318,56 +282,16 @@ function simulation_runner(params)
                 jh = j + halo
                 MOM = M[ih, jh, :]
                 
-                # Debug label for cell (7,13)
-                cell_label = (i == debug_cell_i && j == debug_cell_j) ? " @cell(7,13)" : ""
-                
-                _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma, debug_label="[call1]$(cell_label)")
+                _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma)
                 v6xmin[i,j], v6xmax[i,j], Mr = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D, Ma)
                 v6ymin[i,j], v6ymax[i,j], Mr = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D, Ma)
-                _, _, _, Mr = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma, debug_label="[call2]$(cell_label)")
-                
-                # DEBUG: Check for large values before assignment
-                if rank == 0 && abs(Mr[3]) > 1e6
-                    @printf("  WARNING  Cell (%d,%d): Mr[3] = %.6e before assignment!\n", i, j, Mr[3])
-                end
+                _, _, _, Mr = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma)
                 
                 Mnp[ih, jh, :] = Mr
-                
-                # DEBUG: Check for large values after assignment
-                if rank == 0 && abs(Mnp[ih, jh, 3]) > 1e6
-                    @printf("  WARNING  Cell (%d,%d): Mnp[%d,%d,3] = %.6e after assignment!\n", 
-                           i, j, ih, jh, Mnp[ih, jh, 3])
-                end
-            end
-        end
-        # DEBUG: Check Mnp before bulk assignment
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  Before bulk assignment: Mnp[%d,%d,3] = %.6e\n", debug_ih, debug_jh, Mnp[debug_ih, debug_jh, 3])
-            # Check if it's already corrupted
-            if abs(Mnp[debug_ih, debug_jh, 3]) > 1e6
-                println("  FAIL ALREADY CORRUPTED before bulk assignment!")
-                # Scan all cells to find which one corrupted it
-                for ii in 1:nx+2*halo
-                    for jj in 1:ny+2*halo
-                        if abs(Mnp[ii, jj, 3]) > 1e6
-                            @printf("    Cell Mnp[%d,%d,3] = %.6e\n", ii, jj, Mnp[ii, jj, 3])
-                        end
-                    end
-                end
             end
         end
         
         M[halo+1:halo+nx, halo+1:halo+ny, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :]
-        
-        # DEBUG: Check M after bulk assignment
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After bulk assignment: M[%d,%d,3] = %.6e\n", debug_ih, debug_jh, M[debug_ih, debug_jh, 3])
-        end
-        
-        # DEBUG: After realizability enforcement
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After realizability: M[3] = %.6e\n", M[debug_ih, debug_jh, 3])
-        end
         
         # Apply BGK collision
         for i in 1:nx
@@ -382,18 +306,8 @@ function simulation_runner(params)
         end
         M[halo+1:halo+nx, halo+1:halo+ny, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :]
         
-        # DEBUG: After collision
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After collision: M[3] = %.6e\n", M[debug_ih, debug_jh, 3])
-        end
-        
         # Exchange halos for next iteration
         halo_exchange_2d!(M, decomp, bc)
-        
-        # DEBUG: After final halo exchange
-        if rank == 0 && debug_cell_i <= nx && debug_cell_j <= ny
-            @printf("  After final halo exchange: M[3] = %.6e\n", M[debug_ih, debug_jh, 3])
-        end
         
         # Symmetry check (simplified - just print timing)
         step_time = time() - step_start_time
@@ -479,7 +393,7 @@ results = run_simulation(Np=40, tmax=0.1, enable_plots=true)
 """
 function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_output=false,
                           enable_plots=false, save_figures=false, output_dir=".",
-                          Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5)
+                          Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5, debug_output=false)
     # Initialize MPI if not already done
     if !MPI.Initialized()
         MPI.Init()
@@ -530,7 +444,8 @@ function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_out
         r101 = r101,
         r011 = r011,
         symmetry_check_interval = 10,
-        enable_memory_tracking = false
+        enable_memory_tracking = false,
+        debug_output = debug_output
     )
     
     if verbose && rank == 0

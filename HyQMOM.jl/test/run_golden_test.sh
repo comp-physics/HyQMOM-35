@@ -7,7 +7,7 @@
 
 set -e
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."  # Go to HyQMOM.jl root
 
 echo "========================================================================"
 echo "Golden File Test: Julia vs MATLAB"
@@ -16,10 +16,10 @@ echo ""
 
 if [[ "$1" == "--mpi" ]]; then
     echo "Running with MPI (1 rank)..."
-    mpiexec -n 1 julia --project test/test_matlab_golden.jl
+    mpiexec -n 1 julia --project=. test/test_matlab_golden.jl
 else
     echo "Running with Julia (no MPI)..."
-    julia --project test/test_matlab_golden.jl
+    julia --project=. test/test_matlab_golden.jl
 fi
 
 exit_code=$?

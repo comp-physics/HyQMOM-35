@@ -10,7 +10,7 @@
 
 set -e
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."  # Go to HyQMOM.jl root
 
 TEST_TYPE="${1:-all}"
 
@@ -69,7 +69,7 @@ if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "unit" ]; then
     echo "========================================================================"
     echo "Step 1: Installing Julia dependencies"
     echo "========================================================================"
-    julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.status()'
+    julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.status()'
     print_status $? "Dependency installation"
     echo ""
 fi
@@ -79,7 +79,7 @@ if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "mpi" ] && [ "$SKIP_MPI" = false ]; 
     echo "========================================================================"
     echo "Step 2: Building MPI.jl"
     echo "========================================================================"
-    julia --project -e 'using Pkg; Pkg.build("MPI"); using MPI; println("MPI OK")'
+    julia --project=. -e 'using Pkg; Pkg.build("MPI"); using MPI; println("MPI OK")'
     print_status $? "MPI build"
     echo ""
 fi
@@ -90,7 +90,7 @@ if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "unit" ]; then
     echo "Step 3: Running Julia unit tests"
     echo "========================================================================"
     # Set environment variable to skip golden test in Pkg.test() since we run it separately
-    TEST_GOLDEN_SIMULATION=false julia --project --color=yes -e 'using Pkg; Pkg.test()'
+    TEST_GOLDEN_SIMULATION=false julia --project=. --color=yes -e 'using Pkg; Pkg.test()'
     UNIT_TEST_STATUS=$?
     print_status $UNIT_TEST_STATUS "Unit tests"
     echo ""
@@ -101,7 +101,7 @@ if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "golden" ]; then
     echo "========================================================================"
     echo "Step 4: Running golden file test (Julia vs MATLAB)"
     echo "========================================================================"
-    julia --project test/test_matlab_golden.jl
+    julia --project=. test/test_matlab_golden.jl
     GOLDEN_TEST_STATUS=$?
     print_status $GOLDEN_TEST_STATUS "Golden file test"
     echo ""
@@ -112,7 +112,7 @@ if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "mpi" ] && [ "$SKIP_MPI" = false ]; 
     echo "========================================================================"
     echo "Step 5: Running MPI golden file test (1 rank)"
     echo "========================================================================"
-    mpiexec -n 1 julia --project test/test_matlab_golden.jl
+    mpiexec -n 1 julia --project=. test/test_matlab_golden.jl
     MPI_TEST_STATUS=$?
     print_status $MPI_TEST_STATUS "MPI golden file test"
     echo ""

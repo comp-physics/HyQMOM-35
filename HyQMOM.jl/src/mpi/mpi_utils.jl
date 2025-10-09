@@ -122,13 +122,16 @@ function gather_M(M_interior::Array{T,3}, i0i1::Tuple{Int,Int}, j0j1::Tuple{Int,
         # Receive from all other ranks
         for src in 1:(nprocs-1)
             # Receive index ranges
-            i_range = MPI.Recv(Vector{Int}(undef, 2), src, 0, comm)
-            j_range = MPI.Recv(Vector{Int}(undef, 2), src, 1, comm)
+            i_range = Vector{Int}(undef, 2)
+            MPI.Recv!(i_range, comm; source=src, tag=0)
+            j_range = Vector{Int}(undef, 2)
+            MPI.Recv!(j_range, comm; source=src, tag=1)
             
             # Receive data
             nx_remote = i_range[2] - i_range[1] + 1
             ny_remote = j_range[2] - j_range[1] + 1
-            blk = MPI.Recv(Array{T,3}(undef, nx_remote, ny_remote, Nmom), src, 2, comm)
+            blk = Array{T,3}(undef, nx_remote, ny_remote, Nmom)
+            MPI.Recv!(blk, comm; source=src, tag=2)
             
             # Place in full array
             M_full[i_range[1]:i_range[2], j_range[1]:j_range[2], :] = blk
@@ -137,9 +140,9 @@ function gather_M(M_interior::Array{T,3}, i0i1::Tuple{Int,Int}, j0j1::Tuple{Int,
         return M_full
     else
         # Send data to rank 0
-        MPI.Send([i0i1[1], i0i1[2]], 0, 0, comm)
-        MPI.Send([j0j1[1], j0j1[2]], 0, 1, comm)
-        MPI.Send(M_interior, 0, 2, comm)
+        MPI.Send([i0i1[1], i0i1[2]], comm; dest=0, tag=0)
+        MPI.Send([j0j1[1], j0j1[2]], comm; dest=0, tag=1)
+        MPI.Send(M_interior, comm; dest=0, tag=2)
         
         return nothing
     end
@@ -163,7 +166,7 @@ This is a lower-level function. Typically use `gather_M` instead.
 """
 function send_M(M_interior::Array{T,3}, i0i1::Tuple{Int,Int}, j0j1::Tuple{Int,Int},
                dest_rank::Int, comm::MPI.Comm) where T
-    MPI.Send([i0i1[1], i0i1[2]], dest_rank, 0, comm)
-    MPI.Send([j0j1[1], j0j1[2]], dest_rank, 1, comm)
-    MPI.Send(M_interior, dest_rank, 2, comm)
+    MPI.Send([i0i1[1], i0i1[2]], comm; dest=dest_rank, tag=0)
+    MPI.Send([j0j1[1], j0j1[2]], comm; dest=dest_rank, tag=1)
+    MPI.Send(M_interior, comm; dest=dest_rank, tag=2)
 end

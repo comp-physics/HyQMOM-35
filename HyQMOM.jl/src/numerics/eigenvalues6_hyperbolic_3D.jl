@@ -19,11 +19,11 @@ Compute unified eigenvalues of 3D flux Jacobian.
 3. If complex, correct moments to ensure real eigenvalues
 4. Recompute eigenvalues with corrected moments
 """
-function eigenvalues6_hyperbolic_3D(M::AbstractVector, axis::Int, flag2D::Int, Ma::Real)
+function eigenvalues6_hyperbolic_3D(M::AbstractVector, axis::Int, flag2D::Int, Ma::Real; debug_output=false)
     Mr = copy(M)
     
     # DEBUG
-    debug_this = abs(M[3] - 0.04) < 0.01 && M[1] > 0.03 && M[1] < 0.04
+    debug_this = debug_output && abs(M[3] - 0.04) < 0.01 && M[1] > 0.03 && M[1] < 0.04
     if debug_this
         @printf("    eigenvalues6_hyperbolic_3D axis=%d: Input M[3]=%.6e\n", axis, M[3])
     end

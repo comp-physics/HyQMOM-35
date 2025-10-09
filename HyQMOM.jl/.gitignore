@@ -1,0 +1,41 @@
+# Julia
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+/Manifest.toml
+/docs/build/
+/docs/site/
+
+# Temporary test files
+*.bin
+!test/goldenfiles/*.bin
+trace*.bin
+debug*.bin
+mpi_reference*.bin
+mpi_results*.bin
+detailed*.bin
+ref*.bin
+
+# Log files
+*.txt
+*.log
+
+# PyPlot/Matplotlib cache
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Compiled
+*.so
+*.dylib
+*.dll
+

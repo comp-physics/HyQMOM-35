@@ -30,7 +30,7 @@ This is the main closure function that orchestrates the entire moment pipeline:
 # Algorithm
 See Flux_closure35_and_realizable_3D.m for detailed algorithm description.
 """
-function Flux_closure35_and_realizable_3D(M4::AbstractVector, flag2D::Int, Ma::Real; debug_label="")
+function Flux_closure35_and_realizable_3D(M4::AbstractVector, flag2D::Int, Ma::Real; debug_label="", debug_output=false)
     # Constants
     s3max = 4.0 + abs(Ma) / 2.0
     h2min = 1.0e-8
@@ -43,7 +43,7 @@ function Flux_closure35_and_realizable_3D(M4::AbstractVector, flag2D::Int, Ma::R
     wmean = M4[16] / M000  # M001/M000
     
     # DEBUG: Check if M[3] is around 0.04 (the problematic input)
-    debug_this = abs(M4[3] - 0.04) < 0.01 && M4[1] > 0.03 && M4[1] < 0.04
+    debug_this = debug_output && abs(M4[3] - 0.04) < 0.01 && M4[1] > 0.03 && M4[1] < 0.04
     if debug_this
         println("\n[DEBUG] Flux_closure35_and_realizable_3D $(debug_label):")
         @printf("  Input M[1:5] = [%.6e, %.6e, %.6e, %.6e, %.6e]\n", 

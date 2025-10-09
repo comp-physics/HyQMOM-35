@@ -55,24 +55,24 @@ function halo_exchange_2d!(A::Array{T,3}, decomp, bc=:copy) where T
     # Send interior boundary data to neighbors
     if left_neighbor != -1
         send_buf = A[h+1:h+h, h+1:h+ny, :]
-        MPI.Send(send_buf, left_neighbor, 0, comm)
+        MPI.Send(send_buf, comm; dest=left_neighbor, tag=0)
     end
     
     if right_neighbor != -1
         send_buf = A[h+nx-h+1:h+nx, h+1:h+ny, :]
-        MPI.Send(send_buf, right_neighbor, 1, comm)
+        MPI.Send(send_buf, comm; dest=right_neighbor, tag=1)
     end
     
     # Receive halo data from neighbors
     if left_neighbor != -1
         recv_buf = similar(A, h, ny, size(A, 3))
-        MPI.Recv!(recv_buf, left_neighbor, 1, comm)
+        MPI.Recv!(recv_buf, comm; source=left_neighbor, tag=1)
         A[1:h, h+1:h+ny, :] = recv_buf
     end
     
     if right_neighbor != -1
         recv_buf = similar(A, h, ny, size(A, 3))
-        MPI.Recv!(recv_buf, right_neighbor, 0, comm)
+        MPI.Recv!(recv_buf, comm; source=right_neighbor, tag=0)
         A[h+nx+1:h+nx+h, h+1:h+ny, :] = recv_buf
     end
     
@@ -83,24 +83,24 @@ function halo_exchange_2d!(A::Array{T,3}, decomp, bc=:copy) where T
     # Send interior boundary data to neighbors
     if down_neighbor != -1
         send_buf = A[h+1:h+nx, h+1:h+h, :]
-        MPI.Send(send_buf, down_neighbor, 2, comm)
+        MPI.Send(send_buf, comm; dest=down_neighbor, tag=2)
     end
     
     if up_neighbor != -1
         send_buf = A[h+1:h+nx, h+ny-h+1:h+ny, :]
-        MPI.Send(send_buf, up_neighbor, 3, comm)
+        MPI.Send(send_buf, comm; dest=up_neighbor, tag=3)
     end
     
     # Receive halo data from neighbors
     if down_neighbor != -1
         recv_buf = similar(A, nx, h, size(A, 3))
-        MPI.Recv!(recv_buf, down_neighbor, 3, comm)
+        MPI.Recv!(recv_buf, comm; source=down_neighbor, tag=3)
         A[h+1:h+nx, 1:h, :] = recv_buf
     end
     
     if up_neighbor != -1
         recv_buf = similar(A, nx, h, size(A, 3))
-        MPI.Recv!(recv_buf, up_neighbor, 2, comm)
+        MPI.Recv!(recv_buf, comm; source=up_neighbor, tag=2)
         A[h+1:h+nx, h+ny+1:h+ny+h, :] = recv_buf
     end
     
@@ -130,49 +130,37 @@ function apply_physical_bc_2d!(A::Array{T,3}, decomp, bc) where T
     ny = decomp.local_size[2]
     
     # Copy BC: halo cells copy from nearest interior cell
+    # Match MATLAB behavior: copy entire rows/columns including corners
     if bc == :copy
-        # Left boundary (global)
+        # Left boundary (global) - copy ENTIRE column including corners
         if decomp.neighbors.left == -1
             for i in 1:h
-                A[i, h+1:h+ny, :] = A[h+1:h+1, h+1:h+ny, :]
+                A[i, :, :] = A[h+1, :, :]
             end
         end
         
-        # Right boundary (global)
+        # Right boundary (global) - copy ENTIRE column including corners
         if decomp.neighbors.right == -1
             for i in 1:h
-                A[h+nx+i, h+1:h+ny, :] = A[h+nx:h+nx, h+1:h+ny, :]
+                A[h+nx+i, :, :] = A[h+nx, :, :]
             end
         end
         
-        # Down boundary (global)
+        # Down boundary (global) - copy ENTIRE row including corners
         if decomp.neighbors.down == -1
             for j in 1:h
-                A[h+1:h+nx, j, :] = A[h+1:h+nx, h+1:h+1, :]
+                A[:, j, :] = A[:, h+1, :]
             end
         end
         
-        # Up boundary (global)
+        # Up boundary (global) - copy ENTIRE row including corners
         if decomp.neighbors.up == -1
             for j in 1:h
-                A[h+1:h+nx, h+ny+j, :] = A[h+1:h+nx, h+ny:h+ny, :]
+                A[:, h+ny+j, :] = A[:, h+ny, :]
             end
-        end
-        
-        # Corners (copy from nearest interior corner)
-        if decomp.neighbors.left == -1 && decomp.neighbors.down == -1
-            A[1:h, 1:h, :] .= A[h+1:h+1, h+1:h+1, :]
-        end
-        if decomp.neighbors.right == -1 && decomp.neighbors.down == -1
-            A[h+nx+1:h+nx+h, 1:h, :] .= A[h+nx:h+nx, h+1:h+1, :]
-        end
-        if decomp.neighbors.left == -1 && decomp.neighbors.up == -1
-            A[1:h, h+ny+1:h+ny+h, :] .= A[h+1:h+1, h+ny:h+ny, :]
-        end
-        if decomp.neighbors.right == -1 && decomp.neighbors.up == -1
-            A[h+nx+1:h+nx+h, h+ny+1:h+ny+h, :] .= A[h+nx:h+nx, h+ny:h+ny, :]
         end
     end
     
     return A
 end
+

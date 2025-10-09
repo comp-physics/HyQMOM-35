@@ -24,6 +24,7 @@ mpiexec -n 2 julia --project=.. run_with_plots.jl
 
 using HyQMOM
 using Printf
+using Statistics
 
 println("="^70)
 println("HyQMOM Simulation with Visualization")
@@ -48,7 +49,8 @@ results = HyQMOM.run_simulation(
     CFL = 0.5,
     verbose = true,
     enable_plots = true,      # Enable visualization
-    save_figures = false      # Set to true to save figures to disk
+    save_figures = false,     # Set to true to save figures to disk
+    debug_output = false      # Set to true to enable debug output
 )
 
 # Display results summary
