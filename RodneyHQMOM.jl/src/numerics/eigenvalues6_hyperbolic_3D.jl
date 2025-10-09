@@ -125,9 +125,23 @@ function correct_moments_for_real_eigenvalues(M::AbstractVector, axis::Int, lam6
                    C_all.C040, C_all.C031, C_all.C022, C_all.C013, C_all.C004)
     
     # Extract to vector
-    M000, M100, M010, M001, M200, M110, M101, M020, M011, M002,
-    M300, M210, M201, M120, M111, M102, M030, M021, M012, M003,
-    M400, M310, M301, M220, M211, M202, M130, M121, M112, M103, M040, M031, M022, M013, M004 =
+    # IMPORTANT: Order must match M4_to_vars return order!
+    # M4_to_vars returns: M000, M100, M200, M300, M400, M010, M110, M210, M310, M020, ...
+    M000, M100, M200, M300, M400,
+    M010, M110, M210, M310,
+    M020, M120, M220,
+    M030, M130,
+    M040,
+    M001, M101, M201, M301,
+    M002, M102, M202,
+    M003, M103,
+    M004,
+    M011, M111, M211,
+    M021, M121,
+    M031,
+    M012, M112,
+    M013,
+    M022 =
         M4_to_vars(M4)
     
     Mh = [M000,M100,M200,M300,M400,M010,M110,M210,M310,M020,M120,M220,M030,M130,M040,
@@ -135,7 +149,7 @@ function correct_moments_for_real_eigenvalues(M::AbstractVector, axis::Int, lam6
           M031,M012,M112,M013,M022]
     
     # Apply realizability constraints
-    _, _, _, M_corrected = Flux_closure35_and_realizable_3D(Mh, flag2D, Ma, debug_label="[eigenvalues6_nested]")
+    _, _, _, M_corrected = Flux_closure35_and_realizable_3D(Mh, flag2D, Ma)
     
     return M_corrected
 end

@@ -82,6 +82,11 @@ function simulation_runner(params)
     dx_global = (xmax - xmin) / Np
     dy_global = (ymax - ymin) / Np
     
+    # Override params.dx/dy with correct grid spacing
+    # (params.dx may have been set incorrectly as 2.0/Np in wrapper)
+    dx = dx_global
+    dy = dy_global
+    
     # Local grid coordinates
     i0i1 = decomp.istart_iend
     j0j1 = decomp.jstart_jend
@@ -485,8 +490,9 @@ function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_out
     end
     
     # Setup parameters
-    dx = 2.0 / Np  # Domain is [-0.5, 0.5] × [-0.5, 0.5] but grid spacing is 2.0/Np
-    dy = 2.0 / Np
+    # Domain is [-0.5, 0.5] × [-0.5, 0.5], so dx = (0.5 - (-0.5))/Np = 1.0/Np
+    dx = 1.0 / Np  # FIX: Was incorrectly 2.0/Np
+    dy = 1.0 / Np
     dtmax = CFL * min(dx, dy)
     nnmax = ceil(Int, tmax / dtmax) + 100  # Safety margin
     
