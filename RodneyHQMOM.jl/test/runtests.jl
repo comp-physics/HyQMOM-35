@@ -23,17 +23,16 @@ const RUN_GOLDEN_TEST = get(ENV, "TEST_GOLDEN_SIMULATION", "true") != "false"
     
     # Full simulation golden file test (Julia vs MATLAB)
     # Only run if golden file exists and TEST_GOLDEN_SIMULATION is not set to "false"
+    # Note: The included file has its own @testset blocks, so we don't wrap it
     if RUN_GOLDEN_TEST && isfile(GOLDEN_FILE)
-        @testset "MATLAB Golden File (Full Simulation)" begin
-            println("\n" * "="^70)
-            println("Testing Julia vs MATLAB Golden File")
-            println("="^70)
-            
-            # Run the golden file test
-            # This is a standalone test that includes its own MPI initialization
-            # For Pkg.test(), we run it without MPI
-            include("test_matlab_golden_simple.jl")
-        end
+        println("\n" * "="^70)
+        println("Testing Julia vs MATLAB Golden File")
+        println("="^70)
+        
+        # Run the golden file test (includes its own testsets)
+        # This is a standalone test that includes its own MPI initialization
+        # For Pkg.test(), we run it without MPI
+        include("test_matlab_golden_simple.jl")
     elseif RUN_GOLDEN_TEST && !isfile(GOLDEN_FILE)
         @warn "MATLAB golden file not found: $GOLDEN_FILE\nSkipping full simulation test."
     else
