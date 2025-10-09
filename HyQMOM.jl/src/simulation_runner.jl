@@ -558,12 +558,8 @@ function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_out
     
     # Generate plots if requested (only on rank 0)
     if enable_plots && rank == 0 && !isnothing(M_final)
-        try
-            plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35; 
-                             save_figures=save_figures, output_dir=output_dir)
-        catch e
-            @warn "Plotting failed (PyPlot may not be available)" exception=(e, catch_backtrace())
-        end
+        plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35; 
+                         save_figures=save_figures, output_dir=output_dir)
     end
     
     # Package results

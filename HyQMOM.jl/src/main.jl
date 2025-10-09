@@ -38,7 +38,10 @@ function parse_args()
         :Kn => 0.01,
         :CFL => 0.9,
         :flag2D => 0,
-        :output => "results.jld2"
+        :output => "results.jld2",
+        :enable_plots => true,
+        :save_figures => false,
+        :output_dir => "."
     )
     
     # Parse command-line arguments
@@ -66,22 +69,48 @@ function parse_args()
         elseif arg == "--2D"
             params[:flag2D] = 1
             i += 1
+        elseif arg == "--enable-plots"
+            params[:enable_plots] = true
+            i += 1
+        elseif arg == "--no-plots"
+            params[:enable_plots] = false
+            i += 1
+        elseif arg == "--save-figures"
+            params[:save_figures] = true
+            i += 1
+        elseif arg == "--output-dir" && i < length(ARGS)
+            params[:output_dir] = ARGS[i+1]
+            i += 2
         elseif arg == "--help" || arg == "-h"
             println("""
             Usage: julia src/main.jl [OPTIONS]
             
             Options:
-              --Np N          Grid size (default: 120)
-              --tmax T        Maximum simulation time (default: 0.02)
-              --Ma M          Mach number (default: 2.0)
-              --Kn K          Knudsen number (default: 0.01)
-              --CFL C         CFL number (default: 0.9)
-              --2D            Run 2D simulation (default: 3D)
-              --output FILE   Output file name (default: results.jld2)
-              --help, -h      Show this help message
+              --Np N             Grid size (default: 120)
+              --tmax T           Maximum simulation time (default: 0.02)
+              --Ma M             Mach number (default: 2.0)
+              --Kn K             Knudsen number (default: 0.01)
+              --CFL C            CFL number (default: 0.9)
+              --2D               Run 2D simulation (default: 3D)
+              --output FILE      Output file name (default: results.jld2)
+              --enable-plots     Enable visualization (default: true)
+              --no-plots         Disable visualization
+              --save-figures     Save figures to disk (default: false)
+              --output-dir DIR   Directory for saved figures (default: .)
+              --help, -h         Show this help message
             
-            Example:
-              mpiexec -n 4 julia --project src/main.jl --Np 240 --tmax 0.04
+            Examples:
+              # Run with default visualization
+              julia --project main.jl --Np 40 --tmax 0.1
+              
+              # Run without visualization
+              julia --project main.jl --Np 40 --tmax 0.1 --no-plots
+              
+              # Run and save figures
+              julia --project main.jl --Np 40 --tmax 0.1 --save-figures --output-dir ./figures
+              
+              # MPI parallel
+              mpiexec -n 4 julia --project main.jl --Np 240 --tmax 0.04
             """)
             exit(0)
         else
@@ -111,6 +140,9 @@ function main()
     CFL = args[:CFL]
     flag2D = args[:flag2D]
     output_file = args[:output]
+    enable_plots = args[:enable_plots]
+    save_figures = args[:save_figures]
+    output_dir = args[:output_dir]
     
     # Derived parameters
     dx = 1.0 / Np
@@ -150,6 +182,10 @@ function main()
         println("  CFL number: $(CFL)")
         println("  2D mode: $(flag2D == 1 ? "Yes" : "No")")
         println("  Output file: $(output_file)")
+        println("  Visualization: $(enable_plots ? "Enabled" : "Disabled")")
+        if enable_plots && save_figures
+            println("  Save figures: Yes (to $output_dir)")
+        end
         println("="^70)
         flush(stdout)
     end
@@ -158,6 +194,15 @@ function main()
     start_time = time()
     M_final, final_time, time_steps, grid_out = simulation_runner(params)
     total_time = time() - start_time
+    
+    # Generate plots if requested (only on rank 0)
+    if enable_plots && rank == 0 && !isnothing(M_final)
+        println("="^70)
+        println("Generating visualization...")
+        println("="^70)
+        plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35;
+                         save_figures=save_figures, output_dir=output_dir)
+    end
     
     # Save results (only rank 0)
     if rank == 0

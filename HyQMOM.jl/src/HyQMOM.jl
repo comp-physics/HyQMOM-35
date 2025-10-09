@@ -79,33 +79,7 @@ include("utils/diagnostics.jl")
 # Main simulation
 include("simulation_runner.jl")
 
-# Stub for plot_final_results when PyPlot not available
-"""
-    plot_final_results(args...; kwargs...)
-
-Visualization function (requires PyPlot to be installed).
-
-Install PyPlot with: `using Pkg; Pkg.add("PyPlot")`
-"""
-function plot_final_results(args...; kwargs...)
-    error("PyPlot is not installed. Install it with: using Pkg; Pkg.add(\"PyPlot\"); Pkg.add(\"ColorSchemes\")")
-end
-
-# Visualization (optional - only loads if PyPlot available)
-function __init__()
-    # Try to load PyPlot visualization conditionally
-    if !isnothing(Base.find_package("PyPlot")) && !isnothing(Base.find_package("ColorSchemes"))
-        try
-            @eval begin
-                import PyPlot
-                import ColorSchemes
-                include(joinpath(@__DIR__, "visualization", "plotting.jl"))
-            end
-            @info "PyPlot visualization loaded successfully"
-        catch e
-            @warn "Could not load PyPlot visualization" exception=(e, catch_backtrace())
-        end
-    end
-end
+# Visualization (requires PyPlot and ColorSchemes)
+include("visualization/plotting.jl")
 
 end # module
