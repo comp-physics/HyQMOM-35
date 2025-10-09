@@ -14,7 +14,7 @@ This is the core time-stepping loop that orchestrates all components:
 
 # Arguments
 - `params`: Named tuple with simulation parameters:
-  - `Np`: Global grid size (Np × Np)
+  - `Np`: Global grid size (Np x Np)
   - `tmax`: Maximum simulation time
   - `Kn`: Knudsen number
   - `Ma`: Mach number
@@ -181,7 +181,7 @@ function simulation_runner(params)
     
     if rank == 0
         println("Starting time evolution...")
-        println("  Grid: $(Np)×$(Np), Ranks: $(nprocs), Local: $(nx)×$(ny)")
+        println("  Grid: $(Np)x$(Np), Ranks: $(nprocs), Local: $(nx)x$(ny)")
         println("  tmax: $(tmax), CFL: $(CFL), Ma: $(Ma), Kn: $(Kn)")
     end
     
@@ -328,14 +328,14 @@ function simulation_runner(params)
                 
                 # DEBUG: Check for large values before assignment
                 if rank == 0 && abs(Mr[3]) > 1e6
-                    @printf("  ⚠️  Cell (%d,%d): Mr[3] = %.6e before assignment!\n", i, j, Mr[3])
+                    @printf("  WARNING  Cell (%d,%d): Mr[3] = %.6e before assignment!\n", i, j, Mr[3])
                 end
                 
                 Mnp[ih, jh, :] = Mr
                 
                 # DEBUG: Check for large values after assignment
                 if rank == 0 && abs(Mnp[ih, jh, 3]) > 1e6
-                    @printf("  ⚠️  Cell (%d,%d): Mnp[%d,%d,3] = %.6e after assignment!\n", 
+                    @printf("  WARNING  Cell (%d,%d): Mnp[%d,%d,3] = %.6e after assignment!\n", 
                            i, j, ih, jh, Mnp[ih, jh, 3])
                 end
             end
@@ -345,7 +345,7 @@ function simulation_runner(params)
             @printf("  Before bulk assignment: Mnp[%d,%d,3] = %.6e\n", debug_ih, debug_jh, Mnp[debug_ih, debug_jh, 3])
             # Check if it's already corrupted
             if abs(Mnp[debug_ih, debug_jh, 3]) > 1e6
-                println("  ❌ ALREADY CORRUPTED before bulk assignment!")
+                println("  FAIL ALREADY CORRUPTED before bulk assignment!")
                 # Scan all cells to find which one corrupted it
                 for ii in 1:nx+2*halo
                     for jj in 1:ny+2*halo
@@ -443,7 +443,7 @@ end
 High-level wrapper for running simulations with sensible defaults.
 
 # Arguments
-- `Np`: Global grid size (Np × Np), default 20
+- `Np`: Global grid size (Np x Np), default 20
 - `tmax`: Maximum simulation time, default 0.1
 - `num_workers`: Number of MPI ranks (must match mpiexec -n), default 1
 - `verbose`: Print progress information, default true
@@ -455,7 +455,7 @@ High-level wrapper for running simulations with sensible defaults.
 
 # Returns
 Dictionary with:
-- `:M`: Final moment field (Np×Np×35) on rank 0, nothing on other ranks
+- `:M`: Final moment field (NpxNpx35) on rank 0, nothing on other ranks
 - `:final_time`: Actual final time reached
 - `:time_steps`: Number of time steps taken
 - `:xm`, `:ym`: Grid coordinates (only on rank 0)
@@ -490,7 +490,7 @@ function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_out
     end
     
     # Setup parameters
-    # Domain is [-0.5, 0.5] × [-0.5, 0.5], so dx = (0.5 - (-0.5))/Np = 1.0/Np
+    # Domain is [-0.5, 0.5] x [-0.5, 0.5], so dx = (0.5 - (-0.5))/Np = 1.0/Np
     dx = 1.0 / Np  # FIX: Was incorrectly 2.0/Np
     dy = 1.0 / Np
     dtmax = CFL * min(dx, dy)
@@ -530,7 +530,7 @@ function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_out
         println("="^60)
         println("HyQMOM Simulation")
         println("="^60)
-        println("Grid: $(Np)×$(Np)")
+        println("Grid: $(Np)x$(Np)")
         println("MPI ranks: $nprocs")
         println("tmax: $tmax")
         println("Kn: $Kn, Ma: $Ma")

@@ -27,13 +27,13 @@ end
 """
     M4_to_vars(M4::AbstractArray{T,3})
 
-Extract M4 3D array (5×5×5) to individual variables.
+Extract M4 3D array (5x5x5) to individual variables.
 
 # Returns
 35 individual moment variables in canonical order.
 """
 function M4_to_vars(M4::AbstractArray{T,3}) where T
-    @assert size(M4) == (5,5,5) "M4 must be 5×5×5"
+    @assert size(M4) == (5,5,5) "M4 must be 5x5x5"
     
     # Extract moments from 3D array using 1-based indexing
     # M[i+1, j+1, k+1] corresponds to moment M_ijk
@@ -77,13 +77,13 @@ end
 """
     M5_to_vars(M5::AbstractArray{T,3})
 
-Extract M5 3D array (6×6×6) to individual variables.
+Extract M5 3D array (6x6x6) to individual variables.
 
 # Returns
 56 individual moment variables in canonical order (up to 5th order).
 """
 function M5_to_vars(M5::AbstractArray{T,3}) where T
-    @assert size(M5) == (6,6,6) "M5 must be 6×6×6"
+    @assert size(M5) == (6,6,6) "M5 must be 6x6x6"
     
     # Extract moments from 3D array using 1-based indexing
     # M[i+1, j+1, k+1] corresponds to moment M_ijk

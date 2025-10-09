@@ -45,7 +45,7 @@ function Flux_closure35_and_realizable_3D(M4::AbstractVector, flag2D::Int, Ma::R
     # DEBUG: Check if M[3] is around 0.04 (the problematic input)
     debug_this = abs(M4[3] - 0.04) < 0.01 && M4[1] > 0.03 && M4[1] < 0.04
     if debug_this
-        println("\n🔍 Flux_closure35_and_realizable_3D $(debug_label):")
+        println("\n[DEBUG] Flux_closure35_and_realizable_3D $(debug_label):")
         @printf("  Input M[1:5] = [%.6e, %.6e, %.6e, %.6e, %.6e]\n", 
                 M4[1], M4[2], M4[3], M4[4], M4[5])
     end
@@ -178,7 +178,7 @@ function Flux_closure35_and_realizable_3D(M4::AbstractVector, flag2D::Int, Ma::R
     sC020 = sqrt(max(eps(), C020))
     sC002 = sqrt(max(eps(), C002))
     
-    # Batch convert S→C
+    # Batch convert S->C
     (C110, C101, C011, C300, C210, C201, C120, C111, C102, C030, C021, C012, C003,
      C400, C310, C301, C220, C211, C202, C130, C121, C112, C103, C040, C031, C022, C013, C004,
      C500, C410, C401, C320, C311, C302, C230, C221, C212, C203, C140, C131, C122, C113, C104,
@@ -223,7 +223,7 @@ function Flux_closure35_and_realizable_3D(M4::AbstractVector, flag2D::Int, Ma::R
     if debug_this
         @printf("  Output M4r[1:5] = [%.6e, %.6e, %.6e, %.6e, %.6e]\n", 
                 M4r[1], M4r[2], M4r[3], M4r[4], M4r[5])
-        @printf("  M[3] change: %.6e → %.6e (%.2fx)\n", M4[3], M4r[3], M4r[3] / M4[3])
+        @printf("  M[3] change: %.6e -> %.6e (%.2fx)\n", M4[3], M4r[3], M4r[3] / M4[3])
         @printf("  M4r element 3 is M200 = %.6e\n", M200)
     end
     

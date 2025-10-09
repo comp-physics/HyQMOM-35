@@ -119,13 +119,13 @@ try
     
     eval(mex_cmd);
     
-    fprintf('\n✓ MEX compilation successful!\n');
+    fprintf('\nOK MEX compilation successful!\n');
     
     % Verify output file exists
     output_file = sprintf('%s.%s', mex_output_base, mex_ext);
     if exist(output_file, 'file')
         file_info = dir(output_file);
-        fprintf('✓ Output file created: %s (%.1f KB)\n', ...
+        fprintf('OK Output file created: %s (%.1f KB)\n', ...
                 file_info.name, file_info.bytes/1024);
     else
         warning('MEX file was compiled but not found at expected location');
@@ -133,7 +133,7 @@ try
     
 catch ME
     cd(old_dir);
-    fprintf('\n✗ MEX compilation failed!\n');
+    fprintf('\nX MEX compilation failed!\n');
     fprintf('Error: %s\n\n', ME.message);
     
     fprintf('Troubleshooting:\n');
@@ -171,10 +171,10 @@ if run_tests
         E = delta2star3D(s(1),s(2),s(3),s(4),s(5),s(6),s(7),s(8),s(9),s(10),...
                         s(11),s(12),s(13),s(14),s(15),s(16),s(17),s(18),s(19),s(20),...
                         s(21),s(22),s(23),s(24),s(25),s(26),s(27),s(28));
-        fprintf('  ✓ Function executes successfully\n');
-        fprintf('  ✓ Output size: %dx%d\n', size(E, 1), size(E, 2));
+        fprintf('  OK Function executes successfully\n');
+        fprintf('  OK Output size: %dx%d\n', size(E, 1), size(E, 2));
     catch ME
-        fprintf('  ✗ FAILED: %s\n', ME.message);
+        fprintf('  X FAILED: %s\n', ME.message);
         return;
     end
     
@@ -195,9 +195,9 @@ if run_tests
     
     max_error = max(max_diffs);
     if max_error < 1e-13
-        fprintf('  ✓ Accuracy: %.2e (excellent)\n', max_error);
+        fprintf('  OK Accuracy: %.2e (excellent)\n', max_error);
     else
-        fprintf('  ✗ Accuracy: %.2e (may be problematic)\n', max_error);
+        fprintf('  X Accuracy: %.2e (may be problematic)\n', max_error);
     end
     
     % Test 3: Performance benchmark
@@ -233,7 +233,7 @@ if run_tests
     speedup = time_matlab / time_mex;
     fprintf('  MEX:    %.4f ms/call\n', time_mex/n_iter*1000);
     fprintf('  MATLAB: %.4f ms/call\n', time_matlab/n_iter*1000);
-    fprintf('  ✓ Speedup: %.1fx\n', speedup);
+    fprintf('  OK Speedup: %.1fx\n', speedup);
     
     fprintf('\n=== All Tests Passed ===\n');
 end

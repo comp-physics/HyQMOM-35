@@ -50,7 +50,7 @@ const INTEGRATION_TOL = 1e-8  # Slightly relaxed tolerance for full simulation
         # Extract parameters
         Np = Int(params["Np"])
         tmax = Float64(params["tmax"])
-        expected_M = moments["M"]  # Np×Np×35
+        expected_M = moments["M"]  # NpxNpx35
         expected_xm = vec(grid["xm"])
         expected_ym = vec(grid["ym"])
         
@@ -80,17 +80,17 @@ const INTEGRATION_TOL = 1e-8  # Slightly relaxed tolerance for full simulation
             println("  Time steps: ", results[:time_steps])
             
             # Extract results
-            M_final = results[:M]  # Should be Np×Np×35
+            M_final = results[:M]  # Should be NpxNpx35
             xm = results[:xm]
             ym = results[:ym]
             
             # Test grid coordinates
-            @test xm ≈ expected_xm atol=INTEGRATION_TOL
-            @test ym ≈ expected_ym atol=INTEGRATION_TOL
+            @test xm ~= expected_xm atol=INTEGRATION_TOL
+            @test ym ~= expected_ym atol=INTEGRATION_TOL
             
             # Test moment field
             @test size(M_final) == size(expected_M)
-            @test M_final ≈ expected_M atol=INTEGRATION_TOL
+            @test M_final ~= expected_M atol=INTEGRATION_TOL
             
             # Compute relative error
             rel_error = maximum(abs.(M_final .- expected_M) ./ (abs.(expected_M) .+ 1e-10))
@@ -117,10 +117,10 @@ const INTEGRATION_TOL = 1e-8  # Slightly relaxed tolerance for full simulation
             end
             
             if all_realizable
-                println("    ✓ All grid points have realizable moments")
+                println("    OK All grid points have realizable moments")
             end
             
-            println("\n✓ 1-Rank integration test PASSED")
+            println("\nOK 1-Rank integration test PASSED")
             
         catch e
             if isa(e, MethodError) && occursin("run_simulation", string(e))

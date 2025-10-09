@@ -13,7 +13,7 @@ function [S110, S101, S011, S300, S030, S003, S400, S040, S004, ...
 %EDGE_CORNER_CORRECTION Corrects moments at edges/corners of realizability domain
 
 %   Handles cases where one or more 2D correlations (R110, R101, R011) are
-%   non-realizable (≤ 0), placing the state at edges or corners of the
+%   non-realizable (<= 0), placing the state at edges or corners of the
 %   realizability domain.
 %   Inputs:
 %       R110, R101, R011 - Realizability indicators (1 - S###^2)
@@ -24,7 +24,7 @@ function [S110, S101, S011, S300, S030, S003, S400, S040, S004, ...
 
 % Route to appropriate edge or corner correction
 if R110 <= 0 && R101 > 0 && R011 > 0
-    % Edge 1: S110 = ±1 (xy-plane boundary)
+    % Edge 1: S110 = +/-1 (xy-plane boundary)
     S110 = sign(S110r);
     Smean = (S011r + S101r)/2;
     S011 = sign(S011r) * Smean;
@@ -39,7 +39,7 @@ if R110 <= 0 && R101 > 0 && R011 > 0
                                   S201r, S102r, S103r, S301r, S202r, S003r, S004r);
     
 elseif R101 <= 0 && R110 > 0 && R011 > 0
-    % Edge 2: S101 = ±1 (xz-plane boundary)
+    % Edge 2: S101 = +/-1 (xz-plane boundary)
     S101 = sign(S101r);
     Smean = (S011r + S110r)/2;
     S011 = sign(S011r) * Smean;
@@ -54,7 +54,7 @@ elseif R101 <= 0 && R110 > 0 && R011 > 0
                                   S030r, S210r, S120r, S220r, S130r, S310r);
     
 elseif R011 <= 0 && R101 > 0 && R110 > 0
-    % Edge 3: S011 = ±1 (yz-plane boundary)
+    % Edge 3: S011 = +/-1 (yz-plane boundary)
     S011 = sign(S011r);
     Smean = (S101r + S110r)/2;
     S101 = sign(S101r) * Smean;

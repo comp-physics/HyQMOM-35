@@ -29,9 +29,9 @@ NC='\033[0m' # No Color
 # Function to print status
 print_status() {
     if [ $1 -eq 0 ]; then
-        echo -e "${GREEN}✅ $2 PASSED${NC}"
+        echo -e "${GREEN}OK $2 PASSED${NC}"
     else
-        echo -e "${RED}❌ $2 FAILED${NC}"
+        echo -e "${RED}FAIL $2 FAILED${NC}"
         return 1
     fi
 }
@@ -39,12 +39,12 @@ print_status() {
 # Check prerequisites
 echo "Checking prerequisites..."
 if ! command -v julia &> /dev/null; then
-    echo -e "${RED}❌ Julia not found. Please install Julia 1.9 or later.${NC}"
+    echo -e "${RED}FAIL Julia not found. Please install Julia 1.9 or later.${NC}"
     exit 1
 fi
 
 if ! command -v mpiexec &> /dev/null && [ "$TEST_TYPE" = "mpi" -o "$TEST_TYPE" = "all" ]; then
-    echo -e "${YELLOW}⚠️  MPI not found. MPI tests will be skipped.${NC}"
+    echo -e "${YELLOW}WARNING  MPI not found. MPI tests will be skipped.${NC}"
     SKIP_MPI=true
 else
     SKIP_MPI=false
@@ -53,15 +53,15 @@ fi
 # Check golden file
 GOLDEN_FILE="../goldenfiles/goldenfile_mpi_1ranks_Np20_tmax100.mat"
 if [ ! -f "$GOLDEN_FILE" ]; then
-    echo -e "${RED}❌ Golden file not found: $GOLDEN_FILE${NC}"
+    echo -e "${RED}FAIL Golden file not found: $GOLDEN_FILE${NC}"
     echo "   Run create_goldenfiles('ci') in MATLAB to generate it."
     exit 1
 fi
-echo -e "${GREEN}✓${NC} Golden file found"
+echo -e "${GREEN}OK${NC} Golden file found"
 
 # Check Julia version
 JULIA_VERSION=$(julia --version | grep -oE '[0-9]+\.[0-9]+')
-echo -e "${GREEN}✓${NC} Julia version: $JULIA_VERSION"
+echo -e "${GREEN}OK${NC} Julia version: $JULIA_VERSION"
 echo ""
 
 # Test 1: Install dependencies
@@ -127,27 +127,27 @@ EXIT_CODE=0
 
 if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "unit" ]; then
     if [ ${UNIT_TEST_STATUS:-0} -eq 0 ]; then
-        echo -e "${GREEN}✅ Unit tests: PASSED${NC}"
+        echo -e "${GREEN}OK Unit tests: PASSED${NC}"
     else
-        echo -e "${RED}❌ Unit tests: FAILED${NC}"
+        echo -e "${RED}FAIL Unit tests: FAILED${NC}"
         EXIT_CODE=1
     fi
 fi
 
 if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "golden" ]; then
     if [ ${GOLDEN_TEST_STATUS:-0} -eq 0 ]; then
-        echo -e "${GREEN}✅ Golden file test: PASSED${NC}"
+        echo -e "${GREEN}OK Golden file test: PASSED${NC}"
     else
-        echo -e "${RED}❌ Golden file test: FAILED${NC}"
+        echo -e "${RED}FAIL Golden file test: FAILED${NC}"
         EXIT_CODE=1
     fi
 fi
 
 if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "mpi" ] && [ "$SKIP_MPI" = false ]; then
     if [ ${MPI_TEST_STATUS:-0} -eq 0 ]; then
-        echo -e "${GREEN}✅ MPI golden file test: PASSED${NC}"
+        echo -e "${GREEN}OK MPI golden file test: PASSED${NC}"
     else
-        echo -e "${RED}❌ MPI golden file test: FAILED${NC}"
+        echo -e "${RED}FAIL MPI golden file test: FAILED${NC}"
         EXIT_CODE=1
     fi
 fi
@@ -156,21 +156,21 @@ echo "========================================================================"
 
 if [ $EXIT_CODE -eq 0 ]; then
     echo -e "${GREEN}"
-    echo "╔══════════════════════════════════════════════════════════════════╗"
-    echo "║                 ALL TESTS PASSED! 🎉                             ║"
-    echo "║                                                                  ║"
-    echo "║  Your code is ready for CI. GitHub Actions will run these       ║"
-    echo "║  same tests automatically on push/PR.                           ║"
-    echo "╚══════════════════════════════════════════════════════════════════╝"
+    echo "+==================================================================+"
+    echo "|                 ALL TESTS PASSED! SUCCESS                             |"
+    echo "|                                                                  |"
+    echo "|  Your code is ready for CI. GitHub Actions will run these       |"
+    echo "|  same tests automatically on push/PR.                           |"
+    echo "+==================================================================+"
     echo -e "${NC}"
 else
     echo -e "${RED}"
-    echo "╔══════════════════════════════════════════════════════════════════╗"
-    echo "║                   SOME TESTS FAILED                              ║"
-    echo "║                                                                  ║"
-    echo "║  Please fix the failing tests before pushing to GitHub.         ║"
-    echo "║  CI will run the same tests and fail if these aren't fixed.     ║"
-    echo "╚══════════════════════════════════════════════════════════════════╝"
+    echo "+==================================================================+"
+    echo "|                   SOME TESTS FAILED                              |"
+    echo "|                                                                  |"
+    echo "|  Please fix the failing tests before pushing to GitHub.         |"
+    echo "|  CI will run the same tests and fail if these aren't fixed.     |"
+    echo "+==================================================================+"
     echo -e "${NC}"
 fi
 

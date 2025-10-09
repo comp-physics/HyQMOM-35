@@ -27,11 +27,11 @@ exit_code=$?
 echo ""
 if [ $exit_code -eq 0 ]; then
     echo "========================================================================"
-    echo "✅ Golden file test PASSED"
+    echo "OK Golden file test PASSED"
     echo "========================================================================"
 else
     echo "========================================================================"
-    echo "❌ Golden file test FAILED (exit code: $exit_code)"
+    echo "FAIL Golden file test FAILED (exit code: $exit_code)"
     echo "========================================================================"
 fi
 

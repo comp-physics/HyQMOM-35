@@ -4,21 +4,21 @@
 Correct moments at edges/corners of realizability domain.
 
 Handles cases where one or more 2D correlations (R110, R101, R011) are
-non-realizable (≤ 0), placing the state at edges or corners of the
+non-realizable (<= 0), placing the state at edges or corners of the
 realizability domain.
 
 # Arguments
-- `R110`, `R101`, `R011`: Realizability indicators (1 - S###²)
+- `R110`, `R101`, `R011`: Realizability indicators (1 - S###^2)
 - Various `S###r` corrected moments from check2D_all_planes
 
 # Returns
 28 edge/corner-corrected standardized moments
 
 # Algorithm
-Routes to appropriate edge or corner correction based on which R values are ≤ 0:
-- Edge 1: S110 = ±1 (xy-plane boundary)
-- Edge 2: S101 = ±1 (xz-plane boundary)  
-- Edge 3: S011 = ±1 (yz-plane boundary)
+Routes to appropriate edge or corner correction based on which R values are <= 0:
+- Edge 1: S110 = +/-1 (xy-plane boundary)
+- Edge 2: S101 = +/-1 (xz-plane boundary)  
+- Edge 3: S011 = +/-1 (yz-plane boundary)
 - Corner: All three at boundaries
 """
 function edge_corner_correction(R110, R101, R011,
@@ -32,7 +32,7 @@ function edge_corner_correction(R110, R101, R011,
                                 S031r, S022r, S013r)
     
     if R110 <= 0 && R101 > 0 && R011 > 0
-        # Edge 1: S110 = ±1 (xy-plane boundary)
+        # Edge 1: S110 = +/-1 (xy-plane boundary)
         S110 = sign(S110r)
         Smean = (S011r + S101r) / 2
         S011 = sign(S011r) * Smean
@@ -47,7 +47,7 @@ function edge_corner_correction(R110, R101, R011,
                                      S201r, S102r, S103r, S301r, S202r, S003r, S004r)
         
     elseif R101 <= 0 && R110 > 0 && R011 > 0
-        # Edge 2: S101 = ±1 (xz-plane boundary)
+        # Edge 2: S101 = +/-1 (xz-plane boundary)
         S101 = sign(S101r)
         Smean = (S011r + S110r) / 2
         S011 = sign(S011r) * Smean
@@ -62,7 +62,7 @@ function edge_corner_correction(R110, R101, R011,
                                      S030r, S210r, S120r, S220r, S130r, S310r)
         
     elseif R011 <= 0 && R101 > 0 && R110 > 0
-        # Edge 3: S011 = ±1 (yz-plane boundary)
+        # Edge 3: S011 = +/-1 (yz-plane boundary)
         S011 = sign(S011r)
         Smean = (S101r + S110r) / 2
         S101 = sign(S101r) * Smean
@@ -82,7 +82,7 @@ function edge_corner_correction(R110, R101, R011,
         S101 = sign(S101r)
         S011 = sign(S011r)
         if S011 * S101 * S110 != 1
-            @warn "edge_corner_correction: S011*S101*S110 ≠ 1 at corner"
+            @warn "edge_corner_correction: S011*S101*S110 != 1 at corner"
         end
         S110, S101, S011, _ = realizability(Symbol("S2"), S110, S101, S011)
         

@@ -6,7 +6,7 @@
 Check and correct realizability of cross moments in 3D.
 
 This is the most complex realizability function, handling 3D cross-moment
-constraints. It enforces positive-definiteness of the 6×6 realizability matrix.
+constraints. It enforces positive-definiteness of the 6x6 realizability matrix.
 
 # Arguments
 - 28 standardized moments from 3rd and 4th order
@@ -18,7 +18,7 @@ constraints. It enforces positive-definiteness of the 6×6 realizability matrix.
 1. Compute H200, H020, H002 (variance-related quantities)
 2. Check maximum bounds on S220, S202, S022
 3. Check and correct S110, S101, S011 (2nd-order)
-4. Handle degenerate cases (faces) when S2 ≈ 0
+4. Handle degenerate cases (faces) when S2 ~= 0
 5. Handle interior cases:
    - Check diagonal elements of delta2star3D matrix
    - Correct 3rd-order moments (S210, S201, S120, S021, S102, S012)
@@ -281,7 +281,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
                    S211, S021, S121, S031, S012, S112, S013, S022, flag220
         end
         
-        ## ITERATIVE REFINEMENT: Check 2×2 minors and apply realizability_S310
+        ## ITERATIVE REFINEMENT: Check 2x2 minors and apply realizability_S310
         S220a = S220
         S220b = S220
         S202a = S202
@@ -296,7 +296,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
         
         flag310 = 0
         
-        # Check E1 and E4 (2×2 minor)
+        # Check E1 and E4 (2x2 minor)
         if flagE11 == 0 && flagE44 == 0
             if det(E1[1:2, 1:2]) < h2min
                 S310, S220a = realizability(:S310, S110, S101, S011, S300, S210, S120, S201, S111, S310, S220, H200, beta)
@@ -304,7 +304,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
             end
         end
         
-        # Check E2 and E2 (2×2 minor)
+        # Check E2 and E2 (2x2 minor)
         if flagE22 == 0 && flagE44 == 0
             if det(E3[1:2, 1:2]) < h2min
                 S130, S220b = realizability(:S310, S110, S011, S101, S030, S120, S021, S210, S111, S130, S220, H020, beta)
@@ -312,7 +312,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
             end
         end
         
-        # Check E1 and E3 (2×2 minor)
+        # Check E1 and E3 (2x2 minor)
         if flagE11 == 0 && flagE33 == 0
             if det(E2[1:2, 1:2]) < h2min
                 S301, S202a = realizability(:S310, S101, S110, S011, S300, S201, S210, S102, S111, S301, S202, H200, beta)
@@ -320,7 +320,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
             end
         end
         
-        # Check E3 and E6 (2×2 minor)
+        # Check E3 and E6 (2x2 minor)
         if flagE33 == 0 && flagE66 == 0
             if det(E4[1:2, 1:2]) < h2min
                 S103, S202b = realizability(:S310, S101, S011, S110, S003, S102, S012, S201, S111, S103, S202, H002, beta)
@@ -328,7 +328,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
             end
         end
         
-        # Check E4 and E5 (2×2 minor)
+        # Check E4 and E5 (2x2 minor)
         if flagE44 == 0 && flagE55 == 0
             if det(E5[1:2, 1:2]) < h2min
                 S031, S022a = realizability(:S310, S011, S110, S101, S030, S021, S120, S012, S111, S031, S022, H020, beta)
@@ -336,7 +336,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
             end
         end
         
-        # Check E5 and E6 (2×2 minor)
+        # Check E5 and E6 (2x2 minor)
         if flagE55 == 0 && flagE66 == 0
             if det(E6[1:2, 1:2]) < h2min
                 S013, S022b = realizability(:S310, S011, S101, S110, S003, S012, S102, S021, S111, S013, S022, H002, beta)
@@ -377,7 +377,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
             end
         end
         
-        ## Check 3×3 minors and apply realizability_S211
+        ## Check 3x3 minors and apply realizability_S211
         S220a = S220
         S220b = S220
         S202a = S202
@@ -385,7 +385,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
         S022b = S022
         S022c = S022
         
-        # Check E1 and E2 (3×3 minor) - S211
+        # Check E1 and E2 (3x3 minor) - S211
         if flagE11 == 0 && flagE22 == 0 && flagE33 == 0 && flagE55 == 0
             if det(E1[1:3, 1:3]) <= h2min || det(E2[1:3, 1:3]) <= h2min
                 e11a = E1[1,1]
@@ -406,7 +406,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
             end
         end
         
-        # Check E3 and E5 (3×3 minor) - S121
+        # Check E3 and E5 (3x3 minor) - S121
         if flagE22 == 0 && flagE33 == 0 && flagE44 == 0 && flagE55 == 0
             if det(E3[1:3, 1:3]) < h2min || det(E5[1:3, 1:3]) < h2min
                 e11b = E3[1,1]
@@ -427,7 +427,7 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
             end
         end
         
-        # Check E4 and E6 (3×3 minor) - S112
+        # Check E4 and E6 (3x3 minor) - S112
         if flagE22 == 0 && flagE33 == 0 && flagE55 == 0 && flagE66 == 0
             if det(E4[1:3, 1:3]) < h2min || det(E6[1:3, 1:3]) < h2min
                 e11c = E6[1,1]
@@ -452,9 +452,9 @@ function realizable_3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S04
         S202_211 = max(S202a, S202c)
         S022_211 = max(S022b, S022c)
         
-        ## Check 4×4 minors using rootsR_X_Y to find bounds
+        ## Check 4x4 minors using rootsR_X_Y to find bounds
         
-        # Recompute E1 and E3 for 4×4 checks
+        # Recompute E1 and E3 for 4x4 checks
         E1 = delta2star3D(S300, S400, S110, S210, S310, S120, S220, S030, S130, S040,
                           S101, S201, S301, S102, S202, S003, S103, S004, S011, S111,
                           S211, S021, S121, S031, S012, S112, S013, S022)

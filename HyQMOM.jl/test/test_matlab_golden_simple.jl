@@ -34,7 +34,7 @@ const GOLDEN_FILE_PATH = joinpath(@__DIR__, "..", "..", "goldenfiles",
     @test size(M_matlab, 2) == params_matlab["Np"]
     @test size(M_matlab, 3) == 35  # Number of moments
     
-    println("  ✓ MATLAB golden file loaded:")
+    println("  OK MATLAB golden file loaded:")
     println("    Size: $(size(M_matlab))")
     println("    Np: $(params_matlab["Np"])")
     println("    tmax: $(params_matlab["tmax"])")
@@ -90,7 +90,7 @@ end
     @test time_steps_julia == params_matlab["time_steps"]
     @test abs(final_time_julia - final_time_matlab) < 1e-10
     
-    println("  ✓ Julia simulation complete:")
+    println("  OK Julia simulation complete:")
     println("    Final time: $final_time_julia")
     println("    Time steps: $time_steps_julia")
     println("    Size: $(size(M_julia))")
@@ -141,15 +141,15 @@ end
     println()
     
     if max_abs_diff < TOLERANCE_ABS && max_rel_diff < TOLERANCE_REL
-        println("  ✅ Julia matches MATLAB within tolerance")
+        println("  OK Julia matches MATLAB within tolerance")
         if max_abs_diff < 1e-14
             println("     (Agreement at machine precision!)")
         end
     end
     
     # Moment-by-moment check (first 11 moments)
-    moment_names = ["ρ", "ρu", "ρv", "ρw", "ρE", "M₁₁₀", "M₁₀₁", "M₀₁₁", 
-                    "M₂₀₀", "M₀₂₀", "M₀₀₂"]
+    moment_names = ["rho", "rhou", "rhov", "rhow", "rhoE", "M110", "M101", "M011", 
+                    "M200", "M020", "M002"]
     
     println("  Per-moment analysis:")
     for k in 1:min(11, size(M_julia, 3))
@@ -160,23 +160,23 @@ end
         @printf("    %-6s: max_abs=%.6e", moment_name, max_abs)
         
         if max_abs < TOLERANCE_ABS
-            println(" ✓")
+            println(" OK")
         else
-            println(" ⚠")
+            println(" WARNING")
         end
     end
 end
 
 @testset "Physical Sanity Checks" begin
     # Density should be positive
-    ρ = M_julia[:, :, 1]
-    @test all(ρ .> 0)
-    if !all(ρ .> 0)
+    rho = M_julia[:, :, 1]
+    @test all(rho .> 0)
+    if !all(rho .> 0)
         @warn "Density must be positive"
     end
     
-    @test minimum(ρ) > 1e-10
-    if minimum(ρ) <= 1e-10
+    @test minimum(rho) > 1e-10
+    if minimum(rho) <= 1e-10
         @warn "Density should not be near zero"
     end
     
@@ -193,15 +193,15 @@ end
     mass_matlab = sum(M_matlab[:, :, 1])
     @test abs(mass_julia - mass_matlab) / mass_matlab < 1e-12
     
-    println("  ✓ Physical sanity checks passed")
-    @printf("    Min density: %.6e\n", minimum(ρ))
-    @printf("    Max density: %.6e\n", maximum(ρ))
+    println("  OK Physical sanity checks passed")
+    @printf("    Min density: %.6e\n", minimum(rho))
+    @printf("    Max density: %.6e\n", maximum(rho))
     @printf("    Total mass (Julia): %.6e\n", mass_julia)
     @printf("    Total mass (MATLAB): %.6e\n", mass_matlab)
 end
 
 println()
 println("="^70)
-println("✅ MATLAB GOLDEN FILE TEST PASSED")
+println("OK MATLAB GOLDEN FILE TEST PASSED")
 println("="^70)
 

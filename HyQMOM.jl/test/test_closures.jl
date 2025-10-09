@@ -52,7 +52,7 @@ const TOL = 1e-10
         Fx, Fy, Fz, M4r = Flux_closure35_and_realizable_3D(M4, 0, 2.0)
         
         # M000 should be preserved
-        @test M4r[1] ≈ M4[1] atol=TOL
+        @test M4r[1] ~= M4[1] atol=TOL
     end
     
     @testset "eigenvalues6_hyperbolic_3D basic" begin

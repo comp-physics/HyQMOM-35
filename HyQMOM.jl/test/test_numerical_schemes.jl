@@ -80,7 +80,7 @@ const TOL = 1e-10
         @test all(isfinite.(Mnew))
         
         # Mass should be conserved
-        @test Mnew[1] ≈ M[1] atol=TOL
+        @test Mnew[1] ~= M[1] atol=TOL
     end
     
     @testset "collision35 relaxes to equilibrium" begin

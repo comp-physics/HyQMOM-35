@@ -4,7 +4,7 @@
 Exchange halos for a 2D subdomain with nv variables.
 
 # Arguments
-- `A`: Local array (nx+2h) × (ny+2h) × nv, interior: A[h+1:h+nx, h+1:h+ny, :]
+- `A`: Local array (nx+2h) x (ny+2h) x nv, interior: A[h+1:h+nx, h+1:h+ny, :]
 - `decomp`: Struct from `setup_mpi_cartesian_2d`
 - `bc`: (optional) Boundary condition type, default: `:copy`
 

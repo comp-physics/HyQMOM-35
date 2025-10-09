@@ -92,7 +92,7 @@ function create_goldenfiles(mode)
                    num_ranks, Px, Py, min_pts_x, min_pts_y);
         end
         
-        fprintf('  %d rank(s): %dx%d grid, process grid %d x %d → %d x %d pts/rank\n', ...
+        fprintf('  %d rank(s): %dx%d grid, process grid %d x %d -> %d x %d pts/rank\n', ...
                 num_ranks, Np, Np, Px, Py, min_pts_x, min_pts_y);
     end
     fprintf('\n');
@@ -163,7 +163,7 @@ function create_goldenfiles(mode)
                     Np, Np, num_ranks, results.parameters.final_time);
             
         catch ME
-            fprintf('  ✗ ERROR: %s\n', ME.message);
+            fprintf('  X ERROR: %s\n', ME.message);
             if ~isempty(ME.stack)
                 fprintf('    at %s (line %d)\n', ME.stack(1).name, ME.stack(1).line);
             end
@@ -190,9 +190,9 @@ function create_goldenfiles(mode)
         if exist(golden_path, 'file')
             finfo = dir(golden_path);
             total_size = total_size + finfo.bytes;
-            fprintf('✓ %s (%.1f KB)\n', golden_filename, finfo.bytes/1024);
+            fprintf('OK %s (%.1f KB)\n', golden_filename, finfo.bytes/1024);
         else
-            fprintf('✗ %s (FAILED)\n', golden_filename);
+            fprintf('X %s (FAILED)\n', golden_filename);
         end
     end
     

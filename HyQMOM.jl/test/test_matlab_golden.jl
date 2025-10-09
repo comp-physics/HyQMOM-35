@@ -27,7 +27,7 @@ function load_matlab_golden(golden_file)
         error("Golden file not found: $golden_file")
     end
     
-    println("📥 Loading MATLAB golden file: $golden_file")
+    println("[LOAD] Loading MATLAB golden file: $golden_file")
     matlab_data = matread(golden_file)
     golden_data = matlab_data["golden_data"]
     
@@ -39,9 +39,9 @@ function load_matlab_golden(golden_file)
     time_steps = Int(golden_data["parameters"]["time_steps"])
     num_ranks = Int(golden_data["parameters"]["num_workers"])
     
-    println("  ✓ Loaded: Np=$Np, tmax=$tmax, ranks=$num_ranks")
-    println("  ✓ MATLAB final time: $final_time ($(time_steps) steps)")
-    println("  ✓ Moment array shape: ", size(M_matlab))
+    println("  OK Loaded: Np=$Np, tmax=$tmax, ranks=$num_ranks")
+    println("  OK MATLAB final time: $final_time ($(time_steps) steps)")
+    println("  OK Moment array shape: ", size(M_matlab))
     
     return (M=M_matlab, Np=Np, tmax=tmax, final_time=final_time, 
             time_steps=time_steps, num_ranks=num_ranks)
@@ -62,7 +62,7 @@ function run_julia_simulation_exact_matlab_params(Np, tmax, num_workers=1)
     - flag2D = 0 (3D)
     """
     
-    println("\n🚀 Running Julia simulation with EXACT MATLAB parameters:")
+    println("\n[RUN] Running Julia simulation with EXACT MATLAB parameters:")
     println("  Np = $Np")
     println("  tmax = $tmax")
     println("  Kn = 1.0  (MATLAB default)")
@@ -124,10 +124,10 @@ function run_julia_simulation_exact_matlab_params(Np, tmax, num_workers=1)
     M_final, final_time, time_steps, grid_out = HyQMOM.simulation_runner(params)
     elapsed = time() - start_time
     
-    println("  ✓ Julia simulation complete in $(round(elapsed, digits=2))s")
-    println("  ✓ Julia final time: $final_time ($(time_steps) steps)")
+    println("  OK Julia simulation complete in $(round(elapsed, digits=2))s")
+    println("  OK Julia final time: $final_time ($(time_steps) steps)")
     if M_final !== nothing
-        println("  ✓ Moment array shape: ", size(M_final))
+        println("  OK Moment array shape: ", size(M_final))
     end
     
     return (M=M_final, final_time=final_time, time_steps=time_steps, grid=grid_out)
@@ -137,38 +137,38 @@ function compare_results(matlab_result, julia_result, tolerance_abs=1e-8, tolera
     """Compare MATLAB and Julia results with detailed diagnostics."""
     
     println("\n" * "="^70)
-    println("📊 COMPARISON RESULTS")
+    println("[CHART] COMPARISON RESULTS")
     println("="^70)
     
     M_matlab = matlab_result.M
     M_julia = julia_result.M
     
     if M_julia === nothing
-        println("  ⚠️  Julia result is nothing (not on rank 0)")
+        println("  WARNING  Julia result is nothing (not on rank 0)")
         return false
     end
     
     # Check dimensions
     println("\n1. Dimension Check:")
     if size(M_matlab) != size(M_julia)
-        println("  ❌ DIMENSION MISMATCH!")
+        println("  FAIL DIMENSION MISMATCH!")
         println("     MATLAB: ", size(M_matlab))
         println("     Julia:  ", size(M_julia))
         return false
     else
-        println("  ✓ Dimensions match: ", size(M_julia))
+        println("  OK Dimensions match: ", size(M_julia))
     end
     
     # Check time
     println("\n2. Time Check:")
     time_diff = abs(matlab_result.final_time - julia_result.final_time)
     if time_diff > 1e-10
-        println("  ⚠️  Time mismatch:")
+        println("  WARNING  Time mismatch:")
         println("     MATLAB: $(matlab_result.final_time) ($(matlab_result.time_steps) steps)")
         println("     Julia:  $(julia_result.final_time) ($(julia_result.time_steps) steps)")
         println("     Diff:   $time_diff")
     else
-        println("  ✓ Time matches: $(julia_result.final_time)")
+        println("  OK Time matches: $(julia_result.final_time)")
         println("     MATLAB steps: $(matlab_result.time_steps)")
         println("     Julia steps:  $(julia_result.time_steps)")
     end
@@ -179,12 +179,12 @@ function compare_results(matlab_result, julia_result, tolerance_abs=1e-8, tolera
     inf_count = sum(isinf, M_julia)
     
     if nan_count > 0 || inf_count > 0
-        println("  ❌ NUMERICAL ISSUES:")
+        println("  FAIL NUMERICAL ISSUES:")
         println("     NaN count: $nan_count")
         println("     Inf count: $inf_count")
         return false
     else
-        println("  ✓ No NaN or Inf values")
+        println("  OK No NaN or Inf values")
     end
     
     # Compute differences
@@ -220,8 +220,8 @@ function compare_results(matlab_result, julia_result, tolerance_abs=1e-8, tolera
     println("-"^70)
     nx, ny, nmom = size(M_julia)
     
-    moment_names = ["ρ", "ρu", "ρv", "ρw", "ρE", "M₁₁₀", "M₁₀₁", "M₀₁₁", 
-                    "M₂₀₀", "M₀₂₀", "M₀₀₂"]
+    moment_names = ["rho", "rhou", "rhov", "rhow", "rhoE", "M110", "M101", "M011", 
+                    "M200", "M020", "M002"]
     
     for k in 1:min(11, nmom)
         moment_abs_diff = abs_diff[:, :, k]
@@ -238,7 +238,7 @@ function compare_results(matlab_result, julia_result, tolerance_abs=1e-8, tolera
         
         # Flag if this moment has issues
         if max_abs > tolerance_abs || max_rel > tolerance_rel
-            print("  ⚠️")
+            print("  WARNING")
         end
         println()
     end
@@ -256,10 +256,10 @@ function compare_results(matlab_result, julia_result, tolerance_abs=1e-8, tolera
     passed = (max_abs_diff < tolerance_abs && max_rel_diff < tolerance_rel)
     
     if passed
-        println("  ✅ TEST PASSED!")
+        println("  OK TEST PASSED!")
         println("  Julia matches MATLAB within tolerance.")
     else
-        println("  ❌ TEST FAILED!")
+        println("  FAIL TEST FAILED!")
         println("  Differences exceed tolerance thresholds.")
         
         # Additional diagnostics for failure
@@ -308,7 +308,7 @@ function main()
         try
             matlab_result = load_matlab_golden(golden_file)
         catch e
-            println("❌ Error loading golden file: $e")
+            println("FAIL Error loading golden file: $e")
             MPI.Finalize()
             return 1
         end
@@ -334,9 +334,9 @@ function main()
         
         println("\n" * "="^70)
         if test_passed
-            println("🎉 OVERALL TEST RESULT: PASSED")
+            println("SUCCESS OVERALL TEST RESULT: PASSED")
         else
-            println("❌ OVERALL TEST RESULT: FAILED")
+            println("FAIL OVERALL TEST RESULT: FAILED")
             println("\nPossible issues:")
             println("  1. Different random number generation")
             println("  2. Different order of operations in collision operator")

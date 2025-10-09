@@ -34,13 +34,13 @@ function eigenvalues6_hyperbolic_3D(M::AbstractVector, axis::Int, flag2D::Int, M
     # Check for complex eigenvalues and correct if needed
     if maximum(abs.(imag(lam6a))) > 1000*eps() || maximum(abs.(imag(lam6b))) > 1000*eps()
         if debug_this
-            println("    → Complex eigenvalues detected, correcting...")
+            println("    -> Complex eigenvalues detected, correcting...")
         end
         # Correct moments to ensure real eigenvalues
         M_corrected = correct_moments_for_real_eigenvalues(M, axis, lam6a, lam6b, flag2D, Ma)
         
         if debug_this
-            @printf("    → After correction: M_corrected[3]=%.6e\n", M_corrected[3])
+            @printf("    -> After correction: M_corrected[3]=%.6e\n", M_corrected[3])
         end
         
         # Recompute eigenvalues with corrected moments

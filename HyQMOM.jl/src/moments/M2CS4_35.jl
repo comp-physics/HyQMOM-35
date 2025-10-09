@@ -13,7 +13,7 @@ Converts 35 raw moments to central (C4) and standardized (S4) moments.
 - `S4`: 35-element vector of standardized moments
 """
 function M2CS4_35(M4)
-    # Precomputed linear indices for extracting 35 moments from 5×5×5 array
+    # Precomputed linear indices for extracting 35 moments from 5x5x5 array
     # Manually computed: sub2ind([5 5 5], i, j, k) = i + 5*(j-1) + 25*(k-1)
     idx_c = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 16, 17, 21,
              26, 27, 28, 29, 51, 52, 53, 76, 77, 101, 31, 32, 33, 36, 37,

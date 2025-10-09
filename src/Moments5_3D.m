@@ -73,7 +73,7 @@ sC200 = sqrt(max(eps,C200));
 sC020 = sqrt(max(eps,C020));
 sC002 = sqrt(max(eps,C002));
 
-% Batch S→C conversion for 5th-order closure moments (replaces ~21 lines)
+% Batch S->C conversion for 5th-order closure moments (replaces ~21 lines)
 % Note: We need dummy values for orders 2-4 (already computed), only converting order 5
 S110_d=0; S101_d=0; S011_d=0; S300_d=0; S210_d=0; S201_d=0; S120_d=0; S111_d=0; S102_d=0; S030_d=0; S021_d=0; S012_d=0; S003_d=0;
 S400_d=0; S310_d=0; S301_d=0; S220_d=0; S211_d=0; S202_d=0; S130_d=0; S121_d=0; S112_d=0; S103_d=0; S040_d=0; S031_d=0; S022_d=0; S013_d=0; S004_d=0;

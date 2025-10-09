@@ -24,17 +24,17 @@ if !isfile(golden_file)
 end
 
 # Load MATLAB golden file
-println("\n📥 Loading MATLAB golden file...")
+println("\n[LOAD] Loading MATLAB golden file...")
 matlab_data = matread(golden_file)
 golden_data = matlab_data["golden_data"]
 M_matlab = golden_data["moments"]["M"]
 t_matlab = golden_data["parameters"]["final_time"]
 steps_matlab = golden_data["parameters"]["time_steps"]
 
-println("  ✓ MATLAB: t=$(t_matlab), steps=$(steps_matlab), M shape = ", size(M_matlab))
+println("  OK MATLAB: t=$(t_matlab), steps=$(steps_matlab), M shape = ", size(M_matlab))
 
 # Run Julia simulation with EXACT MATLAB parameters
-println("\n🚀 Running Julia simulation...")
+println("\n[RUN] Running Julia simulation...")
 println("  Using MATLAB parameters: Kn=1.0, Ma=0.0, CFL=0.5, rhol=1.0, rhor=0.01")
 
 # Setup parameters EXACTLY as MATLAB does (from parse_main_args.m)
@@ -69,26 +69,26 @@ M_julia = result_julia[:M]
 t_julia = result_julia[:final_time]
 steps_julia = result_julia[:time_steps]
 
-println("  ✓ Julia: t=$(t_julia), steps=$(steps_julia), M shape = ", size(M_julia))
+println("  OK Julia: t=$(t_julia), steps=$(steps_julia), M shape = ", size(M_julia))
 
 # Compare results
-println("\n📊 Comparison Results:")
+println("\n[CHART] Comparison Results:")
 println("-"^70)
 
 # Check dimensions
 if size(M_matlab) != size(M_julia)
-    println("  ❌ DIMENSION MISMATCH!")
+    println("  FAIL DIMENSION MISMATCH!")
     println("     MATLAB: ", size(M_matlab))
     println("     Julia:  ", size(M_julia))
 else
-    println("  ✓ Dimensions match: ", size(M_julia))
+    println("  OK Dimensions match: ", size(M_julia))
 end
 
 # Check time
 if abs(t_matlab - t_julia) > 1e-10
-    println("  ⚠️  Time mismatch: MATLAB=$(t_matlab), Julia=$(t_julia)")
+    println("  WARNING  Time mismatch: MATLAB=$(t_matlab), Julia=$(t_julia)")
 else
-    println("  ✓ Time matches: t=$(t_julia)")
+    println("  OK Time matches: t=$(t_julia)")
 end
 
 # Compute differences
@@ -118,11 +118,11 @@ nan_count = sum(isnan, M_julia)
 inf_count = sum(isinf, M_julia)
 
 if nan_count > 0 || inf_count > 0
-    println("\n  ❌ NUMERICAL ISSUES:")
+    println("\n  FAIL NUMERICAL ISSUES:")
     println("     NaN count: ", nan_count)
     println("     Inf count: ", inf_count)
 else
-    println("\n  ✓ No NaN or Inf values")
+    println("\n  OK No NaN or Inf values")
 end
 
 # Overall pass/fail
@@ -131,11 +131,11 @@ TOLERANCE_REL = 1e-6
 
 println("\n" * "="^70)
 if max_abs_diff < TOLERANCE_ABS && max_rel_diff < TOLERANCE_REL
-    println("✅ TEST PASSED! Julia matches MATLAB within tolerance.")
+    println("OK TEST PASSED! Julia matches MATLAB within tolerance.")
     println("   Absolute tolerance: ", @sprintf("%.6e", TOLERANCE_ABS))
     println("   Relative tolerance: ", @sprintf("%.6e", TOLERANCE_REL))
 else
-    println("⚠️  TEST WARNING: Differences exceed tolerance")
+    println("WARNING  TEST WARNING: Differences exceed tolerance")
     println("   Max abs diff: ", @sprintf("%.6e", max_abs_diff), 
             " (tolerance: ", @sprintf("%.6e", TOLERANCE_ABS), ")")
     println("   Max rel diff: ", @sprintf("%.6e", max_rel_diff),
@@ -150,7 +150,7 @@ end
 println("="^70)
 
 # Detailed statistics by moment
-println("\n📈 Detailed Statistics by Moment Component:")
+println("\n[STATS] Detailed Statistics by Moment Component:")
 println("-"^70)
 nx, ny, nmom = size(M_julia)
 for k in 1:min(10, nmom)  # Show first 10 moments

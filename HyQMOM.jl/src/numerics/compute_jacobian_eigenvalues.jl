@@ -1,7 +1,7 @@
 """
     compute_jacobian_eigenvalues(moments_a, moments_b)
 
-Compute 6×6 Jacobian eigenvalues for two moment sets.
+Compute 6x6 Jacobian eigenvalues for two moment sets.
 
 # Arguments
 - `moments_a`: 15-element vector of moments for first Jacobian
@@ -12,7 +12,7 @@ Compute 6×6 Jacobian eigenvalues for two moment sets.
 - `lam6a`, `lam6b`: Full eigenvalue vectors for both Jacobians
 
 # Algorithm
-Constructs two 6×6 Jacobian matrices using `jacobian6` and computes
+Constructs two 6x6 Jacobian matrices using `jacobian6` and computes
 their eigenvalues. Returns the global min/max across both matrices.
 """
 function compute_jacobian_eigenvalues(moments_a::AbstractVector, moments_b::AbstractVector)

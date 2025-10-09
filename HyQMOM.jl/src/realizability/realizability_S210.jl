@@ -7,7 +7,7 @@ Check and correct realizability of S210 and S201 moments.
 - S110, S101, S011: Second-order standardized moments
 - S300: Third-order moment along first axis
 - S210, S201: Third-order cross-moments to correct
-- H200: Variance-related quantity (H200 = max(eps, S400 - S300² - 1))
+- H200: Variance-related quantity (H200 = max(eps, S400 - S300^2 - 1))
 - beta: Scaling factor (typically 1.0)
 
 # Returns
@@ -15,7 +15,7 @@ Check and correct realizability of S210 and S201 moments.
 
 # Algorithm
 Uses matrix square root and quadratic form to determine feasible region.
-Scales the deviation from the mean by xr ∈ [0,1] to satisfy realizability.
+Scales the deviation from the mean by xr in [0,1] to satisfy realizability.
 """
 @fastmath function realizability_S210(S110, S101, S011, S300, S210, S201, H200, beta)
     xr = 1.0

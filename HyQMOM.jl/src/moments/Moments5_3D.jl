@@ -114,7 +114,7 @@ function Moments5_3D(M4)
                         C311, C221, C131, C212, C113, C122,
                         C050, C041, C032, C023, C014, C005)
     
-    # Extract 5th-order moments (indices for 5th order in 6×6×6 array)
+    # Extract 5th-order moments (indices for 5th order in 6x6x6 array)
     # M500, M410, M320, M230, M140, M401, M302, M203, M104, M311, M221, M131,
     # M212, M113, M122, M050, M041, M032, M023, M014, M005
     M500 = M5_full[6,1,1]

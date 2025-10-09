@@ -25,7 +25,7 @@ function setupOnce(testCase)
 end
 
 function test_mpi_1_rank_vs_golden(testCase)
-    % Test MPI with 1 rank (single processor) against golden file (20×20 grid)
+    % Test MPI with 1 rank (single processor) against golden file (20x20 grid)
     
     if ~testCase.TestData.has_pct
         fprintf('\n=== TEST: MPI 1 Rank vs Golden ===\n');
@@ -34,7 +34,7 @@ function test_mpi_1_rank_vs_golden(testCase)
         return;
     end
     
-    fprintf('\n=== TEST: MPI 1 Rank (20×20 grid) ===\n');
+    fprintf('\n=== TEST: MPI 1 Rank (20x20 grid) ===\n');
     
     num_ranks = 1;
     Np = 20;
@@ -57,7 +57,7 @@ function test_mpi_1_rank_vs_golden(testCase)
 end
 
 function test_mpi_2_ranks_vs_golden(testCase)
-% Test MPI with 2 ranks against golden file (40×40 grid)
+% Test MPI with 2 ranks against golden file (40x40 grid)
     if ~testCase.TestData.has_pct
         fprintf('\n=== TEST: MPI 2 Ranks vs Golden ===\n');
         fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
@@ -65,7 +65,7 @@ function test_mpi_2_ranks_vs_golden(testCase)
         return;
     end
     
-    fprintf('\n=== TEST: MPI 2 Ranks (40×40 grid) ===\n');
+    fprintf('\n=== TEST: MPI 2 Ranks (40x40 grid) ===\n');
     
     num_ranks = 2;
     Np = 40;

@@ -3,7 +3,7 @@
 
 Enforce realizability bounds on univariate moments.
 
-Ensures H = S4 - S3² - 1 ≥ h2min and |S3| ≤ s3max.
+Ensures H = S4 - S3^2 - 1 >= h2min and |S3| <= s3max.
 
 # Arguments
 - `S3`: Third standardized moment

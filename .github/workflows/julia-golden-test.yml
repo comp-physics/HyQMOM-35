@@ -42,10 +42,10 @@ jobs:
           echo "Checking for MATLAB golden files..."
           ls -lh goldenfiles/
           if [ ! -f "goldenfiles/goldenfile_mpi_1ranks_Np20_tmax100.mat" ]; then
-            echo "❌ Golden file not found!"
+            echo "FAIL Golden file not found!"
             exit 1
           fi
-          echo "✅ Golden files found"
+          echo "OK Golden files found"
       
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
@@ -90,9 +90,9 @@ jobs:
         run: |
           # Retry logic for package installation (handles transient network issues)
           for i in {1..3}; do
-            echo "════════════════════════════════════════════════════════════"
+            echo "============================================================"
             echo "Package installation attempt $i/3"
-            echo "════════════════════════════════════════════════════════════"
+            echo "============================================================"
             
             # On retry, clean up potentially corrupted cache
             if [ $i -gt 1 ]; then
@@ -113,7 +113,7 @@ jobs:
               println("Updating package registry...")
               try
                 Pkg.Registry.update()
-                println("✓ Registry updated")
+                println("OK Registry updated")
               catch e
                 @warn "Registry update failed, continuing anyway" exception=(e, catch_backtrace())
               end
@@ -138,12 +138,12 @@ jobs:
               println("Package status:")
               Pkg.status()
               println()
-              println("✓ All packages installed successfully")
+              println("OK All packages installed successfully")
             '; then
-              echo "✓ Installation successful on attempt $i"
+              echo "OK Installation successful on attempt $i"
               break
             else
-              echo "⚠ Attempt $i failed"
+              echo "WARNING Attempt $i failed"
               if [ $i -lt 3 ]; then
                 echo "Cleaning precompile cache..."
                 rm -rf ~/.julia/compiled/v* || true
@@ -153,9 +153,9 @@ jobs:
             fi
             
             if [ $i -eq 3 ]; then
-              echo "════════════════════════════════════════════════════════════"
-              echo "❌ Package installation failed after 3 attempts"
-              echo "════════════════════════════════════════════════════════════"
+              echo "============================================================"
+              echo "FAIL Package installation failed after 3 attempts"
+              echo "============================================================"
               exit 1
             fi
           done
@@ -171,7 +171,7 @@ jobs:
             
             # Test MPI loading
             using MPI
-            println("✓ MPI.jl loaded successfully")
+            println("OK MPI.jl loaded successfully")
             
             # Verify MPI binary
             println("MPI implementation: ", MPI.MPI_LIBRARY_VERSION_STRING)
@@ -223,10 +223,10 @@ jobs:
             
             # Check if test passed by looking for output file
             if isfile("test_results.txt")
-              println("\n✅ Tests completed successfully")
+              println("\nOK Tests completed successfully")
               println(read("test_results.txt", String))
             else
-              println("\n⚠️  Test results not found")
+              println("\nWARNING  Test results not found")
             end
             println("="^70)
           '

@@ -6,8 +6,8 @@ HLL flux update scheme.
 Computes the updated moments using the HLL (Harten-Lax-van Leer) flux scheme.
 
 # Arguments
-- `M`: Moment array (Np × Nmom)
-- `F`: Flux array (Np × Nmom)
+- `M`: Moment array (Np x Nmom)
+- `F`: Flux array (Np x Nmom)
 - `dt`: Time step
 - `dx`: Spatial step
 - `vpmin`: Minimum eigenvalues (Np)

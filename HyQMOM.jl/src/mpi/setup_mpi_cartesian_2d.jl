@@ -4,7 +4,7 @@
 Create a 2D Cartesian domain decomposition.
 
 # Arguments
-- `np`: Global grid size along x and y (np × np)
+- `np`: Global grid size along x and y (np x np)
 - `halo`: Halo width in cells (typically 1)
 - `comm`: MPI communicator
 

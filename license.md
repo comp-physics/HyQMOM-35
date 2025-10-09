@@ -1,5 +1,5 @@
 ALL RIGHTS RESERVED
-© Georgia Institue of Technology 2025
+(c) Georgia Institue of Technology 2025
 
 CC BY-NC-ND: https://creativecommons.org/licenses/by-nc-nd/4.0/
 

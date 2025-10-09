@@ -9,15 +9,15 @@ const TOL = 1e-10
         
         M = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
         
-        @test M[1] ≈ rho atol=TOL
-        @test M[2]/M[1] ≈ u atol=TOL
-        @test M[6]/M[1] ≈ v atol=TOL
-        @test M[16]/M[1] ≈ w atol=TOL
+        @test M[1] ~= rho atol=TOL
+        @test M[2]/M[1] ~= u atol=TOL
+        @test M[6]/M[1] ~= v atol=TOL
+        @test M[16]/M[1] ~= w atol=TOL
         
         C4, S4 = M2CS4_35(M)
-        @test S4[5] ≈ 3.0 atol=TOL  # S400 kurtosis
-        @test S4[15] ≈ 3.0 atol=TOL  # S040 kurtosis
-        @test S4[25] ≈ 3.0 atol=TOL  # S004 kurtosis
+        @test S4[5] ~= 3.0 atol=TOL  # S400 kurtosis
+        @test S4[15] ~= 3.0 atol=TOL  # S040 kurtosis
+        @test S4[25] ~= 3.0 atol=TOL  # S004 kurtosis
     end
     
     @testset "InitializeM4_35 correlated" begin
@@ -30,12 +30,12 @@ const TOL = 1e-10
         
         C4, S4 = M2CS4_35(M)
         
-        @test C4[3] ≈ C200 atol=TOL  # C200 variance
-        @test C4[10] ≈ C020 atol=TOL  # C020 variance
-        @test C4[20] ≈ C002 atol=TOL  # C002 variance
+        @test C4[3] ~= C200 atol=TOL  # C200 variance
+        @test C4[10] ~= C020 atol=TOL  # C020 variance
+        @test C4[20] ~= C002 atol=TOL  # C002 variance
         
         S110_expected = C110 / sqrt(C200 * C020)
-        @test S4[7] ≈ S110_expected atol=TOL  # S110 correlation
+        @test S4[7] ~= S110_expected atol=TOL  # S110 correlation
     end
     
     @testset "InitializeM4_35 mass conservation" begin
@@ -45,7 +45,7 @@ const TOL = 1e-10
         
         M = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
         
-        @test M[1] ≈ rho atol=TOL
+        @test M[1] ~= rho atol=TOL
     end
     
     @testset "InitializeM4_35 third-order zero for Gaussian" begin

@@ -31,10 +31,10 @@ jobs:
           file_count=$(ls -1 goldenfiles/goldenfile_*.mat 2>/dev/null | wc -l)
           echo "Found $file_count golden files"
           if [ "$file_count" -lt 1 ]; then
-            echo "❌ No golden files found!"
+            echo "FAIL No golden files found!"
             exit 1
           fi
-          echo "✅ Golden files present"
+          echo "OK Golden files present"
       
       - name: Run MATLAB tests
         uses: matlab-actions/run-command@v2
@@ -45,7 +45,7 @@ jobs:
             if exit_code ~= 0
               error('MATLAB tests failed');
             end
-            fprintf('✅ MATLAB tests passed\n');
+            fprintf('OK MATLAB tests passed\n');
       
       - name: Verify golden file integrity
         uses: matlab-actions/run-command@v2
@@ -81,7 +81,7 @@ jobs:
             fprintf('  tmax: %.2f\n', gd.parameters.tmax);
             fprintf('  Final time: %.6f\n', gd.parameters.final_time);
             fprintf('  Time steps: %d\n', gd.parameters.time_steps);
-            fprintf('✅ Golden file structure validated\n');
+            fprintf('OK Golden file structure validated\n');
       
       - name: Upload MATLAB validation results
         if: always()
@@ -132,9 +132,9 @@ jobs:
         run: |
           # Retry logic for robustness
           for i in {1..3}; do
-            echo "════════════════════════════════════════════════════════════"
+            echo "============================================================"
             echo "Package installation attempt $i/3"
-            echo "════════════════════════════════════════════════════════════"
+            echo "============================================================"
             
             # On retry, clean up potentially corrupted cache
             if [ $i -gt 1 ]; then
@@ -155,7 +155,7 @@ jobs:
               println("Updating package registry...")
               try
                 Pkg.Registry.update()
-                println("✓ Registry updated")
+                println("OK Registry updated")
               catch e
                 @warn "Registry update failed, continuing anyway" exception=(e, catch_backtrace())
               end
@@ -177,12 +177,12 @@ jobs:
               println("Package status:")
               Pkg.status()
               println()
-              println("✓ All packages installed successfully")
+              println("OK All packages installed successfully")
             '; then
-              echo "✓ Installation successful on attempt $i"
+              echo "OK Installation successful on attempt $i"
               break
             else
-              echo "⚠ Attempt $i failed"
+              echo "WARNING Attempt $i failed"
               if [ $i -lt 3 ]; then
                 echo "Cleaning precompile cache..."
                 rm -rf ~/.julia/compiled/v* || true
@@ -192,9 +192,9 @@ jobs:
             fi
             
             if [ $i -eq 3 ]; then
-              echo "════════════════════════════════════════════════════════════"
-              echo "❌ Package installation failed after 3 attempts"
-              echo "════════════════════════════════════════════════════════════"
+              echo "============================================================"
+              echo "FAIL Package installation failed after 3 attempts"
+              echo "============================================================"
               exit 1
             fi
           done
@@ -204,7 +204,7 @@ jobs:
             using Pkg
             Pkg.build("MPI", verbose=true)
             using MPI
-            println("✓ MPI.jl ready")
+            println("OK MPI.jl ready")
           '
       
       - name: Run unit tests
@@ -224,9 +224,9 @@ jobs:
           exit_code=$?
           
           if [ $exit_code -eq 0 ]; then
-            echo "✅ Golden file test PASSED"
+            echo "OK Golden file test PASSED"
           else
-            echo "❌ Golden file test FAILED"
+            echo "FAIL Golden file test FAILED"
             exit 1
           fi
       
@@ -241,9 +241,9 @@ jobs:
           exit_code=$?
           
           if [ $exit_code -eq 0 ]; then
-            echo "✅ MPI golden file test PASSED"
+            echo "OK MPI golden file test PASSED"
           else
-            echo "❌ MPI golden file test FAILED"
+            echo "FAIL MPI golden file test FAILED"
             exit 1
           fi
       
@@ -261,10 +261,10 @@ jobs:
             println("  OS: ", Sys.KERNEL, " ", Sys.ARCH)
             println()
             println("Golden file test compares:")
-            println("  ✓ Grid size: 20×20")
-            println("  ✓ Time range: 0.0 → 0.1")
-            println("  ✓ Moments: 35 components")
-            println("  ✓ MPI ranks: 1")
+            println("  OK Grid size: 20x20")
+            println("  OK Time range: 0.0 -> 0.1")
+            println("  OK Moments: 35 components")
+            println("  OK MPI ranks: 1")
             println()
             println("Expected results:")
             println("  Max absolute error: < 1e-8")
@@ -309,15 +309,15 @@ jobs:
           echo "" >> validation_report.md
           
           if [ "${{ needs.validate-matlab.result }}" == "success" ]; then
-            echo "✅ MATLAB validation: **PASSED**" >> validation_report.md
+            echo "OK MATLAB validation: **PASSED**" >> validation_report.md
           else
-            echo "❌ MATLAB validation: **FAILED**" >> validation_report.md
+            echo "FAIL MATLAB validation: **FAILED**" >> validation_report.md
           fi
           
           if [ "${{ needs.validate-julia.result }}" == "success" ]; then
-            echo "✅ Julia validation: **PASSED**" >> validation_report.md
+            echo "OK Julia validation: **PASSED**" >> validation_report.md
           else
-            echo "❌ Julia validation: **FAILED**" >> validation_report.md
+            echo "FAIL Julia validation: **FAILED**" >> validation_report.md
           fi
           
           echo "" >> validation_report.md
@@ -327,7 +327,7 @@ jobs:
           echo "identical results to the MATLAB reference implementation by" >> validation_report.md
           echo "comparing against pre-generated golden files." >> validation_report.md
           echo "" >> validation_report.md
-          echo "Expected agreement: machine precision (~10⁻¹⁵)" >> validation_report.md
+          echo "Expected agreement: machine precision (~10^-^1^5)" >> validation_report.md
           
           cat validation_report.md
       

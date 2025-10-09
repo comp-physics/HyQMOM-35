@@ -41,7 +41,7 @@ function moment_idx(name::String)
     j = parse(Int, name[3:3]) + 1
     k = parse(Int, name[4:4]) + 1
     
-    # Compute linear index in 5×5×5 array
+    # Compute linear index in 5x5x5 array
     linear_idx = i + 5*(j-1) + 25*(k-1)
     
     # Map to position in 35-element vector

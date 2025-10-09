@@ -11,8 +11,8 @@ Check and correct realizability of 2nd-order moments.
 - S2r: Determinant-like quantity (should be non-negative)
 
 # Algorithm
-Computes S2 = 1 + 2*S110*S101*S011 - (S110² + S101² + S011²).
-If S2 < 0, scales all moments by a factor xr ∈ (0,1) found via root-finding
+Computes S2 = 1 + 2*S110*S101*S011 - (S110^2 + S101^2 + S011^2).
+If S2 < 0, scales all moments by a factor xr in (0,1) found via root-finding
 to make S2 = 0.
 """
 function realizability_S2(S110, S101, S011)
