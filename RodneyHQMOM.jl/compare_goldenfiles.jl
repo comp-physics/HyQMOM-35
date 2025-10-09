@@ -33,18 +33,37 @@ steps_matlab = golden_data["parameters"]["time_steps"]
 
 println("  ✓ MATLAB: t=$(t_matlab), steps=$(steps_matlab), M shape = ", size(M_matlab))
 
-# Run Julia simulation
+# Run Julia simulation with EXACT MATLAB parameters
 println("\n🚀 Running Julia simulation...")
-result_julia = run_simulation(
-    Np=20, 
-    tmax=t_matlab, 
-    num_workers=1,
-    Kn=1.0, 
-    Ma=0.0, 
-    flag2D=0, 
-    CFL=0.5,
-    verbose=false
-)
+println("  Using MATLAB parameters: Kn=1.0, Ma=0.0, CFL=0.5, rhol=1.0, rhor=0.01")
+
+# Setup parameters EXACTLY as MATLAB does (from parse_main_args.m)
+Np = 20
+dx = 1.0 / Np
+dy = 1.0 / Np
+Nmom = 35
+nnmax = 20000000
+Kn = 1.0
+dtmax = Kn
+rhol = 1.0
+rhor = 0.01  # MATLAB uses 0.01!
+T = 1.0
+r110 = 0.0
+r101 = 0.0
+r011 = 0.0
+Ma = 0.0
+flag2D = 0
+CFL = 0.5
+symmetry_check_interval = 10
+
+params = (Np=Np, tmax=t_matlab, Kn=Kn, Ma=Ma, flag2D=flag2D, CFL=CFL,
+          dx=dx, dy=dy, Nmom=Nmom, nnmax=nnmax, dtmax=dtmax,
+          rhol=rhol, rhor=rhor, T=T, r110=r110, r101=r101, r011=r011,
+          symmetry_check_interval=symmetry_check_interval,
+          enable_memory_tracking=false)
+
+M_julia, t_julia, steps_julia, grid_julia = simulation_runner(params)
+result_julia = Dict(:M => M_julia, :final_time => t_julia, :time_steps => steps_julia)
 
 M_julia = result_julia[:M]
 t_julia = result_julia[:final_time]
