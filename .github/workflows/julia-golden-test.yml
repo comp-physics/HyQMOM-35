@@ -92,6 +92,14 @@ jobs:
             echo "Package installation attempt $i/3"
             echo "════════════════════════════════════════════════════════════"
             
+            # On retry, clean up potentially corrupted cache
+            if [ $i -gt 1 ]; then
+              echo "Cleaning up package cache before retry..."
+              julia --project -e 'using Pkg; Pkg.gc(; collect_delay=0.0)' || true
+              rm -rf ~/.julia/compiled/v* || true
+              echo "Cache cleaned"
+            fi
+            
             if julia --project --color=yes -e '
               using Pkg
               
@@ -135,6 +143,8 @@ jobs:
             else
               echo "⚠ Attempt $i failed"
               if [ $i -lt 3 ]; then
+                echo "Cleaning precompile cache..."
+                rm -rf ~/.julia/compiled/v* || true
                 echo "Waiting 15 seconds before retry..."
                 sleep 15
               fi
