@@ -148,8 +148,18 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     println("Visualization complete! Created 7 figures.")
     if save_figures
         println("Figures saved to: $output_dir")
+        println("  - fig02_moments.png")
+        println("  - fig03_central_moments.png")
+        println("  - fig04_standardized_moments.png")
+        println("  - fig09_contours.png")
+        println("  - fig10_cmoments.png")
+        println("  - fig11_smoments.png")
+        println("  - fig12_hyperbolicity.png")
     else
-        println("Figures displayed. Close windows or call show() to view.")
+        println("Figures displayed in windows.")
+        println("Call PyPlot.show() to display if not visible, or close windows to continue.")
+        # Show the figures
+        PyPlot.show()
     end
     println("="^70)
     

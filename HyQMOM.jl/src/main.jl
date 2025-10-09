@@ -199,9 +199,18 @@ function main()
     if enable_plots && rank == 0 && !isnothing(M_final)
         println("="^70)
         println("Generating visualization...")
+        println("  enable_plots = $enable_plots")
+        println("  save_figures = $save_figures")
+        println("  output_dir = $output_dir")
         println("="^70)
         plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35;
                          save_figures=save_figures, output_dir=output_dir)
+    elseif !enable_plots && rank == 0
+        println("Visualization disabled (--no-plots)")
+    elseif rank != 0
+        # Other ranks don't plot
+    elseif isnothing(M_final)
+        @warn "M_final is nothing - cannot generate plots"
     end
     
     # Save results (only rank 0)
