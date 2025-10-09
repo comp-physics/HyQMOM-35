@@ -170,12 +170,22 @@ end
 @testset "Physical Sanity Checks" begin
     # Density should be positive
     ρ = M_julia[:, :, 1]
-    @test all(ρ .> 0) "Density must be positive"
-    @test minimum(ρ) > 1e-10 "Density should not be near zero"
+    @test all(ρ .> 0)
+    if !all(ρ .> 0)
+        @warn "Density must be positive"
+    end
+    
+    @test minimum(ρ) > 1e-10
+    if minimum(ρ) <= 1e-10
+        @warn "Density should not be near zero"
+    end
     
     # Energy should be positive  
     E = M_julia[:, :, 5]
-    @test all(E .> 0) "Energy must be positive"
+    @test all(E .> 0)
+    if !all(E .> 0)
+        @warn "Energy must be positive"
+    end
     
     # Check conservation (for 1 rank, boundaries are periodic-like)
     # Total mass should be conserved
