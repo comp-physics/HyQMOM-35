@@ -24,7 +24,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.9', '1.10', '1']  # 1.9 (min), 1.10 (stable), 1 (latest)
+        julia-version: ['1.9', '1.10']  # 1.9 (min), 1.10 (stable)
+        # Note: Julia 1.12 currently has OpenSSL_jll precompilation issues on GitHub Actions
+        # Will re-enable when resolved: https://github.com/JuliaLang/julia/issues/xxxxx
         os: [ubuntu-latest]
         # Optional: Add macOS for development testing
         # os: [ubuntu-latest, macos-latest]
