@@ -2,22 +2,24 @@
 """
 Main entry point for HyQMOM 3D simulation - Julia version
 
-This is the Julia equivalent of main.m in MATLAB.
-It provides a convenient top-level interface to run simulations.
+This is the Julia equivalent of the MATLAB main.m file.
+Run simulations from the HyQMOM.jl directory.
 
 # Usage
 
 ## Single rank (no MPI):
 ```bash
-julia main.jl
-julia main.jl --Np 40 --tmax 0.1
+cd HyQMOM.jl
+julia --project main.jl
+julia --project main.jl --Np 40 --tmax 0.1
 ```
 
 ## MPI parallel:
 ```bash
-mpiexec -n 2 julia main.jl
-mpiexec -n 4 julia main.jl --Np 80 --tmax 0.1
-mpiexec -n 8 julia main.jl --Np 240 --tmax 0.04 --Ma 2.0 --Kn 0.01
+cd HyQMOM.jl
+mpiexec -n 2 julia --project main.jl
+mpiexec -n 4 julia --project main.jl --Np 80 --tmax 0.1
+mpiexec -n 8 julia --project main.jl --Np 240 --tmax 0.04 --Ma 2.0 --Kn 0.01
 ```
 
 # Command-line Arguments
@@ -33,16 +35,16 @@ mpiexec -n 8 julia main.jl --Np 240 --tmax 0.04 --Ma 2.0 --Kn 0.01
 # Examples
 ```bash
 # Default parameters (Np=120, tmax=0.02, Ma=2.0, Kn=0.01)
-julia main.jl
+julia --project main.jl
 
 # Small test case
-julia main.jl --Np 40 --tmax 0.1
+julia --project main.jl --Np 40 --tmax 0.1
 
 # Production run with MPI
-mpiexec -n 8 julia main.jl --Np 240 --tmax 0.04
+mpiexec -n 8 julia --project main.jl --Np 240 --tmax 0.04
 
 # Match MATLAB golden file parameters (1 rank, Np=20, tmax=0.1)
-julia main.jl --Np 20 --tmax 0.1 --Kn 1.0 --Ma 0.0 --CFL 0.5
+julia --project main.jl --Np 20 --tmax 0.1 --Kn 1.0 --Ma 0.0 --CFL 0.5
 ```
 
 # Output
@@ -54,9 +56,6 @@ containing:
 - grid: Grid information
 """
 
-# Add the HyQMOM.jl package to the load path
-push!(LOAD_PATH, joinpath(@__DIR__, "HyQMOM.jl"))
-
-# Import the main.jl from src directory
-include(joinpath(@__DIR__, "HyQMOM.jl", "src", "main.jl"))
+# Include the actual main implementation
+include(joinpath(@__DIR__, "src", "main.jl"))
 
