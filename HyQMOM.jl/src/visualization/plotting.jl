@@ -161,9 +161,11 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
         println("  - fig12_hyperbolicity.png")
     else
         println("Figures displayed in windows.")
-        println("Call PyPlot.show() to display if not visible, or close windows to continue.")
+        println("Press Enter to close all windows and exit...")
         # Show the figures
         PyPlot.show()
+        # Wait for user input to keep windows open
+        readline()
     end
     println("="^70)
     

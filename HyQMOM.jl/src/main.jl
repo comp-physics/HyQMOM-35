@@ -18,9 +18,9 @@ mpiexec -n 8 julia --project src/main.jl --Np 240 --tmax 0.04
 # Command-line Arguments
 - `--Np`: Grid size (default: 120)
 - `--tmax`: Maximum simulation time (default: 0.02)
-- `--Ma`: Mach number (default: 2.0)
-- `--Kn`: Knudsen number (default: 0.01)
-- `--CFL`: CFL number (default: 0.9)
+- `--Ma`: Mach number (default: 0.0, matching MATLAB)
+- `--Kn`: Knudsen number (default: 1.0, matching MATLAB)
+- `--CFL`: CFL number (default: 0.5, matching MATLAB)
 - `--output`: Output file name (default: "results.jld2")
 """
 
@@ -30,13 +30,13 @@ using JLD2
 using HyQMOM
 
 function parse_args()
-    # Default parameters
+    # Default parameters (matching MATLAB test case defaults)
     params = Dict{Symbol,Any}(
         :Np => 120,
         :tmax => 0.02,
-        :Ma => 2.0,
-        :Kn => 0.01,
-        :CFL => 0.9,
+        :Ma => 0.0,      # MATLAB default (was 2.0)
+        :Kn => 1.0,      # MATLAB default (was 0.01)
+        :CFL => 0.5,     # MATLAB default (was 0.9)
         :flag2D => 0,
         :output => "results.jld2",
         :enable_plots => true,
@@ -88,9 +88,9 @@ function parse_args()
             Options:
               --Np N             Grid size (default: 120)
               --tmax T           Maximum simulation time (default: 0.02)
-              --Ma M             Mach number (default: 2.0)
-              --Kn K             Knudsen number (default: 0.01)
-              --CFL C            CFL number (default: 0.9)
+              --Ma M             Mach number (default: 0.0)
+              --Kn K             Knudsen number (default: 1.0)
+              --CFL C            CFL number (default: 0.5)
               --2D               Run 2D simulation (default: 3D)
               --output FILE      Output file name (default: results.jld2)
               --enable-plots     Enable visualization (default: true)
@@ -148,12 +148,12 @@ function main()
     dx = 1.0 / Np
     dy = 1.0 / Np
     Nmom = 35
-    nnmax = 100000
-    dtmax = 0.001
+    nnmax = 20000000  # Maximum number of time steps (MATLAB: 2e7, was 100000)
+    dtmax = Kn        # Maximum time step (MATLAB uses Kn)
     
-    # Initial condition parameters (crossing jets)
+    # Initial condition parameters (crossing jets, matching MATLAB)
     rhol = 1.0    # High density in jets
-    rhor = 0.5    # Low density in background
+    rhor = 0.01   # Low density in background (MATLAB default, was 0.5)
     T = 1.0       # Temperature
     r110 = 0.0    # Correlation coefficients
     r101 = 0.0

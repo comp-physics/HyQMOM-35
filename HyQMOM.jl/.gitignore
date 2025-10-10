@@ -39,3 +39,4 @@ Thumbs.db
 *.dylib
 *.dll
 
+*.jld2
