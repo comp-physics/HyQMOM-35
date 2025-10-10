@@ -318,8 +318,8 @@ function simulation_runner(params)
         # Print timestep info
         if rank == 0
             # Always print for debugging (was: mod(nn, symmetry_check_interval) == 0 || nn == 1)
-            @printf("Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s\n",
-                   nn, t, dt, time_per_point_global)
+            @printf("Step %4d: t = %.4f, dt = %.4e, wall = %.4f s, s/pt = %.4e s\n",
+                   nn, t, dt, max_step_time, time_per_point_global)
         end
     end
     
