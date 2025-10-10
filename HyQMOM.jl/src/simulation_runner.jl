@@ -1,3 +1,5 @@
+using LinearAlgebra: norm
+
 """
     simulation_runner(params)
 
@@ -309,6 +311,82 @@ function simulation_runner(params)
         # Exchange halos for next iteration
         halo_exchange_2d!(M, decomp, bc)
         
+        # Symmetry check: test that M(i,i,k) ≈ M(Np+1-i, Np+1-i, k) along diagonal
+        # Only check every symmetry_check_interval steps to reduce overhead
+        MaxDiff = 0.0
+        if mod(nn, symmetry_check_interval) == 0 || nn == 1
+            # Gather diagonal entries from all ranks
+            # Diagonal: global indices where i == j
+            i0, i1 = decomp.istart_iend
+            j0, j1 = decomp.jstart_jend
+            i_start = max(i0, j0)
+            i_end = min(i1, j1)
+            diag_i_global = i_start:i_end
+            ndiag = length(diag_i_global)
+            
+            # Extract 5 moment components from diagonal cells for symmetry test
+            # MATLAB checks indices 1-5: M000, M100, M200, M300, M400
+            diag5_local = zeros(ndiag, 5)
+            for (idx, gi) in enumerate(diag_i_global)
+                ii = gi - i0 + 1  # local i index (interior, 1-based)
+                jj = gi - j0 + 1  # local j index (interior, 1-based)
+                diag5_local[idx, 1] = M[halo+ii, halo+jj, 1]   # M000
+                diag5_local[idx, 2] = M[halo+ii, halo+jj, 2]   # M100
+                diag5_local[idx, 3] = M[halo+ii, halo+jj, 3]   # M200
+                diag5_local[idx, 4] = M[halo+ii, halo+jj, 4]   # M300
+                diag5_local[idx, 5] = M[halo+ii, halo+jj, 5]   # M400
+            end
+            
+            # Gather to rank 0
+            if rank == 0
+                diag5_global = zeros(Np, 5)
+                # Copy local contribution
+                for (idx, gi) in enumerate(diag_i_global)
+                    diag5_global[gi, :] = diag5_local[idx, :]
+                end
+                # Receive from other ranks
+                for src in 1:(nprocs-1)
+                    ndiag_remote_buf = Vector{Int}(undef, 1)
+                    MPI.Recv!(ndiag_remote_buf, comm; source=src, tag=0)
+                    ndiag_remote = ndiag_remote_buf[1]
+                    if ndiag_remote > 0
+                        i_remote = Vector{Int}(undef, ndiag_remote)
+                        MPI.Recv!(i_remote, comm; source=src, tag=1)
+                        diag_remote = Array{Float64}(undef, ndiag_remote, 5)
+                        MPI.Recv!(diag_remote, comm; source=src, tag=2)
+                        for idx in 1:ndiag_remote
+                            diag5_global[i_remote[idx], :] = diag_remote[idx, :]
+                        end
+                    end
+                end
+                
+                # Compute symmetry differences: M(i,i,k) vs M(Np+1-i,Np+1-i,k)
+                Diff = zeros(Np, 5)
+                for i = 1:Np
+                    j = Np + 1 - i
+                    Diff[i, 1] = diag5_global[i, 1] - diag5_global[j, 1]  # M000 (symmetric)
+                    Diff[i, 2] = diag5_global[i, 2] + diag5_global[j, 2]  # M100 (antisymmetric)
+                    Diff[i, 3] = diag5_global[i, 3] - diag5_global[j, 3]  # M010 (symmetric)
+                    Diff[i, 4] = diag5_global[i, 4] + diag5_global[j, 4]  # M001 (antisymmetric)
+                    Diff[i, 5] = diag5_global[i, 5] - diag5_global[j, 5]  # M002 (symmetric)
+                end
+                # Compute normalized MaxDiff for each moment (matching MATLAB)
+                MaxDiff_vec = zeros(5)
+                for k = 1:5
+                    Normk = norm(Diff[:, k])
+                    MaxDiff_vec[k] = maximum(Diff[:, k]) / (Normk + 1)
+                end
+                MaxDiff = maximum(abs.(MaxDiff_vec))
+            else
+                # Send local diagonal to rank 0
+                MPI.Send([ndiag], comm; dest=0, tag=0)
+                if ndiag > 0
+                    MPI.Send(collect(diag_i_global), comm; dest=0, tag=1)
+                    MPI.Send(diag5_local, comm; dest=0, tag=2)
+                end
+            end
+        end
+        
         # Timing: compute per global grid point for fair comparison across ranks
         step_time = time() - step_start_time
         max_step_time = MPI.Allreduce(step_time, max, comm)
@@ -317,9 +395,13 @@ function simulation_runner(params)
         
         # Print timestep info
         if rank == 0
-            # Always print for debugging (was: mod(nn, symmetry_check_interval) == 0 || nn == 1)
-            @printf("Step %4d: t = %.4f, dt = %.4e, wall = %.4f s, s/pt = %.4e s\n",
-                   nn, t, dt, max_step_time, time_per_point_global)
+            if mod(nn, symmetry_check_interval) == 0 || nn == 1
+                @printf("Step %4d: t = %.4f, dt = %.4e, wall = %.4f s, s/pt = %.4e s, MaxDiff = %.3e\n",
+                       nn, t, dt, max_step_time, time_per_point_global, MaxDiff)
+            else
+                @printf("Step %4d: t = %.4f, dt = %.4e, wall = %.4f s, s/pt = %.4e s\n",
+                       nn, t, dt, max_step_time, time_per_point_global)
+            end
         end
     end
     
