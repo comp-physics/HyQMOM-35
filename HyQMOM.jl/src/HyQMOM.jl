@@ -13,8 +13,8 @@ using StaticArrays
 using MPI
 using Printf
 
-# Export main entry point
-export run_simulation
+# Export main entry points
+export run_simulation, simulation_runner
 
 # Export visualization functions
 export plot_final_results
