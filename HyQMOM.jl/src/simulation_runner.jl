@@ -309,17 +309,17 @@ function simulation_runner(params)
         # Exchange halos for next iteration
         halo_exchange_2d!(M, decomp, bc)
         
-        # Symmetry check (simplified - just print timing)
+        # Timing: compute per global grid point for fair comparison across ranks
         step_time = time() - step_start_time
-        local_grid_points = nx * ny
-        time_per_point_local = step_time / local_grid_points
-        max_time_per_point = MPI.Allreduce(time_per_point_local, max, comm)
+        max_step_time = MPI.Allreduce(step_time, max, comm)
+        global_grid_points = Np * Np
+        time_per_point_global = max_step_time / global_grid_points
         
         # Print timestep info
         if rank == 0
             # Always print for debugging (was: mod(nn, symmetry_check_interval) == 0 || nn == 1)
             @printf("Step %4d: t = %.6f, dt = %.6e, max s/pt = %.6e s\n",
-                   nn, t, dt, max_time_per_point)
+                   nn, t, dt, time_per_point_global)
         end
     end
     
