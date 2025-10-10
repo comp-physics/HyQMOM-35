@@ -148,8 +148,8 @@ function main()
     dx = 1.0 / Np
     dy = 1.0 / Np
     Nmom = 35
-    nnmax = 100000
-    dtmax = Kn  # Maximum time step (MATLAB uses Kn, was hardcoded to 0.001)
+    nnmax = 20000000  # Maximum number of time steps (MATLAB: 2e7, was 100000)
+    dtmax = Kn        # Maximum time step (MATLAB uses Kn)
     
     # Initial condition parameters (crossing jets, matching MATLAB)
     rhol = 1.0    # High density in jets
