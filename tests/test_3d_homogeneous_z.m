@@ -45,12 +45,30 @@ function test_3d_basic_run(testCase)
     verifyTrue(testCase, all(M_3d(:,:,:,1) > 0, 'all'), 'Density should remain positive');
     
     % Check that z-variation exists (jets only in lower z)
+    % At very short times, the mean densities may be nearly identical
+    % because the high-density jets are small regions in x-y
+    % Instead, check max density (which should be higher in jet regions)
+    
+    % Debug: print all z-slice stats
+    fprintf('  Z-slice analysis:\n');
+    for k = 1:Nz
+        M_slice = M_3d(:,:,k,1);
+        fprintf('    Slice %d: zm=%.3f, max=%.6f, mean=%.6f\n', ...
+                k, results_3d.grid.zm(k), max(M_slice(:)), mean(M_slice(:)));
+    end
+    
     M_lower_z = M_3d(:,:,1,1);  % Density at z-slice 1 (lower, should have jets)
     M_upper_z = M_3d(:,:,end,1);  % Density at z-slice end (upper, should be background)
-    mean_lower = mean(M_lower_z(:));
-    mean_upper = mean(M_upper_z(:));
-    verifyGreaterThan(testCase, mean_lower, mean_upper, ...
-                      'Lower z should have higher mean density (jets present)');
+    
+    max_lower = max(M_lower_z(:));
+    max_upper = max(M_upper_z(:));
+    
+    fprintf('  Test: max_lower (%.6f) > max_upper * 1.01 (%.6f)?\n', max_lower, max_upper * 1.01);
+    
+    % Jets have rhol=1.0, background has rhor=0.01
+    % So lower z should have significantly higher max density
+    verifyGreaterThan(testCase, max_lower, max_upper * 10, ...
+                      sprintf('Lower z max (%.6f) should be >> upper z max (%.6f)', max_lower, max_upper));
     
     fprintf('PASS: 3D simulation runs correctly with z-variation\n');
 end
