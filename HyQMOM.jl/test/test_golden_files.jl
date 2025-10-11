@@ -5,7 +5,12 @@ These tests compare Julia implementation outputs against MATLAB golden files
 to ensure numerical accuracy and correctness of the port.
 """
 
+using Test
 using MAT
+
+# Add HyQMOM to load path
+push!(LOAD_PATH, joinpath(@__DIR__, ".."))
+using HyQMOM
 
 const GOLDEN_TOL = 1e-10  # Tolerance for golden file comparisons
 const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
