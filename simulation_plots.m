@@ -7,6 +7,9 @@ function simulation_plots(plot_type, varargin)
 %   simulation_plots('time_evolution', S, C, xm, ym, Np, enable_plots)
 %   simulation_plots('final', xm, ym, M, C, S, M5, C5, S5, Np, eig_data, enable_plots)
 %   simulation_plots('final_time', xm, ym, M, Np, Nmom, Nmom5, enable_plots, txt)
+%
+% Note: If M, C, S arrays are 4D (with z-dimension), the middle z-slice is extracted automatically
+
 switch lower(plot_type)
     case 'initial'
         plot_initial_conditions(varargin{:});
@@ -22,12 +25,37 @@ end
 
 end
 
+% ========================================================================
+% HELPER FUNCTIONS
+% ========================================================================
+
+function M_2d = extract_middle_z_slice(M)
+% Extract middle z-slice from 4D array to get 3D array for plotting
+% Input: M can be 3D [nx, ny, nmom] or 4D [nx, ny, nz, nmom]
+% Output: M_2d is always 3D [nx, ny, nmom]
+    if ndims(M) == 4
+        nz = size(M, 3);
+        k_mid = ceil(nz / 2);  % Middle z-index
+        M_2d = squeeze(M(:, :, k_mid, :));
+    else
+        M_2d = M;  % Already 3D
+    end
+end
+
 function plot_initial_conditions(xm, ym, M, C, S, M5, C5, S5, Np, enable_plots)
 % Plot initial conditions for the 3D HyQMOM simulation
 % This function creates figures 1-4 showing the initial state
 if nargin < 10 || ~enable_plots
     return
 end
+
+% Extract middle z-slice if needed
+M = extract_middle_z_slice(M);
+C = extract_middle_z_slice(C);
+S = extract_middle_z_slice(S);
+M5 = extract_middle_z_slice(M5);
+C5 = extract_middle_z_slice(C5);
+S5 = extract_middle_z_slice(S5);
 
 nmin = 1;
 nmax = Np;
@@ -61,6 +89,10 @@ if nargin < 6 || ~enable_plots
     return
 end
 
+% Extract middle z-slice if needed
+S = extract_middle_z_slice(S);
+C = extract_middle_z_slice(C);
+
 figure(10)
 Cmoment_plots_3D(xm, ym, S, Np);
 colormap sky
@@ -76,24 +108,36 @@ if nargin < 11 || ~enable_plots
     return
 end
 
+% Extract middle z-slice if needed
+M = extract_middle_z_slice(M);
+C = extract_middle_z_slice(C);
+S = extract_middle_z_slice(S);
+M5 = extract_middle_z_slice(M5);
+C5 = extract_middle_z_slice(C5);
+S5 = extract_middle_z_slice(S5);
+
 nmin = 1;
 nmax = Np;
 cc = 'r';
 
 % Figure 2: Final moment plots
 figure(2)
+clf;  % Clear this specific figure
 plot_3Dsym_moments(xm, M, nmin, nmax, cc, Np);
 
 % Figure 3: Final central moment plots
 figure(3)
+clf;
 plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np);
 
 % Figure 4: Final standardized moment plots
 figure(4)
+clf;
 plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np);
 
 % Figure 5: Eigenvalue comparison (x-direction)
 figure(5)
+clf;
 Y1 = 0*xm;
 Y2 = 0*xm;
 Y3 = 0*xm;
@@ -108,6 +152,7 @@ plot(xm,Y1,'k',xm,Y2,'r',xm,Y3,'k',xm,Y4,'r')
 
 % Figure 6: Eigenvalue plots (x-direction)
 figure(6)
+clf;
 LAMXa = zeros(Np,6);
 LAMXb = zeros(Np,6);
 for i = 1:Np
@@ -120,6 +165,7 @@ plot(xm,LAMXa,'o',xm,LAMXb,'p')
 
 % Figure 7: Eigenvalue comparison (y-direction)
 figure(7)
+clf;
 Y1 = 0*xm;
 Y2 = 0*xm;
 Y3 = 0*xm;
@@ -134,6 +180,7 @@ plot(xm,Y1,'k',xm,Y2,'r',xm,Y3,'k',xm,Y4,'r')
 
 % Figure 8: Eigenvalue plots (y-direction)
 figure(8)
+clf;
 LAMYa = zeros(Np,6);
 LAMYb = zeros(Np,6);
 for j = 1:Np
@@ -146,21 +193,25 @@ plot(ym,LAMYa,'o',ym,LAMYb,'p')
 
 % Figure 9: Final contour plots
 figure(9)
+clf;
 contour_plots_3D(xm, ym, M, C, S, Np);
 colormap sky
 
 % Figure 10: Final C-moment plots
 figure(10)
+clf;
 Cmoment_plots_3D(xm, ym, S, Np);
 colormap sky
 
 % Figure 11: Final S-moment plots
 figure(11)
+clf;
 Smoment_plots_3D(xm, ym, S, Np);
 colormap sky
 
 % Figure 12: Hyperbolicity plots
 figure(12)
+clf;
 hyperbolic_plots_3D(xm, ym, M, Np);
 colormap sky
 
@@ -575,6 +626,8 @@ end
 
 function plot_3Dsym_moments(xm, M, nmin, nmax, cc, Np)
 % Plot moments vs. x at y = NP/2 (replaces plot3Dsym_mom.m)
+% Uses 'hold on' to overlay initial (black) and final (red) results for comparison
+% Note: M should be 3D [nx, ny, nmom] - z-slice already extracted
 nc = 4; nl = 3;
 
 % M000
@@ -973,6 +1026,9 @@ end
 % Clear and close existing plots
 clc
 close all
+
+% Extract middle z-slice if needed
+M = extract_middle_z_slice(M);
 
 %% Postprocessing for plots
 M5 = zeros(Np,Np,Nmom5);
