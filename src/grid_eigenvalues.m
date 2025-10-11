@@ -2,7 +2,8 @@ function eig_data = grid_eigenvalues(M, Np, Nmom)
 %GRID_EIGENVALUES Compute all eigenvalues for entire grid in one pass
 %   eig_data = grid_eigenvalues(M, Np, Nmom)
 %   Inputs:
-%       M    - Np x Np x Nmom moment array
+%       M    - Np x Np x Nmom moment array OR Np x Np x Nz x Nmom (3D physical space)
+%                If 4D, extracts middle z-slice for 2D plotting
 %       Np   - Grid size
 %       Nmom - Number of moments (35)
 %   Outputs:
@@ -20,6 +21,14 @@ function eig_data = grid_eigenvalues(M, Np, Nmom)
 %       eig = grid_eigenvalues(M_final, Np, 35);
 %       % Use eig.lam6x, eig.v6xmin, etc. directly in plots
 %   See also: axis_moment_slice, compute_jacobian_eigenvalues
+    
+    % Handle 4D input (3D physical space) - extract middle z-slice
+    if ndims(M) == 4
+        nz = size(M, 3);
+        k_mid = ceil(nz / 2);
+        M = squeeze(M(:, :, k_mid, :));  % Now (Np, Np, Nmom)
+    end
+    
     % Pre-allocate arrays
     eig_data = struct();
     eig_data.lam6x = zeros(Np, Np, 6);  % UV plane (X-direction primary)

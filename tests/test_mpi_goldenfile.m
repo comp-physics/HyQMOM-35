@@ -49,7 +49,7 @@ function test_mpi_1_rank_vs_golden(testCase)
     
     % Run MPI simulation
     fprintf('Running MPI simulation with 1 rank...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
+    mpi_data = run_mpi_simulation(Np, golden_data.tmax, num_ranks);
     
     % Compare against golden file
     compare_results(testCase, mpi_data, golden_data, ...
@@ -80,7 +80,7 @@ function test_mpi_2_ranks_vs_golden(testCase)
     
     % Run MPI simulation
     fprintf('Running MPI simulation with 2 ranks...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
+    mpi_data = run_mpi_simulation(Np, golden_data.tmax, num_ranks);
     
     % Compare against golden file
     compare_results(testCase, mpi_data, golden_data, ...
@@ -90,7 +90,8 @@ end
 %% Helper Functions
 
 function mpi_data = run_mpi_simulation(Np, tmax, num_ranks)
-    mpi_data = main(Np, tmax, false, num_ranks, false);
+    % Run with Nz=1 for quasi-2D to match golden files
+    mpi_data = main(Np, tmax, false, num_ranks, false, 1, false, 1);
 end
 
 function compare_results(testCase, data1, data2, tolerance, description)
@@ -98,9 +99,28 @@ function compare_results(testCase, data1, data2, tolerance, description)
     
     fprintf('\nComparing results: %s\n', description);
     
-    % Extract moment arrays
-    M1 = data1.moments.M;
-    M2 = data2.moments.M;
+    % Extract moment arrays (handle different structures)
+    % data1 is from simulation (has moments.M), data2 is from golden file (has M directly)
+    if isfield(data1, 'moments')
+        M1 = data1.moments.M;
+    else
+        M1 = data1.M;
+    end
+    
+    if isfield(data2, 'moments')
+        M2 = data2.moments.M;
+    else
+        M2 = data2.M;
+    end
+    
+    % Squeeze out singleton z-dimension for quasi-2D comparisons
+    % New code produces [nx, ny, 1, nmom], old golden files have [nx, ny, nmom]
+    if ndims(M1) == 4 && size(M1, 3) == 1
+        M1 = squeeze(M1);  % [nx, ny, 1, nmom] -> [nx, ny, nmom]
+    end
+    if ndims(M2) == 4 && size(M2, 3) == 1
+        M2 = squeeze(M2);  % [nx, ny, 1, nmom] -> [nx, ny, nmom]
+    end
     
     % Check sizes match
     if ~isequal(size(M1), size(M2))

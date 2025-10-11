@@ -62,14 +62,14 @@ function create_goldenfiles(mode)
     GOLDEN_TMAX = 0.1;
     
     % Determine grid sizes based on rank count
-    % CI tests (1-2 ranks): 20x20 grid
-    % Local tests (4-8 ranks): 40x40 grid
+    % 1 rank: 20x20 grid (CI: fast, small)
+    % 2+ ranks: 40x40 grid (CI and local: standard size)
     NP_VALUES = zeros(size(RANK_COUNTS));
     for i = 1:length(RANK_COUNTS)
-        if RANK_COUNTS(i) <= 2
-            NP_VALUES(i) = 20;  % CI: smaller, faster
+        if RANK_COUNTS(i) == 1
+            NP_VALUES(i) = 20;  % Single rank: smaller grid
         else
-            NP_VALUES(i) = 40;  % Local: larger, more comprehensive
+            NP_VALUES(i) = 40;  % Multiple ranks: standard grid
         end
     end
     
@@ -106,10 +106,10 @@ function create_goldenfiles(mode)
         fprintf('  Generating golden file for %d rank(s) (Np=%d)\n', num_ranks, Np);
         
         try
-            % Run simulation
+            % Run simulation with Nz=1 (quasi-2D for compatibility)
             tic;
             fprintf('  Running simulation...\n');
-            results = main(Np, GOLDEN_TMAX, false, num_ranks);
+            results = main(Np, GOLDEN_TMAX, false, num_ranks, false, 1, false, 1);
             elapsed = toc;
             
             fprintf('Simulation complete in %.1f seconds\n', elapsed);
@@ -121,6 +121,11 @@ function create_goldenfiles(mode)
                 M_final = results.moments.M{1};
             else
                 M_final = results.moments.M;
+            end
+            
+            % Squeeze out singleton z-dimension for quasi-2D golden files
+            if ndims(M_final) == 4 && size(M_final, 3) == 1
+                M_final = squeeze(M_final);  % [nx, ny, 1, nmom] -> [nx, ny, nmom]
             end
             
             if iscell(results.grid)

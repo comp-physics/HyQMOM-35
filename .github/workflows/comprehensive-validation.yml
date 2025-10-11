@@ -63,24 +63,23 @@ jobs:
             end
             
             gd = data.golden_data;
-            required_fields = {'moments', 'parameters', 'grid'};
+            % New flat structure: M, Np, tmax, final_time, time_steps, xm, ym
+            required_fields = {'M', 'Np', 'tmax', 'final_time', 'time_steps', 'xm', 'ym'};
             for i = 1:length(required_fields)
               if ~isfield(gd, required_fields{i})
                 error('Missing field: %s', required_fields{i});
               end
             end
             
-            if ~isfield(gd.moments, 'M')
-              error('Missing moment array M');
-            end
-            
-            M = gd.moments.M;
+            M = gd.M;
             fprintf('Golden file validation:\n');
             fprintf('  Size: %dx%dx%d\n', size(M));
-            fprintf('  Np: %d\n', gd.parameters.Np);
-            fprintf('  tmax: %.2f\n', gd.parameters.tmax);
-            fprintf('  Final time: %.6f\n', gd.parameters.final_time);
-            fprintf('  Time steps: %d\n', gd.parameters.time_steps);
+            fprintf('  Np: %d\n', gd.Np);
+            fprintf('  tmax: %.2f\n', gd.tmax);
+            fprintf('  Final time: %.6f\n', gd.final_time);
+            fprintf('  Time steps: %d\n', gd.time_steps);
+            fprintf('  Created: %s\n', gd.creation_date);
+            fprintf('  Branch: %s\n', gd.git_branch);
             fprintf('OK Golden file structure validated\n');
       
       - name: Upload MATLAB validation results
@@ -220,7 +219,7 @@ jobs:
           echo "=================================================================="
           echo "GOLDEN FILE TEST: Julia vs MATLAB"
           echo "=================================================================="
-          julia --project test/test_matlab_golden.jl
+          julia --project test/test_golden_files.jl
           exit_code=$?
           
           if [ $exit_code -eq 0 ]; then
@@ -237,7 +236,7 @@ jobs:
           echo "=================================================================="
           echo "MPI GOLDEN FILE TEST: Julia vs MATLAB (1 rank)"
           echo "=================================================================="
-          mpiexec -n 1 julia --project test/test_matlab_golden.jl
+          mpiexec -n 1 julia --project test/test_golden_files.jl
           exit_code=$?
           
           if [ $exit_code -eq 0 ]; then

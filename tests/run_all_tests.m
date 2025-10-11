@@ -29,6 +29,8 @@ test_files = {
     'test_autogen';
     'test_edge_corner_correction';
     'test_integration_1rank';
+    'test_3d_homogeneous_z';
+    'test_3d_homogeneous_validation';
 };
 
 % Track results
