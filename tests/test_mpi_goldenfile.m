@@ -49,7 +49,7 @@ function test_mpi_1_rank_vs_golden(testCase)
     
     % Run MPI simulation
     fprintf('Running MPI simulation with 1 rank...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
+    mpi_data = run_mpi_simulation(Np, golden_data.tmax, num_ranks);
     
     % Compare against golden file
     compare_results(testCase, mpi_data, golden_data, ...
@@ -80,7 +80,7 @@ function test_mpi_2_ranks_vs_golden(testCase)
     
     % Run MPI simulation
     fprintf('Running MPI simulation with 2 ranks...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
+    mpi_data = run_mpi_simulation(Np, golden_data.tmax, num_ranks);
     
     % Compare against golden file
     compare_results(testCase, mpi_data, golden_data, ...
@@ -99,9 +99,19 @@ function compare_results(testCase, data1, data2, tolerance, description)
     
     fprintf('\nComparing results: %s\n', description);
     
-    % Extract moment arrays
-    M1 = data1.moments.M;
-    M2 = data2.moments.M;
+    % Extract moment arrays (handle different structures)
+    % data1 is from simulation (has moments.M), data2 is from golden file (has M directly)
+    if isfield(data1, 'moments')
+        M1 = data1.moments.M;
+    else
+        M1 = data1.M;
+    end
+    
+    if isfield(data2, 'moments')
+        M2 = data2.moments.M;
+    else
+        M2 = data2.M;
+    end
     
     % Squeeze out singleton z-dimension for quasi-2D comparisons
     % New code produces [nx, ny, 1, nmom], old golden files have [nx, ny, nmom]
