@@ -1,7 +1,7 @@
 function [results] = main(varargin)
 % Main solver for 3D HyQMOM with MPI-parallel domain decomposition
 % Parameters:
-%   Np           - GLOBAL grid size (total points in each direction)
+%   Np           - GLOBAL grid size (total points in x and y directions)
 %   tmax         - Final simulation time
 %   enable_plots - Enable/disable plotting (default: false)
 %   num_workers  - Number of MPI ranks/workers (default: 6)
@@ -9,6 +9,7 @@ function [results] = main(varargin)
 %   symmetry_check_interval - Check symmetry every N steps (default: 1)
 %                             Set to 100 for large problems to improve performance
 %   enable_memory_tracking - Enable memory usage tracking (default: true)
+%   Nz           - Grid size in z direction (default: 4, no MPI decomposition in z)
 % Usage:
 %   main()                           % Run with defaults
 %   main(Np, tmax)                   % Override Np and tmax
@@ -17,14 +18,17 @@ function [results] = main(varargin)
 %   main(Np, tmax, enable_plots, num_workers, enable_profile) % Enable profiling
 %   main(Np, tmax, enable_plots, num_workers, enable_profile, symmetry_check_interval) % Set check interval
 %   main(Np, tmax, enable_plots, num_workers, enable_profile, symmetry_check_interval, enable_memory_tracking) % Control memory tracking
+%   main(Np, tmax, enable_plots, num_workers, enable_profile, symmetry_check_interval, enable_memory_tracking, Nz) % Set z grid size
 % Examples:
-%   main()                    % Default: Np=140 (global), tmax=0.02, 6 workers
-%   main(40, 0.1, false, 2)   % 40x40 GLOBAL grid, 2 MPI ranks (each gets 40x20)
-%   main(40, 0.1, false, 4)   % 40x40 GLOBAL grid, 4 MPI ranks (each gets 20x20)
+%   main()                    % Default: Np=120 (global), Nz=4, tmax=0.02, 6 workers
+%   main(40, 0.1, false, 2)   % 40x40x4 GLOBAL grid, 2 MPI ranks (each gets 40x20x4)
+%   main(40, 0.1, false, 4)   % 40x40x4 GLOBAL grid, 4 MPI ranks (each gets 20x20x4)
 %   main(40, 0.1, false, 4, true) % Same as above with MPI profiling enabled
 %   main(200, 0.1, false, 4, false, 100) % Check symmetry every 100 steps (faster!)
-% Note: Np is the total grid size. It will be decomposed into subdomains.
-%       Each rank must have at least 10x10 interior points.
+%   main(40, 0.1, false, 4, false, 1, false, 8) % 40x40x8 grid
+% Note: Np is the total grid size in x and y. It will be decomposed into subdomains.
+%       Nz is NOT decomposed (all ranks have full z extent).
+%       Each rank must have at least 10x10 interior points in x-y.
 
 % Add src directory to path
 script_dir = fileparts(mfilename('fullpath'));
@@ -33,7 +37,8 @@ setup_paths(script_dir);
 % Parse input arguments with clean helper
 defaults = struct('Np', 120, 'tmax', 0.02, 'enable_plots', false, ...
                   'num_workers', 6, 'enable_profile', false, ...
-                  'symmetry_check_interval', 10, 'enable_memory_tracking', false);
+                  'symmetry_check_interval', 10, 'enable_memory_tracking', false, ...
+                  'Nz', 4, 'homogeneous_z', false);
 params = parse_main_args(varargin, defaults);
 
 % Validate grid size for MPI decomposition
@@ -103,10 +108,13 @@ if nargout > 0
     
     results.grid.x = grid_out.x;
     results.grid.y = grid_out.y;
+    results.grid.z = grid_out.z;
     results.grid.xm = grid_out.xm;
     results.grid.ym = grid_out.ym;
+    results.grid.zm = grid_out.zm;
     results.grid.dx = grid_out.dx;
     results.grid.dy = grid_out.dy;
+    results.grid.dz = grid_out.dz;
     
     results.moments.M = M_final;
     results.moments.C = C;

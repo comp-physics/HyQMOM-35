@@ -3,7 +3,7 @@ function [v6min, v6max, Mr] = eigenvalues6_hyperbolic_3D(M, axis, flag2D, Ma)
 %   [v6min, v6max, Mr] = eigenvalues6_hyperbolic_3D(M, axis, flag2D, Ma)
 %   Inputs:
 %       M      - 35-element moment vector
-%       axis   - Direction: 1=X direction, 2=Y direction
+%       axis   - Direction: 1=X direction, 2=Y direction, 3=Z direction
 %       flag2D - 2D simulation flag
 %       Ma     - Mach number
 %   Outputs:
@@ -31,16 +31,21 @@ function [v6min, v6max, lam6a, lam6b] = compute_eigenvalues_for_axis(M, axis)
     if axis == 1  % X direction: UV and UW planes
         moments_uv = axis_moment_slice(M, 1);  % UV plane
         moments_uw = axis_moment_slice(M, 3);  % UW plane
-    else  % Y direction: VU and VW planes
+    elseif axis == 2  % Y direction: VU and VW planes
         moments_vu = axis_moment_slice(M, 2);  % VU plane
         moments_vw = axis_moment_slice(M, 4);  % VW plane
+    else  % axis == 3, Z direction: WU and WV planes
+        moments_wu = axis_moment_slice(M, 5);  % WU plane
+        moments_wv = axis_moment_slice(M, 6);  % WV plane
     end
     
     % Compute Jacobian eigenvalues
     if axis == 1
         [v6min, v6max, lam6a, lam6b] = compute_jacobian_eigenvalues(moments_uv, moments_uw);
-    else
+    elseif axis == 2
         [v6min, v6max, lam6a, lam6b] = compute_jacobian_eigenvalues(moments_vu, moments_vw);
+    else
+        [v6min, v6max, lam6a, lam6b] = compute_jacobian_eigenvalues(moments_wu, moments_wv);
     end
 end
 
@@ -68,16 +73,20 @@ function M_corrected = correct_moments_for_real_eigenvalues(M, axis, lam6a, lam6
     S101 = S4(17); S202 = S4(22); S003 = S4(23);
     S004 = S4(25); S011 = S4(26); S022 = S4(35);
     
-    % Correct for first eigenvalue pair (lam6a) - always UV plane
+    % Correct for first eigenvalue pair (lam6a) - depends on axis
     if max(abs(imag(lam6a))) > 1000*eps
-        [C_all, S220] = correct_uv_plane(C_all, S110, S300, S030, S400, S040, S220, C200, C020);
+        if axis == 1 || axis == 2  % X or Y: UV plane
+            [C_all, S220] = correct_uv_plane(C_all, S110, S300, S030, S400, S040, S220, C200, C020);
+        else  % Z: WU plane (same as UW)
+            C_all = correct_uw_plane(C_all, S101, S300, S003, S400, S004, S202, C200, C002);
+        end
     end
     
     % Correct for second eigenvalue pair (lam6b) - depends on axis
     if max(abs(imag(lam6b))) > 1000*eps
         if axis == 1  % X: UW moments
             C_all = correct_uw_plane(C_all, S101, S300, S003, S400, S004, S202, C200, C002);
-        else  % Y: VW moments
+        else  % Y or Z: VW moments
             C_all = correct_vw_plane(C_all, S011, S030, S003, S040, S004, S022, C020, C002);
         end
     end

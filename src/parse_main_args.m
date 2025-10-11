@@ -20,6 +20,8 @@ addOptional(p, 'num_workers', defaults.num_workers, @(x) isnumeric(x) && isscala
 addOptional(p, 'enable_profile', defaults.enable_profile, @islogical);
 addOptional(p, 'symmetry_check_interval', defaults.symmetry_check_interval, @(x) isnumeric(x) && isscalar(x) && x > 0);
 addOptional(p, 'enable_memory_tracking', defaults.enable_memory_tracking, @islogical);
+addOptional(p, 'Nz', defaults.Nz, @(x) isnumeric(x) && isscalar(x) && x > 0);
+addOptional(p, 'homogeneous_z', defaults.homogeneous_z, @islogical);
 
 % Parse input
 parse(p, args{:});
@@ -34,6 +36,7 @@ params.flag2D = 0;
 params.CFL = 0.5;
 params.dx = 1.0 / params.Np;
 params.dy = 1.0 / params.Np;
+params.dz = 1.0 / params.Nz;
 params.N = 4;
 params.Nmom = 35;
 params.Nmom5 = 21;

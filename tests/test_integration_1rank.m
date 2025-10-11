@@ -25,16 +25,20 @@ function test_small_grid_10x10(testCase)
     Np = 10;
     tmax = 0.001;
     num_workers = 1;
+    Nz = 1;  % Use quasi-2D for this legacy test
     
-    results = main(Np, tmax, false, num_workers, false, 1, false);
+    results = main(Np, tmax, false, num_workers, false, 1, false, Nz);
     
     verifyTrue(testCase, results.parameters.time_steps >= 1, 'Should take at least 1 time step');
     verifyEqual(testCase, size(results.moments.M, 1), Np, 'Grid size should match');
     verifyEqual(testCase, size(results.moments.M, 2), Np, 'Grid size should match');
     
-    verifyTrue(testCase, all(results.moments.M(:,:,1) > 0, 'all'), 'Density should remain positive');
+    % Extract 2D slice (remove singleton z dimension)
+    M_2d = squeeze(results.moments.M);  % (Np, Np, Nmom)
     
-    [realizable, violations] = verify_realizability(results.moments.M, testCase.TestData.tol);
+    verifyTrue(testCase, all(M_2d(:,:,1) > 0, 'all'), 'Density should remain positive');
+    
+    [realizable, violations] = verify_realizability(M_2d, testCase.TestData.tol);
     verifyTrue(testCase, realizable, sprintf('Moments should be realizable. Violations: %d', violations.count));
     
     fprintf('PASS: Small grid 10x10 integration test\n');
@@ -52,13 +56,16 @@ function test_medium_grid_20x20(testCase)
     Np = 20;
     tmax = 0.0005;
     num_workers = 1;
+    Nz = 1;  % Use quasi-2D for this legacy test
     
-    results = main(Np, tmax, false, num_workers, false, 1, false);
+    results = main(Np, tmax, false, num_workers, false, 1, false, Nz);
     
     verifyTrue(testCase, results.parameters.time_steps >= 1, 'Should take at least 1 time step');
     verifyEqual(testCase, size(results.moments.M, 1), Np, 'Grid size should match');
     
-    verifyTrue(testCase, all(results.moments.M(:,:,1) > 0, 'all'), 'Density should remain positive');
+    % Extract 2D slice
+    M_2d = squeeze(results.moments.M);
+    verifyTrue(testCase, all(M_2d(:,:,1) > 0, 'all'), 'Density should remain positive');
     
     fprintf('PASS: Medium grid 20x20 integration test\n');
 end
@@ -75,18 +82,20 @@ function test_symmetry_preservation(testCase)
     Np = 10;
     tmax = 0.0005;
     num_workers = 1;
+    Nz = 1;  % Use quasi-2D for this legacy test
     
-    results = main(Np, tmax, false, num_workers, false, 1, false);
+    results = main(Np, tmax, false, num_workers, false, 1, false, Nz);
     
-    M = results.moments.M;
+    % Extract 2D slice
+    M_2d = squeeze(results.moments.M);  % (Np, Np, Nmom)
     
     diag_vals = zeros(Np, 5);
     for i = 1:Np
-        diag_vals(i, 1) = M(i, i, 1);
-        diag_vals(i, 2) = M(i, i, 2);
-        diag_vals(i, 3) = M(i, i, 3);
-        diag_vals(i, 4) = M(i, i, 4);
-        diag_vals(i, 5) = M(i, i, 5);
+        diag_vals(i, 1) = M_2d(i, i, 1);
+        diag_vals(i, 2) = M_2d(i, i, 2);
+        diag_vals(i, 3) = M_2d(i, i, 3);
+        diag_vals(i, 4) = M_2d(i, i, 4);
+        diag_vals(i, 5) = M_2d(i, i, 5);
     end
     
     Diff = zeros(Np, 5);
