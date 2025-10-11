@@ -1,3 +1,17 @@
+"""
+Main Test Entry Point for HyQMOM.jl
+
+This file is the entry point for Julia's package testing system (Pkg.test()).
+It runs all unit tests and optionally integration tests.
+
+For more control over test execution, use the shell scripts:
+- ./test/run_tests.sh         # All tests with nice formatting
+- ./test/run_mpi_tests.sh     # MPI-specific tests
+
+Environment Variables:
+- TEST_INTEGRATION: Set to "false" to skip integration tests
+"""
+
 using Test
 using HyQMOM
 using LinearAlgebra
@@ -5,37 +19,20 @@ using LinearAlgebra
 # Test tolerance
 const TOL = 1e-10
 
-# Golden file configuration (must be at module level, not in testset)
-const GOLDEN_FILE = joinpath(@__DIR__, "..", "..", "goldenfiles", 
-                              "goldenfile_mpi_1ranks_Np20_tmax100.mat")
-const RUN_GOLDEN_TEST = get(ENV, "TEST_GOLDEN_SIMULATION", "true") != "false"
-
 @testset "HyQMOM.jl" begin
-    # Unit tests
-    include("test_autogen.jl")
-    include("test_moment_conversions.jl")
-    include("test_initialization.jl")
-    include("test_realizability.jl")
-    include("test_closures.jl")
-    include("test_numerical_schemes.jl")
-    include("test_golden_files.jl")
-    include("test_integration_1rank.jl")
-    
-    # Full simulation golden file test (Julia vs MATLAB)
-    # Only run if golden file exists and TEST_GOLDEN_SIMULATION is not set to "false"
-    # Note: The included file has its own @testset blocks, so we don't wrap it
-    if RUN_GOLDEN_TEST && isfile(GOLDEN_FILE)
-        println("\n" * "="^70)
-        println("Testing Julia vs MATLAB Golden File")
-        println("="^70)
-        
-        # Run the golden file test (includes its own testsets)
-        # This is a standalone test that includes its own MPI initialization
-        # For Pkg.test(), we run it without MPI
-        include("test_matlab_golden_simple.jl")
-    elseif RUN_GOLDEN_TEST && !isfile(GOLDEN_FILE)
-        @warn "MATLAB golden file not found: $GOLDEN_FILE\nSkipping full simulation test."
-    else
-        @info "Skipping MATLAB golden file test (TEST_GOLDEN_SIMULATION=false)"
+    @testset "Unit Tests" begin
+        # Core functionality unit tests
+        include("test_autogen.jl")
+        include("test_moment_conversions.jl")
+        include("test_initialization.jl")
+        include("test_realizability.jl")
+        include("test_closures.jl")
+        include("test_numerical_schemes.jl")
+        include("test_golden_files.jl")
     end
+    
+    # Integration tests (Julia vs MATLAB golden files)
+    # The test file handles its own skip logic if golden files are missing
+    # or if TEST_INTEGRATION=false
+    include("test_integration.jl")
 end

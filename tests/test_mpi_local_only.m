@@ -73,7 +73,7 @@ function test_mpi_4_ranks_vs_golden(testCase)
     
     % Run simulation
     fprintf('  Running simulation with %d ranks (Np=%d)...\n', num_ranks, Np);
-    results = main(Np, golden_data.tmax, false, num_ranks, false);
+    results = main(Np, golden_data.tmax, false, num_ranks, false, 1, false, 1);
     
     % Compare results
     fprintf('  Comparing against golden file...\n');
@@ -83,6 +83,11 @@ function test_mpi_4_ranks_vs_golden(testCase)
         M_final = results.moments.M{1};
     else
         M_final = results.moments.M;
+    end
+    
+    % Squeeze out singleton z-dimension for quasi-2D comparisons
+    if ndims(M_final) == 4 && size(M_final, 3) == 1
+        M_final = squeeze(M_final);
     end
     
     % Compute max differences
@@ -130,7 +135,7 @@ function test_mpi_8_ranks_vs_golden(testCase)
     
     % Run simulation
     fprintf('  Running simulation with %d ranks (Np=%d)...\n', num_ranks, Np);
-    results = main(Np, golden_data.tmax, false, num_ranks, false);
+    results = main(Np, golden_data.tmax, false, num_ranks, false, 1, false, 1);
     
     % Compare results
     fprintf('  Comparing against golden file...\n');
@@ -140,6 +145,11 @@ function test_mpi_8_ranks_vs_golden(testCase)
         M_final = results.moments.M{1};
     else
         M_final = results.moments.M;
+    end
+    
+    % Squeeze out singleton z-dimension for quasi-2D comparisons
+    if ndims(M_final) == 4 && size(M_final, 3) == 1
+        M_final = squeeze(M_final);
     end
     
     % Compute max differences

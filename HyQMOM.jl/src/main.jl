@@ -13,6 +13,9 @@ mpiexec -n 4 julia --project src/main.jl
 
 # With custom parameters
 mpiexec -n 8 julia --project src/main.jl --Np 240 --tmax 0.04
+
+# Disable all plotting/matplotlib
+julia src/main.jl --no-matplotlib
 ```
 
 # Command-line Arguments
@@ -22,7 +25,14 @@ mpiexec -n 8 julia --project src/main.jl --Np 240 --tmax 0.04
 - `--Kn`: Knudsen number (default: 1.0, matching MATLAB)
 - `--CFL`: CFL number (default: 0.5, matching MATLAB)
 - `--output`: Output file name (default: "results.jld2")
+- `--no-matplotlib`: Completely disable PyPlot/matplotlib (prevents installation attempts)
 """
+
+# Check for --no-matplotlib flag BEFORE loading HyQMOM
+# This prevents any attempts to load or install matplotlib
+if "--no-matplotlib" in ARGS
+    ENV["HYQMOM_SKIP_PLOTTING"] = "true"
+end
 
 using MPI
 using Printf
@@ -81,6 +91,10 @@ function parse_args()
         elseif arg == "--output-dir" && i < length(ARGS)
             params[:output_dir] = ARGS[i+1]
             i += 2
+        elseif arg == "--no-matplotlib"
+            # Already handled before module loading
+            params[:enable_plots] = false
+            i += 1
         elseif arg == "--help" || arg == "-h"
             println("""
             Usage: julia src/main.jl [OPTIONS]
@@ -95,6 +109,7 @@ function parse_args()
               --output FILE      Output file name (default: results.jld2)
               --enable-plots     Enable visualization (default: true)
               --no-plots         Disable visualization
+              --no-matplotlib    Completely disable PyPlot/matplotlib (no install attempts)
               --save-figures     Save figures to disk (default: false)
               --output-dir DIR   Directory for saved figures (default: .)
               --help, -h         Show this help message

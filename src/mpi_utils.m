@@ -5,11 +5,15 @@ function varargout = mpi_utils(operation, varargin)
 %   [n_local, i0, i1] = mpi_utils('partition', n, P, r)
 %   M_full = mpi_utils('gather_M', M_interior, i0i1, j0j1, Np, Nmom)
 %   mpi_utils('send_M', M_interior, i0i1, j0j1, dest_rank)
+%   M_full = mpi_utils('gather_M_3d', M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom)
+%   mpi_utils('send_M_3d', M_interior, i0i1, j0j1, k0k1, dest_rank)
 % Operations:
 %   'choose_grid' - Choose nearly-square process grid factorization
 %   'partition'   - Compute 1D block decomposition for a rank
-%   'gather_M'    - Gather moment arrays from all ranks (rank 1 only)
-%   'send_M'      - Send moment array to destination rank
+%   'gather_M'    - Gather moment arrays from all ranks (rank 1 only, 2D physical space)
+%   'send_M'      - Send moment array to destination rank (2D physical space)
+%   'gather_M_3d' - Gather moment arrays from all ranks (rank 1 only, 3D physical space)
+%   'send_M_3d'   - Send moment array to destination rank (3D physical space)
     switch operation
         case 'choose_grid'
             [varargout{1}, varargout{2}] = choose_process_grid_impl(varargin{:});
@@ -19,6 +23,10 @@ function varargout = mpi_utils(operation, varargin)
             varargout{1} = gather_M_impl(varargin{:});
         case 'send_M'
             send_M_impl(varargin{:});
+        case 'gather_M_3d'
+            varargout{1} = gather_M_3d_impl(varargin{:});
+        case 'send_M_3d'
+            send_M_3d_impl(varargin{:});
         otherwise
             error('mpi_utils:unknownOp', 'Unknown operation: %s', operation);
     end
@@ -87,5 +95,34 @@ function send_M_impl(M_interior, i0i1, j0j1, dest_rank)
 % Must be called from non-rank-1 workers, inside spmd block
     % Package data with index information
     data_packet = {M_interior, i0i1, j0j1};
+    spmdSend(data_packet, dest_rank);
+end
+
+function M_full = gather_M_3d_impl(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom)
+% Gather moment arrays from all ranks to rank 1 (3D physical space)
+
+    % Initialize full array on rank 1
+    M_full = zeros(Np, Np, Nz, Nmom);
+    
+    % Place rank 1's data
+    M_full(i0i1(1):i0i1(2), j0j1(1):j0j1(2), k0k1(1):k0k1(2), :) = M_interior;
+    
+    % Receive from all other ranks
+    for src = 2:spmdSize
+        % Receive data packet: {M_interior, i0i1, j0j1, k0k1}
+        data_packet = spmdReceive(src);
+        blk = data_packet{1};
+        i_range = data_packet{2};
+        j_range = data_packet{3};
+        k_range = data_packet{4};
+        M_full(i_range(1):i_range(2), j_range(1):j_range(2), k_range(1):k_range(2), :) = blk;
+    end
+end
+
+function send_M_3d_impl(M_interior, i0i1, j0j1, k0k1, dest_rank)
+% Send moment array to destination rank (3D physical space)
+% Must be called from non-rank-1 workers, inside spmd block
+    % Package data with index information
+    data_packet = {M_interior, i0i1, j0j1, k0k1};
     spmdSend(data_packet, dest_rank);
 end

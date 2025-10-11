@@ -3,7 +3,8 @@ function M_slice = axis_moment_slice(M, axis)
 %   M_slice = axis_moment_slice(M, axis)
 %   Inputs:
 %       M    - 35-element moment vector
-%       axis - Direction: 1=X (UV plane), 2=Y (VU plane), 3=Z (UW plane), 4=VW plane
+%       axis - Direction: 1=X (UV plane), 2=Y (VU plane), 3=X (UW plane), 
+%                         4=Y (VW plane), 5=Z (WU plane), 6=Z (WV plane)
 %   Outputs:
 %       M_slice - 15-element moment vector in jacobian6 order:
 %                 [M000, M010, M020, M030, M040, M100, M110, M120, M130,
@@ -16,6 +17,9 @@ function M_slice = axis_moment_slice(M, axis)
 %     
 %     % Y-direction eigenvalues (VU plane)
 %     J6 = jacobian6(axis_moment_slice(M, 2));
+%     
+%     % Z-direction eigenvalues (WU plane)
+%     J6 = jacobian6(axis_moment_slice(M, 5));
 %   See also: eigenvalues6_hyperbolic_3D, compute_jacobian_eigenvalues
     % Define moment index mapping for each axis
     switch axis
@@ -35,9 +39,17 @@ function M_slice = axis_moment_slice(M, axis)
             % M000, M001, M002, M003, M004, M010, M011, M012, M013, M020, M021, M022, M030, M031, M040
             indices = [1, 16, 20, 23, 25, 6, 26, 32, 34, 10, 29, 35, 13, 31, 15];
             
+        case 5  % Z direction: WU plane
+            % M000, M100, M200, M300, M400, M001, M101, M201, M301, M002, M102, M202, M003, M103, M004
+            indices = [1, 2, 3, 4, 5, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
+            
+        case 6  % Z direction: WV plane
+            % M000, M010, M020, M030, M040, M001, M011, M012, M013, M002, M012, M022, M003, M013, M004
+            indices = [1, 6, 10, 13, 15, 16, 26, 32, 34, 20, 32, 35, 23, 34, 25];
+            
         otherwise
             error('axis_moment_slice:invalidAxis', ...
-                  'Axis must be 1 (X-UV), 2 (Y-VU), 3 (X-UW), or 4 (Y-VW)');
+                  'Axis must be 1 (X-UV), 2 (Y-VU), 3 (X-UW), 4 (Y-VW), 5 (Z-WU), or 6 (Z-WV)');
     end
     
     M_slice = M(indices);

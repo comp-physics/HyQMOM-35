@@ -84,16 +84,22 @@ include("simulation_runner.jl")
 const SKIP_PLOTTING = get(ENV, "HYQMOM_SKIP_PLOTTING", "false") == "true" || 
                       get(ENV, "CI", "false") == "true"
 
-if !SKIP_PLOTTING
+# Check if PyPlot is available before trying to include plotting
+const PYPLOT_AVAILABLE = !SKIP_PLOTTING && 
+    try
+        Base.find_package("PyPlot") !== nothing
+    catch
+        false
+    end
+
+if PYPLOT_AVAILABLE
     try
         include("visualization/plotting.jl")
     catch e
-        if e isa ErrorException && occursin("PyPlot", string(e))
-            @warn "PyPlot not available - plotting functions disabled"
-        else
-            rethrow(e)
-        end
+        @warn "Failed to load plotting module" exception=(e, catch_backtrace())
     end
+elseif !SKIP_PLOTTING
+    @info "PyPlot not available - plotting functions disabled"
 else
     @info "Plotting disabled (CI mode or HYQMOM_SKIP_PLOTTING=true)"
 end

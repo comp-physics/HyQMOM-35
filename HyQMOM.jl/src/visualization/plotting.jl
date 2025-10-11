@@ -14,6 +14,31 @@ using Printf
 using LinearAlgebra: det
 
 """
+    format_colorbar(; shrink=0.8, aspect=20)
+
+Create a properly sized colorbar with formatted tick labels.
+
+# Arguments
+- `shrink`: Scale factor for colorbar size (default: 0.8)
+- `aspect`: Aspect ratio for colorbar (default: 20, makes it narrower)
+
+# Returns
+- Colorbar object with formatted labels
+"""
+function format_colorbar(; shrink=0.8, aspect=20)
+    cbar = colorbar(shrink=shrink, aspect=aspect)
+    # Format tick labels to use scientific notation with 2 decimal places
+    cbar.formatter.set_powerlimits((-2, 2))
+    cbar.formatter.set_useMathText(true)
+    cbar.ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useMathText=true))
+    cbar.ax.ticklabel_format(style="scientific", axis="y", scilimits=(-2, 2))
+    # Reduce number of ticks for cleaner appearance
+    cbar.ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=5))
+    cbar.update_ticks()
+    return cbar
+end
+
+"""
     plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=".")
 
 Create comprehensive visualization of final simulation results.
@@ -85,80 +110,87 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     nmax = Np
     cc = "r"  # Red color for final results
     
-    println("Creating Figure 2: Moment line plots...")
-    figure(2)
+    println("Creating Figure 1: Moment line plots...")
+    fig1 = figure(1)
     clf()
     plot_3Dsym_moments(xm, M, nmin, nmax, cc, Np)
     tight_layout()
     if save_figures
-        savefig(joinpath(output_dir, "fig02_moments.png"), dpi=150)
+        savefig(joinpath(output_dir, "fig01_moments.png"), dpi=150)
     end
+    fig1.canvas.draw()  # Force drawing to ensure figure persists
     
-    println("Creating Figure 3: Central moment line plots...")
-    figure(3)
+    println("Creating Figure 2: Central moment line plots...")
+    fig2 = figure(2)
     clf()
     plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
     tight_layout()
     if save_figures
-        savefig(joinpath(output_dir, "fig03_central_moments.png"), dpi=150)
+        savefig(joinpath(output_dir, "fig02_central_moments.png"), dpi=150)
     end
+    fig2.canvas.draw()  # Force drawing to ensure figure persists
     
-    println("Creating Figure 4: Standardized moment line plots...")
-    figure(4)
+    println("Creating Figure 3: Standardized moment line plots...")
+    fig3 = figure(3)
     clf()
     plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     tight_layout()
     if save_figures
-        savefig(joinpath(output_dir, "fig04_standardized_moments.png"), dpi=150)
+        savefig(joinpath(output_dir, "fig03_standardized_moments.png"), dpi=150)
     end
+    fig3.canvas.draw()  # Force drawing to ensure figure persists
     
-    println("Creating Figure 9: Contour plots...")
-    figure(9)
+    println("Creating Figure 4: Contour plots...")
+    fig4 = figure(4)
     clf()
     contour_plots_3D(xm, ym, M, C, S, Np)
     tight_layout()
     if save_figures
-        savefig(joinpath(output_dir, "fig09_contours.png"), dpi=150)
+        savefig(joinpath(output_dir, "fig04_contours.png"), dpi=150)
     end
+    fig4.canvas.draw()  # Force drawing to ensure figure persists
     
-    println("Creating Figure 10: C-moment contour plots...")
-    figure(10)
+    println("Creating Figure 5: C-moment contour plots...")
+    fig5 = figure(5)
     clf()
     Cmoment_plots_3D(xm, ym, S, Np)
     tight_layout()
     if save_figures
-        savefig(joinpath(output_dir, "fig10_cmoments.png"), dpi=150)
+        savefig(joinpath(output_dir, "fig05_cmoments.png"), dpi=150)
     end
+    fig5.canvas.draw()  # Force drawing to ensure figure persists
     
-    println("Creating Figure 11: S-moment contour plots...")
-    figure(11)
+    println("Creating Figure 6: S-moment contour plots...")
+    fig6 = figure(6)
     clf()
     Smoment_plots_3D(xm, ym, S, Np)
     tight_layout()
     if save_figures
-        savefig(joinpath(output_dir, "fig11_smoments.png"), dpi=150)
+        savefig(joinpath(output_dir, "fig06_smoments.png"), dpi=150)
     end
+    fig6.canvas.draw()  # Force drawing to ensure figure persists
     
-    println("Creating Figure 12: Hyperbolicity plots...")
-    figure(12)
+    println("Creating Figure 7: Hyperbolicity plots...")
+    fig7 = figure(7)
     clf()
     hyperbolic_plots_3D(xm, ym, eig_data, Np)
     tight_layout()
     if save_figures
-        savefig(joinpath(output_dir, "fig12_hyperbolicity.png"), dpi=150)
+        savefig(joinpath(output_dir, "fig07_hyperbolicity.png"), dpi=150)
     end
+    fig7.canvas.draw()  # Force drawing to ensure figure persists
     
     println("="^70)
     println("Visualization complete! Created 7 figures.")
     if save_figures
         println("Figures saved to: $output_dir")
-        println("  - fig02_moments.png")
-        println("  - fig03_central_moments.png")
-        println("  - fig04_standardized_moments.png")
-        println("  - fig09_contours.png")
-        println("  - fig10_cmoments.png")
-        println("  - fig11_smoments.png")
-        println("  - fig12_hyperbolicity.png")
+        println("  - fig01_moments.png")
+        println("  - fig02_central_moments.png")
+        println("  - fig03_standardized_moments.png")
+        println("  - fig04_contours.png")
+        println("  - fig05_cmoments.png")
+        println("  - fig06_smoments.png")
+        println("  - fig07_hyperbolicity.png")
     else
         println("Figures displayed in windows.")
         println("Press Enter to close all windows and exit...")
@@ -192,7 +224,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("Density")
-    colorbar()
+    format_colorbar()
     
     # Panel 2: U velocity
     subplot(3, 4, 2)
@@ -200,7 +232,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("U velocity")
-    colorbar()
+    format_colorbar()
     
     # Panel 3: V velocity
     subplot(3, 4, 3)
@@ -208,7 +240,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("V velocity")
-    colorbar()
+    format_colorbar()
     
     # Panel 4: S_110
     subplot(3, 4, 4)
@@ -216,7 +248,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("S_{110}")
-    colorbar()
+    format_colorbar()
     
     # Panel 5: C_200
     subplot(3, 4, 5)
@@ -224,7 +256,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("C_{200}")
-    colorbar()
+    format_colorbar()
     
     # Panel 6: C_020
     subplot(3, 4, 6)
@@ -232,7 +264,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("C_{020}")
-    colorbar()
+    format_colorbar()
     
     # Panel 7: C_002
     subplot(3, 4, 7)
@@ -240,7 +272,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("C_{002}")
-    colorbar()
+    format_colorbar()
     
     # Panel 8: |Delta_1|
     subplot(3, 4, 8)
@@ -249,7 +281,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("|Δ_1|")
-    colorbar()
+    format_colorbar()
     
     # Panel 9: H_200
     subplot(3, 4, 9)
@@ -257,7 +289,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("H_{200}")
-    colorbar()
+    format_colorbar()
     
     # Panel 10: H_020
     subplot(3, 4, 10)
@@ -265,7 +297,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("H_{020}")
-    colorbar()
+    format_colorbar()
     
     # Panel 11: H_002
     subplot(3, 4, 11)
@@ -273,7 +305,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("H_{002}")
-    colorbar()
+    format_colorbar()
     
     # Panel 12: |Delta_2*|
     subplot(3, 4, 12)
@@ -307,7 +339,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("|Δ_2*|")
-    colorbar()
+    format_colorbar()
 end
 
 """
@@ -355,7 +387,7 @@ function Cmoment_plots_3D(xm, ym, S, Np)
         else
             title(label)
         end
-        colorbar()
+        format_colorbar()
     end
 end
 
@@ -393,7 +425,7 @@ function Smoment_plots_3D(xm, ym, S, Np)
         contourf(X, Y, Z', 50, cmap="sky")
         axis("square")
         title(label)
-        colorbar()
+        format_colorbar()
     end
 end
 
@@ -418,7 +450,7 @@ function hyperbolic_plots_3D(xm, ym, eig_data, Np)
         contourf(X, Y, Z', 50, cmap="sky")
         axis("square")
         title("λ_$k")
-        colorbar()
+        format_colorbar()
     end
     
     # Plot eigenvalue differences
@@ -427,21 +459,21 @@ function hyperbolic_plots_3D(xm, ym, eig_data, Np)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("λ_2 - λ_1")
-    colorbar()
+    format_colorbar()
     
     subplot(3, 3, 8)
     Z = lam6x[:, :, 4] .- lam6x[:, :, 3]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("λ_4 - λ_3")
-    colorbar()
+    format_colorbar()
     
     subplot(3, 3, 9)
     Z = lam6x[:, :, 6] .- lam6x[:, :, 5]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
     title("λ_6 - λ_5")
-    colorbar()
+    format_colorbar()
 end
 
 """
