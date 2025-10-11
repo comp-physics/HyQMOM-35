@@ -23,6 +23,10 @@ using Test
 using Printf
 using MAT
 
+# Add HyQMOM to load path and import it
+push!(LOAD_PATH, joinpath(@__DIR__, ".."))
+using HyQMOM
+
 # Check if MPI is available
 const HAS_MPI = try
     using MPI
@@ -152,10 +156,6 @@ function run_julia_simulation(Np, tmax)
         enable_memory_tracking=false,
         debug_output=false
     )
-    
-    # Load HyQMOM module
-    push!(LOAD_PATH, joinpath(@__DIR__, ".."))
-    using HyQMOM
     
     # Run simulation
     start_time = time()
@@ -434,9 +434,6 @@ if !STANDALONE
             @testset "Run Julia Simulation" begin
                 Np = Int(params_matlab["Np"])
                 tmax = params_matlab["tmax"]
-                
-                push!(LOAD_PATH, joinpath(@__DIR__, ".."))
-                using HyQMOM
                 
                 # Setup parameters
                 params = (
