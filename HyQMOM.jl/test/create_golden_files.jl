@@ -1,18 +1,18 @@
 """
-Create MPI Golden Files
+Create Golden Files for MPI Testing
 
-This script generates golden files for MPI consistency testing.
-It runs simulations with 1, 2, 4, and 8 ranks and saves the results
-as reference golden files for regression testing.
+This script generates golden reference files for MPI consistency testing.
+It runs simulations with 1 rank and saves the results as reference data.
 
 Usage:
-    mpiexec -n 1 julia --project=. test/create_mpi_goldenfiles.jl
+    mpiexec -n 1 julia --project=. test/create_golden_files.jl
+    mpiexec -n 1 julia --project=. test/create_golden_files.jl small medium
 """
 
-using HyQMOM
 using MPI
 using Printf
 
+# Initialize MPI
 MPI.Init()
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
@@ -21,11 +21,15 @@ nprocs = MPI.Comm_size(comm)
 if nprocs != 1
     if rank == 0
         println("ERROR: This script must be run with exactly 1 MPI rank")
-        println("Usage: mpiexec -n 1 julia --project=. test/create_mpi_goldenfiles.jl")
+        println("Usage: mpiexec -n 1 julia --project=. test/create_golden_files.jl")
     end
     MPI.Finalize()
     exit(1)
 end
+
+# Load HyQMOM
+push!(LOAD_PATH, joinpath(@__DIR__, ".."))
+using HyQMOM
 
 println("="^70)
 println("CREATING MPI GOLDEN FILES")
@@ -33,20 +37,32 @@ println("="^70)
 println()
 
 # Test configurations
-configs = [
-    (Np=20, tmax=0.1, name="small"),
-    (Np=40, tmax=0.05, name="medium"),
-]
+const TEST_CONFIGS = Dict(
+    "small" => (Np=20, tmax=0.1),
+    "medium" => (Np=40, tmax=0.05),
+)
+
+# Determine which configs to generate
+configs_to_generate = if isempty(ARGS)
+    collect(keys(TEST_CONFIGS))
+else
+    ARGS
+end
 
 golden_dir = joinpath(@__DIR__, "goldenfiles")
 mkpath(golden_dir)
 
-for config in configs
+for config_name in configs_to_generate
+    if !haskey(TEST_CONFIGS, config_name)
+        println("WARNING: Unknown configuration '$(config_name)', skipping...")
+        continue
+    end
+    
+    config = TEST_CONFIGS[config_name]
     Np = config.Np
     tmax = config.tmax
-    name = config.name
     
-    println("Configuration: $(name) (Np=$(Np), tmax=$(tmax))")
+    println("Configuration: $(config_name) (Np=$(Np), tmax=$(tmax))")
     println("-"^70)
     
     # Run with 1 rank (reference)
@@ -67,7 +83,7 @@ for config in configs
     steps = results[:time_steps]
     
     # Save as golden file
-    filename = joinpath(golden_dir, "mpi_1rank_$(name).bin")
+    filename = joinpath(golden_dir, "mpi_1rank_$(config_name).bin")
     open(filename, "w") do io
         write(io, Int64(1))        # Number of ranks
         write(io, Int64(Np))       # Grid size
@@ -78,7 +94,7 @@ for config in configs
     end
     
     println("  ✓ Saved: $(filename)")
-    println("    Final time: $(t_final), Steps: $(steps)")
+    @printf("    Final time: %.6f, Steps: %d\n", t_final, steps)
     println()
 end
 
@@ -89,7 +105,9 @@ println()
 println("Golden files saved in: $(golden_dir)")
 println()
 println("To test MPI consistency:")
-println("  ./test/test_mpi_goldenfiles.sh")
+println("  ./test/run_mpi_tests.sh")
+println("  or")
+println("  mpiexec -n 2 julia --project=. test/test_mpi.jl --golden small")
 
 MPI.Finalize()
 

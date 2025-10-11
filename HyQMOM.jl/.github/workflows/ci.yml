@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, julia ]
   pull_request:
-    branches: [ main, master, julia ]
 
 jobs:
   test:
@@ -52,4 +50,3 @@ jobs:
     - name: Run MPI integration tests
       run: |
         ./test/run_mpi_tests.sh
-
