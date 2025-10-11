@@ -90,7 +90,8 @@ end
 %% Helper Functions
 
 function mpi_data = run_mpi_simulation(Np, tmax, num_ranks)
-    mpi_data = main(Np, tmax, false, num_ranks, false);
+    % Run with Nz=1 for quasi-2D to match golden files
+    mpi_data = main(Np, tmax, false, num_ranks, false, 1, false, 1);
 end
 
 function compare_results(testCase, data1, data2, tolerance, description)
@@ -101,6 +102,15 @@ function compare_results(testCase, data1, data2, tolerance, description)
     % Extract moment arrays
     M1 = data1.moments.M;
     M2 = data2.moments.M;
+    
+    % Squeeze out singleton z-dimension for quasi-2D comparisons
+    % New code produces [nx, ny, 1, nmom], old golden files have [nx, ny, nmom]
+    if ndims(M1) == 4 && size(M1, 3) == 1
+        M1 = squeeze(M1);  % [nx, ny, 1, nmom] -> [nx, ny, nmom]
+    end
+    if ndims(M2) == 4 && size(M2, 3) == 1
+        M2 = squeeze(M2);  % [nx, ny, 1, nmom] -> [nx, ny, nmom]
+    end
     
     % Check sizes match
     if ~isequal(size(M1), size(M2))
