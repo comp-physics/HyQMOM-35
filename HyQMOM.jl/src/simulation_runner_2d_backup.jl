@@ -17,19 +17,17 @@ This is the core time-stepping loop that orchestrates all components:
 # Arguments
 - `params`: Named tuple with simulation parameters:
   - `Np`: Global grid size (Np x Np)
-  - `Nz`: Global grid size in z
   - `tmax`: Maximum simulation time
   - `Kn`: Knudsen number
   - `Ma`: Mach number
   - `flag2D`: 2D flag (1 for 2D, 0 for 3D)
   - `CFL`: CFL number
-  - `dx`, `dy`, `dz`: Grid spacing
+  - `dx`, `dy`: Grid spacing
   - `Nmom`: Number of moments (35)
   - `nnmax`: Maximum number of time steps
   - `dtmax`: Maximum time step size
   - IC parameters: `rhol`, `rhor`, `T`, `r110`, `r101`, `r011`
   - `symmetry_check_interval`: How often to check symmetry
-  - `homogeneous_z`: Whether jets exist at all z levels (validation mode)
   - `enable_memory_tracking`: Enable memory tracking (not implemented)
 
 # Returns
@@ -53,7 +51,6 @@ function simulation_runner(params)
     
     # Unpack parameters
     Np = params.Np
-    Nz = params.Nz
     tmax = params.tmax
     Kn = params.Kn
     Ma = params.Ma
@@ -61,7 +58,6 @@ function simulation_runner(params)
     CFL = params.CFL
     dx = params.dx
     dy = params.dy
-    dz = params.dz
     Nmom = params.Nmom
     nnmax = params.nnmax
     dtmax = params.dtmax
@@ -76,73 +72,59 @@ function simulation_runner(params)
     
     # Diagnostic parameters
     symmetry_check_interval = params.symmetry_check_interval
-    homogeneous_z = params.homogeneous_z
     debug_output = params.debug_output
     
-    # Setup domain decomposition (2D in x-y, no decomposition in z)
-    decomp = setup_mpi_cartesian_3d(Np, Nz, halo, comm)
+    # Setup domain decomposition
+    decomp = setup_mpi_cartesian_2d(Np, halo, comm)
     nx = decomp.local_size[1]
     ny = decomp.local_size[2]
-    nz = decomp.local_size[3]  # Always equals Nz (no decomposition)
     
     # Create local grid structure
     xmin, xmax = -0.5, 0.5
     ymin, ymax = -0.5, 0.5
-    zmin, zmax = -0.5, 0.5
     dx_global = (xmax - xmin) / Np
     dy_global = (ymax - ymin) / Np
-    dz_global = (zmax - zmin) / Nz
     
-    # Override params.dx/dy/dz with correct grid spacing
+    # Override params.dx/dy with correct grid spacing
+    # (params.dx may have been set incorrectly as 2.0/Np in wrapper)
     dx = dx_global
     dy = dy_global
-    dz = dz_global
     
-    # Local grid coordinates (only for this rank's subdomain in x-y)
+    # Local grid coordinates
     i0i1 = decomp.istart_iend
     j0j1 = decomp.jstart_jend
-    k0k1 = decomp.kstart_kend  # Always (1, Nz)
     
     # Cell edges for local subdomain
     x_local = range(xmin + (i0i1[1]-1)*dx_global, step=dx_global, length=nx+1)
     y_local = range(ymin + (j0j1[1]-1)*dy_global, step=dy_global, length=ny+1)
-    z_local = range(zmin + (k0k1[1]-1)*dz_global, step=dz_global, length=nz+1)
     
     # Cell centers
     xm_local = collect(x_local[1:end-1]) .+ dx_global/2
     ym_local = collect(y_local[1:end-1]) .+ dy_global/2
-    zm_local = collect(z_local[1:end-1]) .+ dz_global/2
     
-    grid_local = (dx=dx_global, dy=dy_global, dz=dz_global,
-                  x=collect(x_local), y=collect(y_local), z=collect(z_local),
-                  xm=xm_local, ym=ym_local, zm=zm_local)
+    grid_local = (dx=dx_global, dy=dy_global,
+                  x=collect(x_local), y=collect(y_local),
+                  xm=xm_local, ym=ym_local)
     
-    # Allocate local arrays with halos (4D: x, y, z, moments)
-    M = zeros(Float64, nx+2*halo, ny+2*halo, nz, Nmom)
+    # Allocate local arrays with halos
+    M = zeros(Float64, nx+2*halo, ny+2*halo, Nmom)
     Mnp = similar(M)
-    Fx = zeros(Float64, nx+2*halo, ny+2*halo, nz, Nmom)
-    Fy = zeros(Float64, nx+2*halo, ny+2*halo, nz, Nmom)
-    Fz = zeros(Float64, nx+2*halo, ny+2*halo, nz, Nmom)
+    Fx = zeros(Float64, nx+2*halo, ny+2*halo, Nmom)
+    Fy = zeros(Float64, nx+2*halo, ny+2*halo, Nmom)
     
-    # Wave speed arrays (interior only, no halos needed)
-    vpxmin = zeros(Float64, nx, ny, nz)
-    vpxmax = zeros(Float64, nx, ny, nz)
-    vpymin = zeros(Float64, nx, ny, nz)
-    vpymax = zeros(Float64, nx, ny, nz)
-    vpzmin = zeros(Float64, nx, ny, nz)
-    vpzmax = zeros(Float64, nx, ny, nz)
-    v5xmin = zeros(Float64, nx, ny, nz)
-    v5xmax = zeros(Float64, nx, ny, nz)
-    v5ymin = zeros(Float64, nx, ny, nz)
-    v5ymax = zeros(Float64, nx, ny, nz)
-    v5zmin = zeros(Float64, nx, ny, nz)
-    v5zmax = zeros(Float64, nx, ny, nz)
-    v6xmin = zeros(Float64, nx, ny, nz)
-    v6xmax = zeros(Float64, nx, ny, nz)
-    v6ymin = zeros(Float64, nx, ny, nz)
-    v6ymax = zeros(Float64, nx, ny, nz)
-    v6zmin = zeros(Float64, nx, ny, nz)
-    v6zmax = zeros(Float64, nx, ny, nz)
+    # Wave speed arrays (interior only)
+    vpxmin = zeros(Float64, nx, ny)
+    vpxmax = zeros(Float64, nx, ny)
+    vpymin = zeros(Float64, nx, ny)
+    vpymax = zeros(Float64, nx, ny)
+    v5xmin = zeros(Float64, nx, ny)
+    v5xmax = zeros(Float64, nx, ny)
+    v5ymin = zeros(Float64, nx, ny)
+    v5ymax = zeros(Float64, nx, ny)
+    v6xmin = zeros(Float64, nx, ny)
+    v6xmax = zeros(Float64, nx, ny)
+    v6ymin = zeros(Float64, nx, ny)
+    v6ymax = zeros(Float64, nx, ny)
     
     # Build initial conditions locally
     U0, V0, W0 = 0.0, 0.0, 0.0
@@ -171,46 +153,30 @@ function simulation_runner(params)
     Maxb = div(Np, 2)
     
     # Fill local subdomain with appropriate IC
-    for kk in 1:nz
-        gk = k0k1[1] + kk - 1  # global k index
-        z_coord = zm_local[kk]
-        
-        # Determine if jets exist at this z
-        if homogeneous_z
-            # Homogeneous in z: jets at all z levels (for validation)
-            jets_exist = true
-        else
-            # Inhomogeneous: jets only in lower half (z < 0)
-            jets_exist = (z_coord < 0.0)
-        end
-        
-        for ii in 1:nx
-            gi = i0i1[1] + ii - 1  # global i index
-            for jj in 1:ny
-                gj = j0j1[1] + jj - 1  # global j index
-                
-                # Default: background
-                Mr = Mr_bg
-                
-                if jets_exist
-                    # Bottom jet (moving up-right)
-                    if gi >= Minb && gi <= Maxb && gj >= Minb && gj <= Maxb
-                        Mr = Mb
-                    end
-                    
-                    # Top jet (moving down-left) - overwrites if overlapping
-                    if gi >= Mint && gi <= Maxt && gj >= Mint && gj <= Maxt
-                        Mr = Mt
-                    end
-                end
-                
-                M[ii + halo, jj + halo, kk, :] = Mr
+    for ii in 1:nx
+        gi = i0i1[1] + ii - 1  # global i index
+        for jj in 1:ny
+            gj = j0j1[1] + jj - 1  # global j index
+            
+            # Default: background
+            Mr = Mr_bg
+            
+            # Bottom jet (moving up-right)
+            if gi >= Minb && gi <= Maxb && gj >= Minb && gj <= Maxb
+                Mr = Mb
             end
+            
+            # Top jet (moving down-left) - overwrites if overlapping
+            if gi >= Mint && gi <= Maxt && gj >= Mint && gj <= Maxt
+                Mr = Mt
+            end
+            
+            M[ii + halo, jj + halo, :] = Mr
         end
     end
     
     # Initial halo exchange
-    halo_exchange_3d!(M, decomp, bc)
+    halo_exchange_2d!(M, decomp, bc)
     
     # Time evolution
     t = 0.0
@@ -218,9 +184,8 @@ function simulation_runner(params)
     
     if rank == 0
         println("Starting time evolution...")
-        println("  Grid: $(Np)x$(Np)x$(Nz), Ranks: $(nprocs), Local: $(nx)x$(ny)x$(nz)")
+        println("  Grid: $(Np)x$(Np), Ranks: $(nprocs), Local: $(nx)x$(ny)")
         println("  tmax: $(tmax), CFL: $(CFL), Ma: $(Ma), Kn: $(Kn)")
-        println("  homogeneous_z: $(homogeneous_z)")
     end
     
     while t < tmax && nn < nnmax
@@ -229,81 +194,65 @@ function simulation_runner(params)
         
         
         # Compute fluxes and wave speeds for interior cells
-        for k in 1:nz
-            for i in 1:nx
-                for j in 1:ny
-                    ih = i + halo
-                    jh = j + halo
-                    MOM = M[ih, jh, k, :]
-                    
-                    _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma)
-                    v6xmin[i,j,k], v6xmax[i,j,k], Mr = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D, Ma)
-                    v6ymin[i,j,k], v6ymax[i,j,k], Mr = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D, Ma)
-                    v6zmin[i,j,k], v6zmax[i,j,k], Mr = eigenvalues6z_hyperbolic_3D(Mr, flag2D, Ma)
-                    Mx, My, Mz, Mr = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma)
-                    
-                    Fx[ih, jh, k, :] = Mx
-                    Fy[ih, jh, k, :] = My
-                    Fz[ih, jh, k, :] = Mz
-                    Mnp[ih, jh, k, :] = Mr
-                    
-                    _, v5xmin[i,j,k], v5xmax[i,j,k] = closure_and_eigenvalues(Mr[[1,2,3,4,5]])
-                    _, v5ymin[i,j,k], v5ymax[i,j,k] = closure_and_eigenvalues(Mr[[1,6,10,13,15]])
-                    _, v5zmin[i,j,k], v5zmax[i,j,k] = closure_and_eigenvalues(Mr[[1,16,20,23,25]])
-                    
-                    vpxmin[i,j,k] = min(v5xmin[i,j,k], v6xmin[i,j,k])
-                    vpxmax[i,j,k] = max(v5xmax[i,j,k], v6xmax[i,j,k])
-                    vpymin[i,j,k] = min(v5ymin[i,j,k], v6ymin[i,j,k])
-                    vpymax[i,j,k] = max(v5ymax[i,j,k], v6ymax[i,j,k])
-                    vpzmin[i,j,k] = min(v5zmin[i,j,k], v6zmin[i,j,k])
-                    vpzmax[i,j,k] = max(v5zmax[i,j,k], v6zmax[i,j,k])
-                end
+        for i in 1:nx
+            for j in 1:ny
+                ih = i + halo
+                jh = j + halo
+                MOM = M[ih, jh, :]
+                
+                _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma)
+                v6xmin[i,j], v6xmax[i,j], Mr = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D, Ma)
+                v6ymin[i,j], v6ymax[i,j], Mr = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D, Ma)
+                Mx, My, _, Mr = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma)
+                
+                Fx[ih, jh, :] = Mx
+                Fy[ih, jh, :] = My
+                Mnp[ih, jh, :] = Mr
+                
+                _, v5xmin[i,j], v5xmax[i,j] = closure_and_eigenvalues(Mr[[1,2,3,4,5]])
+                _, v5ymin[i,j], v5ymax[i,j] = closure_and_eigenvalues(Mr[[1,6,10,13,15]])
+                
+                vpxmin[i,j] = min(v5xmin[i,j], v6xmin[i,j])
+                vpxmax[i,j] = max(v5xmax[i,j], v6xmax[i,j])
+                vpymin[i,j] = min(v5ymin[i,j], v6ymin[i,j])
+                vpymax[i,j] = max(v5ymax[i,j], v6ymax[i,j])
             end
         end
-        M[halo+1:halo+nx, halo+1:halo+ny, :, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :, :]
+        M[halo+1:halo+nx, halo+1:halo+ny, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :]
         
-        # Exchange M, Fx, Fy, Fz from neighbors
-        halo_exchange_3d!(M, decomp, bc)
-        halo_exchange_3d!(Fx, decomp, bc)
-        halo_exchange_3d!(Fy, decomp, bc)
-        halo_exchange_3d!(Fz, decomp, bc)
+        # Exchange M, Fx, Fy from neighbors
+        halo_exchange_2d!(M, decomp, bc)
+        halo_exchange_2d!(Fx, decomp, bc)
+        halo_exchange_2d!(Fy, decomp, bc)
         
         # Compute fluxes and wave speeds in halo cells
-        vpxmin_ext = zeros(Float64, nx+2*halo, ny, nz)
-        vpxmax_ext = zeros(Float64, nx+2*halo, ny, nz)
-        vpymin_ext = zeros(Float64, nx, ny+2*halo, nz)
-        vpymax_ext = zeros(Float64, nx, ny+2*halo, nz)
-        
-        compute_halo_fluxes_and_wavespeeds_3d!(Fx, Fy, vpxmin_ext, vpxmax_ext, vpymin_ext, vpymax_ext,
-                                               M, vpxmin, vpxmax, vpymin, vpymax, vpzmin, vpzmax,
-                                               nx, ny, nz, halo, flag2D, Ma)
+        vpxmin_ext, vpxmax_ext, vpymin_ext, vpymax_ext =
+            compute_halo_fluxes_and_wavespeeds!(M, Fx, Fy, vpxmin, vpxmax, vpymin, vpymax,
+                                               nx, ny, halo, flag2D, Ma, decomp)
         
         # Global reduction for time step
-        vmax_local = maximum([abs.(vpxmax); abs.(vpxmin); abs.(vpymax); abs.(vpymin); abs.(vpzmax); abs.(vpzmin)])
+        vmax_local = maximum([abs.(vpxmax); abs.(vpxmin); abs.(vpymax); abs.(vpymin)])
         vmax = MPI.Allreduce(vmax_local, max, comm)
-        dt = min(CFL*min(dx,dy,dz)/vmax, dtmax)
+        dt = min(CFL*dx/vmax, dtmax)
         dt = min(dt, tmax-t)
         
         # Debug: print vmax if it's unusually large
         if rank == 0 && (vmax > 100.0 || isnan(vmax) || isinf(vmax))
             @printf("  WARNING: vmax = %.6e (unusually large or invalid)\n", vmax)
-            # Find which cell has the problem (only check first z-slice for brevity)
+            # Find which cell has the problem
             for i in 1:nx
                 for j in 1:ny
-                    k = 1
-                    if abs(vpxmax[i,j,k]) > 100.0 || abs(vpxmin[i,j,k]) > 100.0 ||
-                       abs(vpymax[i,j,k]) > 100.0 || abs(vpymin[i,j,k]) > 100.0 ||
-                       abs(vpzmax[i,j,k]) > 100.0 || abs(vpzmin[i,j,k]) > 100.0 ||
-                       isnan(vpxmax[i,j,k]) || isnan(vpxmin[i,j,k]) ||
-                       isnan(vpymax[i,j,k]) || isnan(vpymin[i,j,k]) ||
-                       isnan(vpzmax[i,j,k]) || isnan(vpzmin[i,j,k])
-                        @printf("    Cell (%d,%d,%d): vpxmin=%.2e, vpxmax=%.2e, vpymin=%.2e, vpymax=%.2e, vpzmin=%.2e, vpzmax=%.2e\n",
-                               i, j, k, vpxmin[i,j,k], vpxmax[i,j,k], vpymin[i,j,k], vpymax[i,j,k], vpzmin[i,j,k], vpzmax[i,j,k])
+                    if abs(vpxmax[i,j]) > 100.0 || abs(vpxmin[i,j]) > 100.0 ||
+                       abs(vpymax[i,j]) > 100.0 || abs(vpymin[i,j]) > 100.0 ||
+                       isnan(vpxmax[i,j]) || isnan(vpxmin[i,j]) ||
+                       isnan(vpymax[i,j]) || isnan(vpymin[i,j])
+                        @printf("    Cell (%d,%d): vpxmin=%.2e, vpxmax=%.2e, vpymin=%.2e, vpymax=%.2e\n",
+                               i, j, vpxmin[i,j], vpxmax[i,j], vpymin[i,j], vpymax[i,j])
                         # Print moments at this cell
                         ih = i + halo
                         jh = j + halo
                         @printf("    M[1:5] = [%.6e, %.6e, %.6e, %.6e, %.6e]\n",
-                               M[ih,jh,k,1], M[ih,jh,k,2], M[ih,jh,k,3], M[ih,jh,k,4], M[ih,jh,k,5])
+                               M[ih,jh,1], M[ih,jh,2], M[ih,jh,3], M[ih,jh,4], M[ih,jh,5])
                     end
                 end
             end
@@ -312,68 +261,55 @@ function simulation_runner(params)
         t += dt
         
         # X-direction flux update
-        Mnpx = similar(M)
-        apply_flux_update_3d!(Mnpx, M, Fx, vpxmin, vpxmax, vpxmin_ext, vpxmax_ext,
-                              nx, ny, nz, halo, dt, dx, decomp, 1)
+        Mnpx = apply_flux_update(M, Fx, vpxmin, vpxmax, vpxmin_ext, vpxmax_ext,
+                                 nx, ny, halo, dt, dx, decomp, 1)
         
         # Y-direction flux update
-        Mnpy = similar(M)
-        apply_flux_update_3d!(Mnpy, M, Fy, vpymin, vpymax, vpymin_ext, vpymax_ext,
-                              nx, ny, nz, halo, dt, dy, decomp, 2)
-        
-        # Z-direction flux update
-        Mnpz = similar(M)
-        vpzmin_ext = zeros(Float64, nx+2*halo, ny, nz)  # Not used for Z (no halo extension)
-        vpzmax_ext = zeros(Float64, nx+2*halo, ny, nz)  # Not used for Z (no halo extension)
-        apply_flux_update_3d!(Mnpz, M, Fz, vpzmin, vpzmax, vpzmin_ext, vpzmax_ext,
-                              nx, ny, nz, halo, dt, dz, decomp, 3)
+        Mnpy = apply_flux_update(M, Fy, vpymin, vpymax, vpymin_ext, vpymax_ext,
+                                 nx, ny, halo, dt, dy, decomp, 2)
         
         # Combine updates (Strang splitting) - INTERIOR ONLY
-        M[halo+1:halo+nx, halo+1:halo+ny, :, :] =
-            Mnpx[halo+1:halo+nx, halo+1:halo+ny, :, :] +
-            Mnpy[halo+1:halo+nx, halo+1:halo+ny, :, :] +
-            Mnpz[halo+1:halo+nx, halo+1:halo+ny, :, :] -
-            2.0 .* M[halo+1:halo+nx, halo+1:halo+ny, :, :]
+        M[halo+1:halo+nx, halo+1:halo+ny, :] =
+            Mnpx[halo+1:halo+nx, halo+1:halo+ny, :] +
+            Mnpy[halo+1:halo+nx, halo+1:halo+ny, :] -
+            M[halo+1:halo+nx, halo+1:halo+ny, :]
         
         # Exchange halos before realizability enforcement
-        halo_exchange_3d!(M, decomp, bc)
+        halo_exchange_2d!(M, decomp, bc)
         
         # Enforce realizability
-        for k in 1:nz
-            for i in 1:nx
-                for j in 1:ny
-                    ih = i + halo
-                    jh = j + halo
-                    MOM = M[ih, jh, k, :]
-                    
-                    _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma)
-                    v6xmin[i,j,k], v6xmax[i,j,k], Mr = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D, Ma)
-                    v6ymin[i,j,k], v6ymax[i,j,k], Mr = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D, Ma)
-                    _, _, _, Mr = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma)
-                    
-                    Mnp[ih, jh, k, :] = Mr
-                end
+        for i in 1:nx
+            for j in 1:ny
+                ih = i + halo
+                jh = j + halo
+                MOM = M[ih, jh, :]
+                
+                _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma)
+                v6xmin[i,j], v6xmax[i,j], Mr = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D, Ma)
+                v6ymin[i,j], v6ymax[i,j], Mr = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D, Ma)
+                _, _, _, Mr = Flux_closure35_and_realizable_3D(Mr, flag2D, Ma)
+                
+                Mnp[ih, jh, :] = Mr
             end
         end
         
-        M[halo+1:halo+nx, halo+1:halo+ny, :, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :, :]
+        M[halo+1:halo+nx, halo+1:halo+ny, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :]
         
         # Apply BGK collision
-        for k in 1:nz
-            for i in 1:nx
-                for j in 1:ny
-                    ih = i + halo
-                    jh = j + halo
-                    MOM = M[ih, jh, k, :]
-                    MMC = collision35(MOM, dt, Kn)
-                    Mnp[ih, jh, k, :] = MMC
-                end
+        for i in 1:nx
+            for j in 1:ny
+                ih = i + halo
+                jh = j + halo
+                MOM = M[ih, jh, :]
+                MMC = collision35(MOM, dt, Kn)
+                Mnp[ih, jh, :] = MMC
+                
             end
         end
-        M[halo+1:halo+nx, halo+1:halo+ny, :, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :, :]
+        M[halo+1:halo+nx, halo+1:halo+ny, :] = Mnp[halo+1:halo+nx, halo+1:halo+ny, :]
         
         # Exchange halos for next iteration
-        halo_exchange_3d!(M, decomp, bc)
+        halo_exchange_2d!(M, decomp, bc)
         
         # Symmetry check: test that M(i,i,k) ≈ M(Np+1-i, Np+1-i, k) along diagonal
         # Only check every symmetry_check_interval steps to reduce overhead
@@ -394,11 +330,11 @@ function simulation_runner(params)
             for (idx, gi) in enumerate(diag_i_global)
                 ii = gi - i0 + 1  # local i index (interior, 1-based)
                 jj = gi - j0 + 1  # local j index (interior, 1-based)
-                diag5_local[idx, 1] = M[halo+ii, halo+jj, 1, 1]   # M000 (first z-slice)
-                diag5_local[idx, 2] = M[halo+ii, halo+jj, 1, 2]   # M100
-                diag5_local[idx, 3] = M[halo+ii, halo+jj, 1, 3]   # M200
-                diag5_local[idx, 4] = M[halo+ii, halo+jj, 1, 4]   # M300
-                diag5_local[idx, 5] = M[halo+ii, halo+jj, 1, 5]   # M400
+                diag5_local[idx, 1] = M[halo+ii, halo+jj, 1]   # M000
+                diag5_local[idx, 2] = M[halo+ii, halo+jj, 2]   # M100
+                diag5_local[idx, 3] = M[halo+ii, halo+jj, 3]   # M200
+                diag5_local[idx, 4] = M[halo+ii, halo+jj, 4]   # M300
+                diag5_local[idx, 5] = M[halo+ii, halo+jj, 5]   # M400
             end
             
             # Gather to rank 0
@@ -454,7 +390,7 @@ function simulation_runner(params)
         # Timing: compute per global grid point for fair comparison across ranks
         step_time = time() - step_start_time
         max_step_time = MPI.Allreduce(step_time, max, comm)
-        global_grid_points = Np * Np * Nz
+        global_grid_points = Np * Np
         time_per_point_global = max_step_time / global_grid_points
         
         # Print timestep info
@@ -474,28 +410,25 @@ function simulation_runner(params)
     end
     
     # Gather results to rank 0
-    M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
+    M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :]
     
     if rank == 0
-        M_final = gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+        M_final = gather_M(M_interior, i0i1, j0j1, Np, Nmom, comm)
         final_time = t
         time_steps = nn
         
         # Create global grid structure
         grid_out = (x = collect(range(xmin, xmax, length=Np+1)),
                    y = collect(range(ymin, ymax, length=Np+1)),
-                   z = collect(range(zmin, zmax, length=Nz+1)),
                    dx = dx_global,
                    dy = dy_global,
-                   dz = dz_global,
                    xm = collect(range(xmin + dx_global/2, step=dx_global, length=Np)),
-                   ym = collect(range(ymin + dy_global/2, step=dy_global, length=Np)),
-                   zm = collect(range(zmin + dz_global/2, step=dz_global, length=Nz)))
+                   ym = collect(range(ymin + dy_global/2, step=dy_global, length=Np)))
         
         return M_final, final_time, time_steps, grid_out
     else
         # Other ranks send to rank 0
-        gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+        send_M(M_interior, i0i1, j0j1, 0, comm)
         return nothing, t, nn, nothing
     end
 end
@@ -507,7 +440,6 @@ High-level wrapper for running simulations with sensible defaults.
 
 # Arguments
 - `Np`: Global grid size (Np x Np), default 20
-- `Nz`: Global grid size in z, default 1
 - `tmax`: Maximum simulation time, default 0.1
 - `num_workers`: Number of MPI ranks (must match mpiexec -n), default 1
 - `verbose`: Print progress information, default true
@@ -517,17 +449,16 @@ High-level wrapper for running simulations with sensible defaults.
 - `output_dir`: Directory for saved figures, default "."
 - `Kn`: Knudsen number, default 1.0
 - `Ma`: Mach number, default 0.0
-- `flag2D`: 2D flag (1 for 2D, 0 for 3D), default 0
+- `flag2D`: 2D flag (1 for 2D, 0 for 3D), default 1
 - `CFL`: CFL number, default 0.5
-- `homogeneous_z`: Jets at all z levels (true) or only lower half (false), default true
 
 # Returns
 Dictionary with:
-- `:M`: Final moment field (NpxNpxNzx35) on rank 0, nothing on other ranks
+- `:M`: Final moment field (NpxNpx35) on rank 0, nothing on other ranks
 - `:final_time`: Actual final time reached
 - `:time_steps`: Number of time steps taken
-- `:xm`, `:ym`, `:zm`: Grid coordinates (only on rank 0)
-- `:Np`, `:Nz`: Grid sizes
+- `:xm`, `:ym`: Grid coordinates (only on rank 0)
+- `:Np`: Grid size
 - `:tmax`: Requested max time
 
 # Example
@@ -542,9 +473,9 @@ results = run_simulation(Np=40, tmax=0.2, num_workers=4)
 results = run_simulation(Np=40, tmax=0.1, enable_plots=true)
 ```
 """
-function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, save_output=false,
+function run_simulation(; Np=20, tmax=0.1, num_workers=1, verbose=true, save_output=false,
                           enable_plots=false, save_figures=false, output_dir=".",
-                          Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5, homogeneous_z=true, debug_output=false)
+                          Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5, debug_output=false)
     # Initialize MPI if not already done
     if !MPI.Initialized()
         MPI.Init()
@@ -562,11 +493,10 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
     end
     
     # Setup parameters
-    # Domain is [-0.5, 0.5] x [-0.5, 0.5] x [-0.5, 0.5]
-    dx = 1.0 / Np
+    # Domain is [-0.5, 0.5] x [-0.5, 0.5], so dx = (0.5 - (-0.5))/Np = 1.0/Np
+    dx = 1.0 / Np  # FIX: Was incorrectly 2.0/Np
     dy = 1.0 / Np
-    dz = 1.0 / Nz
-    dtmax = CFL * min(dx, dy, dz)
+    dtmax = CFL * min(dx, dy)
     nnmax = ceil(Int, tmax / dtmax) + 100  # Safety margin
     
     # Initial condition parameters (crossing jets)
@@ -579,7 +509,6 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
     
     params = (
         Np = Np,
-        Nz = Nz,
         tmax = tmax,
         Kn = Kn,
         Ma = Ma,
@@ -587,7 +516,6 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
         CFL = CFL,
         dx = dx,
         dy = dy,
-        dz = dz,
         Nmom = 35,
         nnmax = nnmax,
         dtmax = dtmax,
@@ -598,7 +526,6 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
         r101 = r101,
         r011 = r011,
         symmetry_check_interval = 10,
-        homogeneous_z = homogeneous_z,
         enable_memory_tracking = false,
         debug_output = debug_output
     )
@@ -607,12 +534,11 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
         println("="^60)
         println("HyQMOM Simulation")
         println("="^60)
-        println("Grid: $(Np)x$(Np)x$(Nz)")
+        println("Grid: $(Np)x$(Np)")
         println("MPI ranks: $nprocs")
         println("tmax: $tmax")
         println("Kn: $Kn, Ma: $Ma")
         println("CFL: $CFL, dtmax: $dtmax")
-        println("homogeneous_z: $homogeneous_z")
         println("="^60)
     end
     
@@ -630,8 +556,7 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
     # Generate plots if requested (only on rank 0)
     if enable_plots && rank == 0 && !isnothing(M_final)
         plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35; 
-                         save_figures=save_figures, output_dir=output_dir,
-                         zm=grid_out.zm, Nz=Nz)
+                         save_figures=save_figures, output_dir=output_dir)
     end
     
     # Package results
@@ -642,9 +567,7 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
             :time_steps => time_steps,
             :xm => grid_out.xm,
             :ym => grid_out.ym,
-            :zm => grid_out.zm,
             :Np => Np,
-            :Nz => Nz,
             :tmax => tmax
         )
     else
@@ -654,9 +577,7 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
             :time_steps => time_steps,
             :xm => nothing,
             :ym => nothing,
-            :zm => nothing,
             :Np => Np,
-            :Nz => Nz,
             :tmax => tmax
         )
     end

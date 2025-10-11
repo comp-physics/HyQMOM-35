@@ -19,13 +19,11 @@ julia src/main.jl --no-matplotlib
 ```
 
 # Command-line Arguments
-- `--Np`: Grid size in x-y (default: 120)
-- `--Nz`: Grid size in z (default: 1)
+- `--Np`: Grid size (default: 120)
 - `--tmax`: Maximum simulation time (default: 0.02)
 - `--Ma`: Mach number (default: 0.0, matching MATLAB)
 - `--Kn`: Knudsen number (default: 1.0, matching MATLAB)
 - `--CFL`: CFL number (default: 0.5, matching MATLAB)
-- `--homogeneous-z`: Jets at all z levels (default: true)
 - `--output`: Output file name (default: "results.jld2")
 - `--no-matplotlib`: Completely disable PyPlot/matplotlib (prevents installation attempts)
 """
@@ -45,13 +43,11 @@ function parse_args()
     # Default parameters (matching MATLAB test case defaults)
     params = Dict{Symbol,Any}(
         :Np => 120,
-        :Nz => 1,
         :tmax => 0.02,
         :Ma => 0.0,      # MATLAB default (was 2.0)
         :Kn => 1.0,      # MATLAB default (was 0.01)
         :CFL => 0.5,     # MATLAB default (was 0.9)
         :flag2D => 0,
-        :homogeneous_z => true,
         :output => "results.jld2",
         :enable_plots => true,
         :save_figures => false,
@@ -64,9 +60,6 @@ function parse_args()
         arg = ARGS[i]
         if arg == "--Np" && i < length(ARGS)
             params[:Np] = parse(Int, ARGS[i+1])
-            i += 2
-        elseif arg == "--Nz" && i < length(ARGS)
-            params[:Nz] = parse(Int, ARGS[i+1])
             i += 2
         elseif arg == "--tmax" && i < length(ARGS)
             params[:tmax] = parse(Float64, ARGS[i+1])
@@ -83,12 +76,6 @@ function parse_args()
         elseif arg == "--output" && i < length(ARGS)
             params[:output] = ARGS[i+1]
             i += 2
-        elseif arg == "--homogeneous-z"
-            params[:homogeneous_z] = true
-            i += 1
-        elseif arg == "--inhomogeneous-z"
-            params[:homogeneous_z] = false
-            i += 1
         elseif arg == "--2D"
             params[:flag2D] = 1
             i += 1
@@ -162,13 +149,11 @@ function main()
     
     # Setup simulation parameters
     Np = args[:Np]
-    Nz = args[:Nz]
     tmax = args[:tmax]
     Ma = args[:Ma]
     Kn = args[:Kn]
     CFL = args[:CFL]
     flag2D = args[:flag2D]
-    homogeneous_z = args[:homogeneous_z]
     output_file = args[:output]
     enable_plots = args[:enable_plots]
     save_figures = args[:save_figures]
@@ -177,7 +162,6 @@ function main()
     # Derived parameters
     dx = 1.0 / Np
     dy = 1.0 / Np
-    dz = 1.0 / Nz
     Nmom = 35
     nnmax = 20000000  # Maximum number of time steps (MATLAB: 2e7, was 100000)
     dtmax = Kn        # Maximum time step (MATLAB uses Kn)
@@ -194,11 +178,10 @@ function main()
     symmetry_check_interval = 10
     
     # Package parameters into named tuple
-    params = (Np=Np, Nz=Nz, tmax=tmax, Kn=Kn, Ma=Ma, flag2D=flag2D, CFL=CFL,
-              dx=dx, dy=dy, dz=dz, Nmom=Nmom, nnmax=nnmax, dtmax=dtmax,
+    params = (Np=Np, tmax=tmax, Kn=Kn, Ma=Ma, flag2D=flag2D, CFL=CFL,
+              dx=dx, dy=dy, Nmom=Nmom, nnmax=nnmax, dtmax=dtmax,
               rhol=rhol, rhor=rhor, T=T, r110=r110, r101=r101, r011=r011,
               symmetry_check_interval=symmetry_check_interval,
-              homogeneous_z=homogeneous_z,
               enable_memory_tracking=false,
               debug_output=false)
     
@@ -207,14 +190,13 @@ function main()
         println("HyQMOM 3D MPI-Parallel Simulation")
         println("="^70)
         println("Configuration:")
-        println("  Grid size: $(Np)x$(Np)x$(Nz)")
+        println("  Grid size: $(Np)x$(Np)")
         println("  MPI ranks: $(nprocs)")
         println("  Max time: $(tmax)")
         println("  Mach number: $(Ma)")
         println("  Knudsen number: $(Kn)")
         println("  CFL number: $(CFL)")
         println("  2D mode: $(flag2D == 1 ? "Yes" : "No")")
-        println("  Homogeneous z: $(homogeneous_z ? "Yes" : "No")")
         println("  Output file: $(output_file)")
         println("  Visualization: $(enable_plots ? "Enabled" : "Disabled")")
         if enable_plots && save_figures
@@ -237,15 +219,8 @@ function main()
         println("  save_figures = $save_figures")
         println("  output_dir = $output_dir")
         println("="^70)
-        
-        # Check if plotting function is available
-        if isdefined(HyQMOM, :plot_final_results)
-            HyQMOM.plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35;
-                             save_figures=save_figures, output_dir=output_dir,
-                             zm=grid_out.zm, Nz=Nz)
-        else
-            @warn "Plotting requested but PyPlot not available. Install with: using Pkg; Pkg.add(\"PyPlot\")"
-        end
+        plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35;
+                         save_figures=save_figures, output_dir=output_dir)
     elseif !enable_plots && rank == 0
         println("Visualization disabled (--no-plots)")
     elseif rank != 0

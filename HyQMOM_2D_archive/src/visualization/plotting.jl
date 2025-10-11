@@ -39,7 +39,7 @@ function format_colorbar(; shrink=0.8, aspect=20)
 end
 
 """
-    plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=".", zm=nothing, Nz=1)
+    plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=".")
 
 Create comprehensive visualization of final simulation results.
 
@@ -47,15 +47,13 @@ This is the main plotting function that creates all final result figures
 (Figures 2-12 in MATLAB code).
 
 # Arguments
-- `M`: Moment array (Np x Np x Nmom) for 2D or (Np x Np x Nz x Nmom) for 3D
+- `M`: Moment array (Np x Np x Nmom)
 - `xm`: X-coordinates of cell centers
 - `ym`: Y-coordinates of cell centers
 - `Np`: Grid size
 - `Nmom`: Number of moments (35)
 - `save_figures`: Save figures to disk (default: false)
 - `output_dir`: Directory for saved figures (default: ".")
-- `zm`: Z-coordinates of cell centers (optional, for 3D)
-- `Nz`: Number of z grid points (default: 1)
 
 # Figures Created
 - Figure 2: Moment line plots along diagonal
@@ -65,41 +63,22 @@ This is the main plotting function that creates all final result figures
 - Figure 10: C-moment contour plots (16 panels)
 - Figure 11: S-moment contour plots (12 panels)
 - Figure 12: Hyperbolicity/eigenvalue plots (9 panels)
-
-# Notes
-For 3D simulations (Nz > 1), plots the middle z-slice.
 """
-function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=".", zm=nothing, Nz=1)
+function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=".")
     println("\n" * "="^70)
     println("Generating visualization of final results...")
-    
-    # Handle 3D arrays - extract middle z-slice
-    if ndims(M) == 4
-        Nz = size(M, 3)
-        k_mid = div(Nz, 2) + 1  # Middle z-slice (1-indexed)
-        if zm !== nothing
-            println("3D simulation detected: Plotting z-slice $k_mid of $Nz (z = $(zm[k_mid]))")
-        else
-            println("3D simulation detected: Plotting z-slice $k_mid of $Nz")
-        end
-        M_plot = M[:, :, k_mid, :]  # Extract middle z-slice
-    else
-        M_plot = M  # Already 2D
-        println("2D simulation")
-    end
-    
     println("="^70)
     
     # Set up the custom sky colormap
     set_sky_colormap()
     
-    # Compute C and S moments from M_plot
+    # Compute C and S moments from M
     println("Computing central and standardized moments...")
     C = zeros(Np, Np, Nmom)
     S = zeros(Np, Np, Nmom)
     for i = 1:Np
         for j = 1:Np
-            MOM = M_plot[i, j, :]
+            MOM = M[i, j, :]
             CC, SS = M2CS4_35(MOM)
             C[i, j, :] = CC
             S[i, j, :] = SS
@@ -114,7 +93,7 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     S5 = zeros(Np, Np, Nmom5)
     for i = 1:Np
         for j = 1:Np
-            MOM = M_plot[i, j, :]
+            MOM = M[i, j, :]
             MM5, CC5, SS5 = Moments5_3D(MOM)
             M5[i, j, :] = MM5
             C5[i, j, :] = CC5
@@ -124,7 +103,7 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     
     # Compute eigenvalues for hyperbolicity plots
     println("Computing eigenvalues...")
-    eig_data = compute_grid_eigenvalues(M_plot, Np, Nmom)
+    eig_data = compute_grid_eigenvalues(M, Np, Nmom)
     
     # Create plots
     nmin = 1
@@ -134,7 +113,7 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     println("Creating Figure 1: Moment line plots...")
     fig1 = figure(1)
     clf()
-    plot_3Dsym_moments(xm, M_plot, nmin, nmax, cc, Np)
+    plot_3Dsym_moments(xm, M, nmin, nmax, cc, Np)
     tight_layout()
     if save_figures
         savefig(joinpath(output_dir, "fig01_moments.png"), dpi=150)
@@ -144,7 +123,7 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     println("Creating Figure 2: Central moment line plots...")
     fig2 = figure(2)
     clf()
-    plot_3Dsym_central(xm, M_plot, C, C5, nmin, nmax, cc, Np)
+    plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
     tight_layout()
     if save_figures
         savefig(joinpath(output_dir, "fig02_central_moments.png"), dpi=150)
@@ -164,7 +143,7 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     println("Creating Figure 4: Contour plots...")
     fig4 = figure(4)
     clf()
-    contour_plots_3D(xm, ym, M_plot, C, S, Np)
+    contour_plots_3D(xm, ym, M, C, S, Np)
     tight_layout()
     if save_figures
         savefig(joinpath(output_dir, "fig04_contours.png"), dpi=150)
