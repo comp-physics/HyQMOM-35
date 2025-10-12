@@ -424,14 +424,23 @@ if !STANDALONE
                 @test haskey(matlab_data, "golden_data")
                 
                 global golden_data = matlab_data["golden_data"]
-                # New golden file structure (flattened)
-                @test haskey(golden_data, "M")
-                @test haskey(golden_data, "Np")
-                @test haskey(golden_data, "tmax")
-                @test haskey(golden_data, "final_time")
-                @test haskey(golden_data, "time_steps")
                 
-                M_matlab_raw = golden_data["M"]
+                # Handle both nested and flat golden file structures
+                if haskey(golden_data, "moments")
+                    # Nested structure (new format from create_goldenfiles)
+                    M_matlab_raw = golden_data["moments"]["M"]
+                    Np_golden = golden_data["parameters"]["Np"]
+                    tmax_golden = golden_data["parameters"]["tmax"]
+                    final_time_golden = golden_data["parameters"]["final_time"]
+                    time_steps_golden = golden_data["parameters"]["time_steps"]
+                else
+                    # Flat structure (old format)
+                    M_matlab_raw = golden_data["M"]
+                    Np_golden = golden_data["Np"]
+                    tmax_golden = golden_data["tmax"]
+                    final_time_golden = golden_data["final_time"]
+                    time_steps_golden = golden_data["time_steps"]
+                end
                 
                 # Handle both 2D and 3D golden file formats
                 if ndims(M_matlab_raw) == 3
@@ -449,13 +458,13 @@ if !STANDALONE
                     error("Unexpected M array dimensions: $(size(M_matlab_raw))")
                 end
                 
-                # Create params_matlab dict from flat structure
+                # Create params_matlab dict
                 global params_matlab = Dict(
-                    "Np" => golden_data["Np"],
-                    "Nz" => haskey(golden_data, "Nz") ? golden_data["Nz"] : Nz,
-                    "tmax" => golden_data["tmax"],
-                    "final_time" => golden_data["final_time"],
-                    "time_steps" => golden_data["time_steps"]
+                    "Np" => Np_golden,
+                    "Nz" => Nz,
+                    "tmax" => tmax_golden,
+                    "final_time" => final_time_golden,
+                    "time_steps" => time_steps_golden
                 )
                 
                 # Check dimensions (should be 4D: Np x Np x Nz x 35)
