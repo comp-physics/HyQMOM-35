@@ -18,8 +18,8 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 ColorSchemes = "3"
-GLMakie = "0.8, 0.9, 0.10"
-JLD2 = "0.4"
+GLMakie = "0.8, 0.9, 0.10, 0.11, 0.12, 0.13"
+JLD2 = "0.4, 0.5"
 MAT = "0.10"
 MPI = "0.20"
 PyCall = "1"
