@@ -214,12 +214,25 @@ function interactive_3d_volume(M_final, grid, params;
         data = current_data_obs[]
         q = current_quantity[]
         
+        # Check for valid data
+        if any(isnan.(data)) || any(isinf.(data))
+            @warn "Data contains NaN/Inf, skipping isosurfaces"
+            return
+        end
+        
         # Check if this is a signed quantity (velocities can be positive or negative)
         is_velocity = (q == "U velocity" || q == "V velocity" || q == "W velocity")
         
         data_min = minimum(data)
         data_max = maximum(data)
         data_absmax = maximum(abs.(data))
+        data_range = data_max - data_min
+        
+        # Skip if data is essentially constant or zero
+        if data_absmax < 1e-10 || data_range < 1e-10
+            # Data is too flat for meaningful isosurfaces
+            return
+        end
         
         x_lims = (xm[1], xm[end])
         y_lims = (ym[1], ym[end])
@@ -243,9 +256,9 @@ function interactive_3d_volume(M_final, grid, params;
             alphas = [0.6, 0.5, 0.4, 0.6, 0.5, 0.4] .* slider_alpha.value[]
         else
             # For non-negative quantities (density, pressure, etc): use regular levels
-            level1 = data_min + slider_iso1.value[] * (data_max - data_min)
-            level2 = data_min + slider_iso2.value[] * (data_max - data_min)
-            level3 = data_min + slider_iso3.value[] * (data_max - data_min)
+            level1 = data_min + slider_iso1.value[] * data_range
+            level2 = data_min + slider_iso2.value[] * data_range
+            level3 = data_min + slider_iso3.value[] * data_range
             
             levels = [level1, level2, level3]
             colors = [:blue, :green, :red]
@@ -254,6 +267,16 @@ function interactive_3d_volume(M_final, grid, params;
         
         # Create contour surfaces at each level
         for (level, color, alpha) in zip(levels, colors, alphas)
+            # Skip if level is essentially zero or invalid
+            if abs(level) < 1e-10
+                continue
+            end
+            
+            # For non-velocity, skip if outside data range
+            if !is_velocity && (level < data_min - 1e-10 || level > data_max + 1e-10)
+                continue
+            end
+            
             try
                 p = GLMakie.contour!(ax, x_lims, y_lims, z_lims, data,
                                     levels=[level],
@@ -261,8 +284,10 @@ function interactive_3d_volume(M_final, grid, params;
                                     color=color)
                 push!(iso_plots, p)
             catch e
-                # If contour fails, skip this level
-                @warn "Contour failed at level $level" exception=e
+                # Only warn if it's not a known issue with near-zero levels
+                if abs(level) > 1e-8
+                    @warn "Contour failed at level $level" exception=(e,)
+                end
             end
         end
     end

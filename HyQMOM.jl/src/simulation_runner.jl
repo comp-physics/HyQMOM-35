@@ -31,8 +31,14 @@ This is the core time-stepping loop that orchestrates all components:
   - `symmetry_check_interval`: How often to check symmetry
   - `homogeneous_z`: Whether jets exist at all z levels (validation mode)
   - `enable_memory_tracking`: Enable memory tracking (not implemented)
+  - `snapshot_interval`: (optional) Save snapshots every N steps. If not provided or 0, no snapshots saved.
 
 # Returns
+If `snapshot_interval` is provided and > 0:
+- On rank 0: `snapshots` (vector of named tuples), `grid_out`
+- On other ranks: `nothing`, `nothing`
+
+Otherwise (standard mode):
 - `M_final`: Final moment array (global, gathered to rank 0), or `nothing` on other ranks
 - `final_time`: Final simulation time
 - `time_steps`: Number of time steps taken
@@ -59,12 +65,11 @@ function simulation_runner(params)
     Ma = params.Ma
     flag2D = params.flag2D
     CFL = params.CFL
-    dx = params.dx
-    dy = params.dy
-    dz = params.dz
     Nmom = params.Nmom
     nnmax = params.nnmax
     dtmax = params.dtmax
+    
+    # Note: dx, dy, dz will be computed from domain extents below
     
     # IC parameters
     rhol = params.rhol
@@ -79,16 +84,26 @@ function simulation_runner(params)
     homogeneous_z = params.homogeneous_z
     debug_output = params.debug_output
     
+    # Snapshot saving parameters
+    snapshot_interval = get(params, :snapshot_interval, 0)
+    save_snapshots = (snapshot_interval > 0)
+    snapshots = []  # Will store (M, t, step) tuples on rank 0
+    
     # Setup domain decomposition (2D in x-y, no decomposition in z)
     decomp = setup_mpi_cartesian_3d(Np, Nz, halo, comm)
     nx = decomp.local_size[1]
     ny = decomp.local_size[2]
     nz = decomp.local_size[3]  # Always equals Nz (no decomposition)
     
-    # Create local grid structure
-    xmin, xmax = -0.5, 0.5
-    ymin, ymax = -0.5, 0.5
-    zmin, zmax = -0.5, 0.5
+    # Domain extents (allow user to specify, default to [-0.5, 0.5])
+    xmin = get(params, :xmin, -0.5)
+    xmax = get(params, :xmax,  0.5)
+    ymin = get(params, :ymin, -0.5)
+    ymax = get(params, :ymax,  0.5)
+    zmin = get(params, :zmin, -0.5)
+    zmax = get(params, :zmax,  0.5)
+    
+    # Grid spacing
     dx_global = (xmax - xmin) / Np
     dy_global = (ymax - ymin) / Np
     dz_global = (zmax - zmin) / Nz
@@ -213,6 +228,24 @@ function simulation_runner(params)
     # Initial halo exchange
     halo_exchange_3d!(M, decomp, bc)
     
+    # Save initial condition as first snapshot if requested
+    i0i1 = decomp.istart_iend
+    j0j1 = decomp.jstart_jend
+    k0k1 = decomp.kstart_kend
+    
+    if save_snapshots
+        M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
+        if rank == 0
+            M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+            push!(snapshots, (M=copy(M_gathered), t=0.0, step=0))
+            if debug_output
+                println("Saved snapshot 1: t=0.0, step=0")
+            end
+        else
+            gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+        end
+    end
+    
     # Time evolution
     t = 0.0
     nn = 0
@@ -222,6 +255,9 @@ function simulation_runner(params)
         println("  Grid: $(Np)x$(Np)x$(Nz), Ranks: $(nprocs), Local: $(nx)x$(ny)x$(nz)")
         println("  tmax: $(tmax), CFL: $(CFL), Ma: $(Ma), Kn: $(Kn)")
         println("  homogeneous_z: $(homogeneous_z)")
+        if save_snapshots
+            println("  Snapshot interval: every $(snapshot_interval) steps")
+        end
     end
     
     while t < tmax && nn < nnmax
@@ -468,21 +504,30 @@ function simulation_runner(params)
                        nn, t, dt, max_step_time, time_per_point_global)
             end
         end
+        
+        # Save snapshot if requested and it's time
+        if save_snapshots && (mod(nn, snapshot_interval) == 0 || t >= tmax || nn == nnmax)
+            M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
+            if rank == 0
+                M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+                push!(snapshots, (M=copy(M_gathered), t=t, step=nn))
+                println("Saved snapshot $(length(snapshots)): t=$(round(t, digits=4)), step=$nn")
+            else
+                gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+            end
+        end
     end
     
     if rank == 0
         println("Time evolution complete: $(nn) steps, t = $(t)")
+        if save_snapshots
+            println("Saved $(length(snapshots)) snapshots total")
+        end
     end
     
-    # Gather results to rank 0
-    M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
-    
+    # Create global grid structure
+    grid_out = nothing
     if rank == 0
-        M_final = gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
-        final_time = t
-        time_steps = nn
-        
-        # Create global grid structure
         grid_out = (x = collect(range(xmin, xmax, length=Np+1)),
                    y = collect(range(ymin, ymax, length=Np+1)),
                    z = collect(range(zmin, zmax, length=Nz+1)),
@@ -492,12 +537,30 @@ function simulation_runner(params)
                    xm = collect(range(xmin + dx_global/2, step=dx_global, length=Np)),
                    ym = collect(range(ymin + dy_global/2, step=dy_global, length=Np)),
                    zm = collect(range(zmin + dz_global/2, step=dz_global, length=Nz)))
-        
-        return M_final, final_time, time_steps, grid_out
+    end
+    
+    # Return depends on whether snapshots were requested
+    if save_snapshots
+        # Return snapshots mode
+        if rank == 0
+            return snapshots, grid_out
+        else
+            return nothing, nothing
+        end
     else
-        # Other ranks send to rank 0
-        gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
-        return nothing, t, nn, nothing
+        # Standard mode: gather final result
+        M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
+        
+        if rank == 0
+            M_final = gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+            final_time = t
+            time_steps = nn
+            return M_final, final_time, time_steps, grid_out
+        else
+            # Other ranks send to rank 0
+            gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+            return nothing, t, nn, nothing
+        end
     end
 end
 
