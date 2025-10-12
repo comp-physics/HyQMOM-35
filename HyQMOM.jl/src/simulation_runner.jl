@@ -164,25 +164,24 @@ function simulation_runner(params)
     Mb = InitializeM4_35(rhol,  Uc,  Uc, W0, C200, C110, C101, C020, C011, C002)
     
     # Jet region bounds (global indices)
+    # x-y plane: 10% of domain size
     Csize = floor(Int, 0.1 * Np)
     Mint = div(Np, 2) + 1
     Maxt = div(Np, 2) + 1 + Csize
     Minb = div(Np, 2) - Csize
     Maxb = div(Np, 2)
     
-    # Fill local subdomain with appropriate IC
+    # z-direction: Create cubes (not extruded squares)
+    # Cubes centered at z=0
+    Csize_z = Csize  # Same size as x-y for cubic regions
+    Mint_z = div(Nz, 2) + 1 - div(Csize_z, 2)
+    Maxt_z = div(Nz, 2) + 1 + div(Csize_z, 2)
+    
+    # Fill local subdomain with appropriate IC (sharp transitions)
+    # Note: Sharp transitions work better than smooth blending because
+    # blending moment vectors doesn't preserve realizability
     for kk in 1:nz
         gk = k0k1[1] + kk - 1  # global k index
-        z_coord = zm_local[kk]
-        
-        # Determine if jets exist at this z
-        if homogeneous_z
-            # Homogeneous in z: jets at all z levels (for validation)
-            jets_exist = true
-        else
-            # Inhomogeneous: jets only in lower half (z < 0)
-            jets_exist = (z_coord < 0.0)
-        end
         
         for ii in 1:nx
             gi = i0i1[1] + ii - 1  # global i index
@@ -192,16 +191,18 @@ function simulation_runner(params)
                 # Default: background
                 Mr = Mr_bg
                 
-                if jets_exist
-                    # Bottom jet (moving up-right)
-                    if gi >= Minb && gi <= Maxb && gj >= Minb && gj <= Maxb
-                        Mr = Mb
-                    end
-                    
-                    # Top jet (moving down-left) - overwrites if overlapping
-                    if gi >= Mint && gi <= Maxt && gj >= Mint && gj <= Maxt
-                        Mr = Mt
-                    end
+                # Bottom jet cube: check x, y, AND z bounds
+                if (gi >= Minb && gi <= Maxb && 
+                    gj >= Minb && gj <= Maxb &&
+                    gk >= Mint_z && gk <= Maxt_z)
+                    Mr = Mb
+                end
+                
+                # Top jet cube: check x, y, AND z bounds (overwrites if overlapping)
+                if (gi >= Mint && gi <= Maxt && 
+                    gj >= Mint && gj <= Maxt &&
+                    gk >= Mint_z && gk <= Maxt_z)
+                    Mr = Mt
                 end
                 
                 M[ii + halo, jj + halo, kk, :] = Mr
