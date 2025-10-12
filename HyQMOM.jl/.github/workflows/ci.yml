@@ -35,11 +35,22 @@ jobs:
     
     - name: Install dependencies
       run: |
-        julia --project=. -e '
-          using Pkg
-          Pkg.instantiate()
-          Pkg.build("MPI")
-        '
+        if [ "${{ matrix.julia-version }}" == "1.9" ]; then
+          # Julia 1.9: Disable auto-precompilation to avoid Test extension bug
+          julia --project=. -e '
+            ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
+            using Pkg
+            Pkg.instantiate()
+            Pkg.build("MPI")
+          '
+        else
+          # Julia 1.10+: Standard instantiation
+          julia --project=. -e '
+            using Pkg
+            Pkg.instantiate()
+            Pkg.build("MPI")
+          '
+        fi
       env:
         PYTHON: ""  # Tell PyCall to skip Python - not needed for tests
         HYQMOM_SKIP_PLOTTING: true
