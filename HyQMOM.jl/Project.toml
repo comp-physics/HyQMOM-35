@@ -25,7 +25,7 @@ MPI = "0.20"
 PyCall = "1"
 PyPlot = "2"
 StaticArrays = "1"
-julia = "1.9"
+julia = "1.9, 1.10, 1.11"
 
 [extras]
 MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
