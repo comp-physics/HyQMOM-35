@@ -259,9 +259,9 @@ function print_params_summary(params; rank=0, comm=nothing)
                 println("  Decomposition: x-y plane divided among ranks")
                 println("  Z-direction: No decomposition (all ranks have full z)")
                 
-                # Estimate local grid size
+                # Estimate local grid size (assumes uniform distribution)
                 local_nx = div(params.Np, nprocs) + (params.Np % nprocs > 0 ? 1 : 0)
-                println("  Estimated local grid per rank: ~$(local_nx)×$(params.Np)×$(params.Nz)")
+                println("  Estimated local grid per rank: ~$(local_nx)×$(params.Np)×$(params.Nz) (uniform distribution estimate)")
             else
                 println("\nExecution: Single rank (serial)")
             end

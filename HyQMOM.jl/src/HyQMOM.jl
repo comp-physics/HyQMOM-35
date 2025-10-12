@@ -20,7 +20,7 @@ export run_simulation_with_snapshots, simulation_runner_snapshots
 # Export visualization functions
 export plot_final_results, plot_multiple_z_slices, plot_3d_isosurface
 export plot_centerline_profiles, plot_3d_diagnostics
-export interactive_3d_viewer, interactive_3d_volume, interactive_3d_timeseries
+export interactive_3d_volume, interactive_3d_timeseries
 
 # Export key functions for testing
 export InitializeM4_35, M2CS4_35, Moments5_3D, hyqmom_3D
@@ -125,7 +125,6 @@ const GLMAKIE_AVAILABLE = !SKIP_PLOTTING &&
 
 if GLMAKIE_AVAILABLE
     try
-        include("visualization/interactive_3d.jl")
         include("visualization/interactive_3d_volume.jl")
         include("visualization/interactive_3d_timeseries.jl")
     catch e

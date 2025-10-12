@@ -69,8 +69,6 @@ function simulation_runner(params)
     nnmax = params.nnmax
     dtmax = params.dtmax
     
-    # Note: dx, dy, dz will be computed from domain extents below
-    
     # IC parameters
     rhol = params.rhol
     rhor = params.rhor
@@ -103,12 +101,12 @@ function simulation_runner(params)
     zmin = get(params, :zmin, -0.5)
     zmax = get(params, :zmax,  0.5)
     
-    # Grid spacing
+    # Compute grid spacing from domain extents and resolution
+    # Note: dx, dy, dz are always computed automatically and never read from params
     dx_global = (xmax - xmin) / Np
     dy_global = (ymax - ymin) / Np
     dz_global = (zmax - zmin) / Nz
     
-    # Override params.dx/dy/dz with correct grid spacing
     dx = dx_global
     dy = dy_global
     dz = dz_global

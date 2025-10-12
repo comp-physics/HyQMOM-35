@@ -35,13 +35,32 @@ jobs:
     
     - name: Install dependencies
       run: |
-        julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("MPI")'
+        julia --project=. -e '
+          using Pkg
+          Pkg.instantiate()
+          Pkg.build("MPI")
+        '
+      env:
+        PYTHON: ""  # Tell PyCall to skip Python - not needed for tests
+        HYQMOM_SKIP_PLOTTING: true
     
-    - name: Run unit tests
+    - name: Run unit tests (Julia 1.9 - with workaround)
+      if: matrix.julia-version == '1.9'
+      run: |
+        TEST_GOLDEN_SIMULATION=false CI=true julia --project=. --color=yes test/ci_test.jl
+      env:
+        CI: true
+        PYTHON: ""
+        HYQMOM_SKIP_PLOTTING: true
+    
+    - name: Run unit tests (Julia 1.10+)
+      if: matrix.julia-version != '1.9'
       run: |
         TEST_GOLDEN_SIMULATION=false CI=true julia --project=. --color=yes -e 'using Pkg; Pkg.test()'
       env:
         CI: true
+        PYTHON: ""
+        HYQMOM_SKIP_PLOTTING: true
     
     - name: Run MPI golden file tests
       run: |

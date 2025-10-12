@@ -80,7 +80,7 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
         # For true 3D simulations (Nz > 1), create comprehensive 3D visualizations
         if Nz > 1 && zm !== nothing
             println("3D simulation detected (Nz=$Nz): Creating comprehensive 3D visualizations...")
-            plot_3d_diagnostics(M, xm, ym, zm, Np, Nz, Nmom, save_figures=save_figures, output_dir=output_dir)
+            plot_3d_diagnostics(M, xm, ym, zm, Np; Nz=Nz, Nmom=Nmom, save_figures=save_figures, output_dir=output_dir)
             
             # Also create standard 2D plots for middle z-slice
             k_mid = div(Nz, 2) + 1
