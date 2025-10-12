@@ -12,3 +12,6 @@
 .cursor/
 .cursorrules
 .rubies
+Manifest.toml
+*/Manifest.toml
+**/Manifest.toml
