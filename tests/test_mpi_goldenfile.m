@@ -49,7 +49,7 @@ function test_mpi_1_rank_vs_golden(testCase)
     
     % Run MPI simulation
     fprintf('Running MPI simulation with 1 rank...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.tmax, num_ranks);
+    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
     
     % Compare against golden file
     compare_results(testCase, mpi_data, golden_data, ...
@@ -57,7 +57,7 @@ function test_mpi_1_rank_vs_golden(testCase)
 end
 
 function test_mpi_2_ranks_vs_golden(testCase)
-% Test MPI with 2 ranks against golden file (40x40 grid)
+% Test MPI with 2 ranks against golden file (20x20 grid for CI)
     if ~testCase.TestData.has_pct
         fprintf('\n=== TEST: MPI 2 Ranks vs Golden ===\n');
         fprintf('SKIPPED: Parallel Computing Toolbox not available\n');
@@ -65,11 +65,11 @@ function test_mpi_2_ranks_vs_golden(testCase)
         return;
     end
     
-    fprintf('\n=== TEST: MPI 2 Ranks (40x40 grid) ===\n');
+    fprintf('\n=== TEST: MPI 2 Ranks (20x20 grid) ===\n');
     
     num_ranks = 2;
-    Np = 40;
-    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_2ranks_Np40_tmax100.mat');
+    Np = 20;  % CI uses Np=20 for 1-2 ranks (faster)
+    golden_file = fullfile(testCase.TestData.goldenfiles_dir, 'goldenfile_mpi_2ranks_Np20_tmax100.mat');
     
     if ~exist(golden_file, 'file')
         error('Golden file for 2 ranks not found. Run create_goldenfiles.m first.');
@@ -80,7 +80,7 @@ function test_mpi_2_ranks_vs_golden(testCase)
     
     % Run MPI simulation
     fprintf('Running MPI simulation with 2 ranks...\n');
-    mpi_data = run_mpi_simulation(Np, golden_data.tmax, num_ranks);
+    mpi_data = run_mpi_simulation(Np, golden_data.parameters.tmax, num_ranks);
     
     % Compare against golden file
     compare_results(testCase, mpi_data, golden_data, ...
@@ -90,8 +90,10 @@ end
 %% Helper Functions
 
 function mpi_data = run_mpi_simulation(Np, tmax, num_ranks)
-    % Run with Nz=1 for quasi-2D to match golden files
-    mpi_data = main(Np, tmax, false, num_ranks, false, 1, false, 1);
+    % Run with Nz=1 and homogeneous_z=true for quasi-2D to match golden files
+    % Parameters: Np, tmax, enable_plots, num_workers, enable_profile, 
+    %             symmetry_check_interval, enable_memory_tracking, Nz, homogeneous_z
+    mpi_data = main(Np, tmax, false, num_ranks, false, 1, false, 1, true);
 end
 
 function compare_results(testCase, data1, data2, tolerance, description)
