@@ -9,7 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        julia-version: ['1.9', '1.10']
+        julia-version: ['1.9', '1.10', '1.11']
+        include:
+          - julia-version: '1.11'
+            experimental: true  # Allow Julia 1.11 to fail while ecosystem stabilizes
       fail-fast: false
 
     steps:
@@ -35,13 +38,39 @@ jobs:
     
     - name: Install dependencies
       run: |
-        julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("MPI")'
+        if [ "${{ matrix.julia-version }}" == "1.9" ]; then
+          # Julia 1.9: Disable auto-precompilation to avoid Test extension bug
+          julia --project=. -e '
+            ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
+            using Pkg
+            Pkg.instantiate()
+            Pkg.build("MPI")
+          '
+        else
+          # Julia 1.10+: Standard instantiation
+          julia --project=. -e '
+            using Pkg
+            Pkg.instantiate()
+            Pkg.build("MPI")
+          '
+        fi
+      env:
+        PYTHON: ""  # Tell PyCall to skip Python - not needed for tests
+        HYQMOM_SKIP_PLOTTING: true
     
     - name: Run unit tests
       run: |
-        TEST_GOLDEN_SIMULATION=false CI=true julia --project=. --color=yes -e 'using Pkg; Pkg.test()'
+        if [ "${{ matrix.julia-version }}" == "1.9" ]; then
+          # Julia 1.9: Use workaround for Test extension bug
+          TEST_GOLDEN_SIMULATION=false CI=true julia --project=. --color=yes test/ci_test.jl
+        else
+          # Julia 1.10+: Standard testing
+          TEST_GOLDEN_SIMULATION=false CI=true julia --project=. --color=yes -e 'using Pkg; Pkg.test()'
+        fi
       env:
         CI: true
+        PYTHON: ""  # Skip PyCall/PyPlot for all versions
+        HYQMOM_SKIP_PLOTTING: true
     
     - name: Run MPI golden file tests
       run: |

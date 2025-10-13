@@ -15,9 +15,12 @@ using Printf
 
 # Export main entry points
 export run_simulation, simulation_runner
+export run_simulation_with_snapshots, simulation_runner_snapshots
 
 # Export visualization functions
-export plot_final_results
+export plot_final_results, plot_multiple_z_slices, plot_3d_isosurface
+export plot_centerline_profiles, plot_3d_diagnostics
+export interactive_3d_volume, interactive_3d_timeseries
 
 # Export key functions for testing
 export InitializeM4_35, M2CS4_35, Moments5_3D, hyqmom_3D
@@ -85,6 +88,7 @@ include("utils/diagnostics.jl")
 
 # Main simulation
 include("simulation_runner.jl")
+include("simulation_with_snapshots.jl")
 
 # Visualization (requires PyPlot and ColorSchemes) - optional
 # Skip in CI or if PyPlot is not available
@@ -109,6 +113,25 @@ elseif !SKIP_PLOTTING
     @info "PyPlot not available - plotting functions disabled"
 else
     @info "Plotting disabled (CI mode or HYQMOM_SKIP_PLOTTING=true)"
+end
+
+# Check if GLMakie is available for interactive 3D visualization
+const GLMAKIE_AVAILABLE = !SKIP_PLOTTING && 
+    try
+        Base.find_package("GLMakie") !== nothing
+    catch
+        false
+    end
+
+if GLMAKIE_AVAILABLE
+    try
+        include("visualization/interactive_3d_volume.jl")
+        include("visualization/interactive_3d_timeseries.jl")
+    catch e
+        @warn "Failed to load interactive 3D visualization module" exception=(e, catch_backtrace())
+    end
+elseif !SKIP_PLOTTING
+    @info "GLMakie not available - interactive 3D visualization disabled"
 end
 
 end # module

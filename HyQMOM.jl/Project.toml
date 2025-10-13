@@ -11,18 +11,35 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
-PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
+[weakdeps]
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+
 [compat]
+ColorSchemes = "3"
+GLMakie = "0.8, 0.9, 0.10"
+JLD2 = "0.4"
+MAT = "0.10"
 MPI = "0.20"
+PyCall = "1"
+PyPlot = "2"
 StaticArrays = "1"
-julia = "1.9"
+julia = "1.9, 1.10, 1.11"
+
+[extensions]
+HyQMOMGLMakieExt = "GLMakie"
+HyQMOMPyCallExt = "PyCall"
+HyQMOMPyPlotExt = "PyPlot"
 
 [extras]
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MAT"]
+test = ["Test", "MAT", "GLMakie", "PyCall", "PyPlot"]

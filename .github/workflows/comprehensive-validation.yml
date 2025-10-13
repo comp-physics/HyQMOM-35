@@ -63,23 +63,31 @@ jobs:
             end
             
             gd = data.golden_data;
-            % New flat structure: M, Np, tmax, final_time, time_steps, xm, ym
-            required_fields = {'M', 'Np', 'tmax', 'final_time', 'time_steps', 'xm', 'ym'};
-            for i = 1:length(required_fields)
-              if ~isfield(gd, required_fields{i})
-                error('Missing field: %s', required_fields{i});
+            % New nested structure: moments, parameters, grid, metadata
+            required_top_fields = {'moments', 'parameters', 'grid', 'metadata'};
+            for i = 1:length(required_top_fields)
+              if ~isfield(gd, required_top_fields{i})
+                error('Missing top-level field: %s', required_top_fields{i});
               end
             end
             
-            M = gd.M;
+            % Check nested fields
+            if ~isfield(gd.moments, 'M')
+              error('Missing moments.M');
+            end
+            if ~isfield(gd.parameters, 'Np') || ~isfield(gd.parameters, 'tmax') || ~isfield(gd.parameters, 'time_steps')
+              error('Missing required parameters fields');
+            end
+            
+            M = gd.moments.M;
             fprintf('Golden file validation:\n');
             fprintf('  Size: %dx%dx%d\n', size(M));
-            fprintf('  Np: %d\n', gd.Np);
-            fprintf('  tmax: %.2f\n', gd.tmax);
-            fprintf('  Final time: %.6f\n', gd.final_time);
-            fprintf('  Time steps: %d\n', gd.time_steps);
-            fprintf('  Created: %s\n', gd.creation_date);
-            fprintf('  Branch: %s\n', gd.git_branch);
+            fprintf('  Np: %d\n', gd.parameters.Np);
+            fprintf('  tmax: %.2f\n', gd.parameters.tmax);
+            fprintf('  Final time: %.6f\n', gd.parameters.final_time);
+            fprintf('  Time steps: %d\n', gd.parameters.time_steps);
+            fprintf('  Created: %s\n', gd.metadata.creation_date);
+            fprintf('  Branch: %s\n', gd.metadata.git_branch);
             fprintf('OK Golden file structure validated\n');
       
       - name: Upload MATLAB validation results
@@ -350,4 +358,5 @@ jobs:
               repo: context.repo.repo,
               body: report
             });
+
 

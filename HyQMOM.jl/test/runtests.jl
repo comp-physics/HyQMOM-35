@@ -7,6 +7,7 @@ It runs all unit tests and optionally integration tests.
 For more control over test execution, use the shell scripts:
 - ./test/run_tests.sh         # All tests with nice formatting
 - ./test/run_mpi_tests.sh     # MPI-specific tests
+- ./test/ci_test.jl           # CI-friendly runner for Julia 1.9
 
 Environment Variables:
 - TEST_INTEGRATION: Set to "false" to skip integration tests

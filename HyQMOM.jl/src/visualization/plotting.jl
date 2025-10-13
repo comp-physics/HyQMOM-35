@@ -73,16 +73,29 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     println("\n" * "="^70)
     println("Generating visualization of final results...")
     
-    # Handle 3D arrays - extract middle z-slice
+    # Handle 3D arrays
     if ndims(M) == 4
         Nz = size(M, 3)
-        k_mid = div(Nz, 2) + 1  # Middle z-slice (1-indexed)
-        if zm !== nothing
-            println("3D simulation detected: Plotting z-slice $k_mid of $Nz (z = $(zm[k_mid]))")
+        
+        # For true 3D simulations (Nz > 1), create comprehensive 3D visualizations
+        if Nz > 1 && zm !== nothing
+            println("3D simulation detected (Nz=$Nz): Creating comprehensive 3D visualizations...")
+            plot_3d_diagnostics(M, xm, ym, zm, Np; Nz=Nz, Nmom=Nmom, save_figures=save_figures, output_dir=output_dir)
+            
+            # Also create standard 2D plots for middle z-slice
+            k_mid = div(Nz, 2) + 1
+            println("\nAlso creating standard 2D plots for middle z-slice $k_mid (z = $(zm[k_mid]))...")
+            M_plot = M[:, :, k_mid, :]
         else
-            println("3D simulation detected: Plotting z-slice $k_mid of $Nz")
+            # Nz=1 or no z-coordinates provided: treat as 2D
+            k_mid = div(Nz, 2) + 1
+            if zm !== nothing
+                println("Extracting z-slice $k_mid of $Nz (z = $(zm[k_mid]))")
+            else
+                println("3D array with Nz=$Nz")
+            end
+            M_plot = M[:, :, k_mid, :]
         end
-        M_plot = M[:, :, k_mid, :]  # Extract middle z-slice
     else
         M_plot = M  # Already 2D
         println("2D simulation")
@@ -92,6 +105,12 @@ function plot_final_results(M, xm, ym, Np, Nmom; save_figures=false, output_dir=
     
     # Set up the custom sky colormap
     set_sky_colormap()
+    
+    # Check for NaNs/Infs in M_plot
+    if any(isnan.(M_plot)) || any(isinf.(M_plot))
+        @warn "M_plot contains NaN or Inf values - skipping 2D standard plots"
+        return
+    end
     
     # Compute C and S moments from M_plot
     println("Computing central and standardized moments...")
@@ -826,5 +845,439 @@ function compute_grid_eigenvalues(M, Np, Nmom)
         :lam6z => lam6z,
         :lam6w => lam6w
     )
+end
+
+# ============================================================================
+# 3D Visualization Functions
+# ============================================================================
+
+"""
+    plot_multiple_z_slices(M, xm, ym, zm, quantity_name; nslices=6, fignum=nothing)
+
+Create multi-panel plot showing 2D contours at different z-levels.
+
+# Arguments
+- `M`: 4D moment array (Np x Np x Nz x Nmom)
+- `xm`: X-coordinates of cell centers
+- `ym`: Y-coordinates of cell centers  
+- `zm`: Z-coordinates of cell centers
+- `quantity_name`: Name of quantity to plot ("density", "U", "V", "W", "C200", etc.)
+- `nslices`: Number of z-slices to show (default: 6)
+- `fignum`: Figure number (optional)
+
+# Returns
+- Figure object
+"""
+function plot_multiple_z_slices(M, xm, ym, zm, quantity_name; nslices=6, fignum=nothing)
+    Np = size(M, 1)
+    Nz = size(M, 3)
+    Nmom = size(M, 4)
+    
+    # Select z-indices to plot (evenly spaced)
+    z_indices = round.(Int, range(1, Nz, length=nslices))
+    
+    # Create figure
+    if fignum !== nothing
+        fig = figure(fignum)
+    else
+        fig = figure()
+    end
+    clf()
+    
+    # Determine layout (2 rows for 4-6 slices, 3 rows for more)
+    nrows = nslices <= 6 ? 2 : 3
+    ncols = ceil(Int, nslices / nrows)
+    
+    X, Y = meshgrid(xm, ym)
+    set_sky_colormap()
+    
+    for (panel_idx, k) in enumerate(z_indices)
+        subplot(nrows, ncols, panel_idx)
+        
+        # Extract quantity based on name
+        if quantity_name == "density"
+            Z = M[:, :, k, 1]
+            title_str = "Density"
+        elseif quantity_name == "U"
+            Z = M[:, :, k, 2] ./ M[:, :, k, 1]
+            title_str = "U velocity"
+        elseif quantity_name == "V"
+            Z = M[:, :, k, 6] ./ M[:, :, k, 1]
+            title_str = "V velocity"
+        elseif quantity_name == "W"
+            Z = M[:, :, k, 16] ./ M[:, :, k, 1]  # M001 is at index 16
+            title_str = "W velocity"
+        elseif quantity_name == "C200"
+            # Need to compute C moments
+            C = zeros(Np, Np, Nmom)
+            for i = 1:Np
+                for j = 1:Np
+                    MOM = M[i, j, k, :]
+                    CC, _ = M2CS4_35(MOM)
+                    C[i, j, :] = CC
+                end
+            end
+            Z = C[:, :, 3]
+            title_str = "C_{200}"
+        elseif quantity_name == "C020"
+            C = zeros(Np, Np, Nmom)
+            for i = 1:Np
+                for j = 1:Np
+                    MOM = M[i, j, k, :]
+                    CC, _ = M2CS4_35(MOM)
+                    C[i, j, :] = CC
+                end
+            end
+            Z = C[:, :, 10]
+            title_str = "C_{020}"
+        elseif quantity_name == "C002"
+            C = zeros(Np, Np, Nmom)
+            for i = 1:Np
+                for j = 1:Np
+                    MOM = M[i, j, k, :]
+                    CC, _ = M2CS4_35(MOM)
+                    C[i, j, :] = CC
+                end
+            end
+            Z = C[:, :, 20]
+            title_str = "C_{002}"
+        else
+            error("Unknown quantity: $quantity_name")
+        end
+        
+        contourf(X, Y, Z', 50, cmap="sky")
+        axis("square")
+        title("$(title_str) (z=$(round(zm[k], digits=3)))")
+        format_colorbar(shrink=0.9, aspect=15)
+        xlabel("x")
+        ylabel("y")
+    end
+    
+    tight_layout()
+    return fig
+end
+
+"""
+    plot_3d_isosurface(M, xm, ym, zm, quantity_name, isovalue; fignum=nothing, alpha=0.7)
+
+Create 3D isosurface plot showing surfaces of constant value.
+
+Uses PyPlot's mplot3d toolkit to create true 3D visualization.
+
+# Arguments
+- `M`: 4D moment array (Np x Np x Nz x Nmom)
+- `xm`: X-coordinates of cell centers
+- `ym`: Y-coordinates of cell centers
+- `zm`: Z-coordinates of cell centers
+- `quantity_name`: Name of quantity ("density", "U", "V", "W")
+- `isovalue`: Value at which to draw isosurface
+- `fignum`: Figure number (optional)
+- `alpha`: Transparency (default: 0.7)
+
+# Returns
+- Figure object
+"""
+function plot_3d_isosurface(M, xm, ym, zm, quantity_name, isovalue; fignum=nothing, alpha=0.7)
+    Np = size(M, 1)
+    Nz = size(M, 3)
+    
+    # Import 3D plotting toolkit
+    mplot3d = pyimport("mpl_toolkits.mplot3d")
+    
+    # Create figure
+    if fignum !== nothing
+        fig = figure(fignum)
+    else
+        fig = figure(figsize=(10, 8))
+    end
+    clf()
+    
+    ax = fig.add_subplot(111, projection="3d")
+    
+    # Extract quantity
+    if quantity_name == "density"
+        Q = M[:, :, :, 1]
+        title_str = "Density Isosurface"
+    elseif quantity_name == "U"
+        Q = M[:, :, :, 2] ./ M[:, :, :, 1]
+        title_str = "U Velocity Isosurface"
+    elseif quantity_name == "V"
+        Q = M[:, :, :, 6] ./ M[:, :, :, 1]
+        title_str = "V Velocity Isosurface"
+    elseif quantity_name == "W"
+        Q = M[:, :, :, 16] ./ M[:, :, :, 1]  # M001 is at index 16
+        title_str = "W Velocity Isosurface"
+    else
+        error("Unknown quantity: $quantity_name")
+    end
+    
+    # Use scatter plot for 3D visualization (more reliable than contour3D)
+    # Show points where Q ≈ isovalue
+    tolerance = max(0.1 * abs(isovalue), 0.01)
+    mask = abs.(Q .- isovalue) .< tolerance
+    indices = findall(mask)
+    
+    if !isempty(indices)
+        # Extract coordinates
+        x_pts = Float64[]
+        y_pts = Float64[]
+        z_pts = Float64[]
+        q_vals = Float64[]
+        
+        for idx in indices
+            i, j, k = idx[1], idx[2], idx[3]
+            push!(x_pts, xm[i])
+            push!(y_pts, ym[j])
+            push!(z_pts, zm[k])
+            push!(q_vals, Q[idx])
+        end
+        
+        # Plot as scatter
+        scatter = ax.scatter3D(x_pts, y_pts, z_pts, c=q_vals, 
+                               alpha=alpha, s=30, cmap="viridis",
+                               vmin=isovalue-tolerance, vmax=isovalue+tolerance)
+        fig.colorbar(scatter, ax=ax, shrink=0.5, aspect=10)
+    else
+        @warn "No points found near isovalue=$isovalue for $quantity_name"
+    end
+    
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+    ax.set_title("$(title_str) = $(isovalue)")
+    
+    return fig
+end
+
+"""
+    plot_centerline_profiles(M, xm, ym, zm, Np, Nz; fignum=nothing)
+
+Plot line profiles along centerlines showing z-variation.
+
+Shows how density and velocities vary along z at the center of the domain.
+
+# Arguments
+- `M`: 4D moment array (Np x Np x Nz x Nmom)
+- `xm`: X-coordinates
+- `ym`: Y-coordinates
+- `zm`: Z-coordinates
+- `Np`: Grid size in x-y
+- `Nz`: Grid size in z
+- `fignum`: Figure number (optional)
+
+# Returns
+- Figure object
+"""
+function plot_centerline_profiles(M, xm, ym, zm, Np, Nz; fignum=nothing)
+    # Find center indices
+    i_center = div(Np, 2) + 1
+    j_center = div(Np, 2) + 1
+    
+    # Create figure
+    if fignum !== nothing
+        fig = figure(fignum)
+    else
+        fig = figure(figsize=(12, 8))
+    end
+    clf()
+    
+    # Extract profiles at center (x=0, y=0)
+    rho_profile = M[i_center, j_center, :, 1]
+    U_profile = M[i_center, j_center, :, 2] ./ M[i_center, j_center, :, 1]
+    V_profile = M[i_center, j_center, :, 6] ./ M[i_center, j_center, :, 1]
+    W_profile = M[i_center, j_center, :, 16] ./ M[i_center, j_center, :, 1]  # M001 is at index 16
+    
+    # Plot density
+    subplot(2, 2, 1)
+    plot(zm, rho_profile, "b-", linewidth=2)
+    xlabel("z")
+    ylabel("Density")
+    title("Density along centerline (x=0, y=0)")
+    grid(true)
+    
+    # Plot U velocity
+    subplot(2, 2, 2)
+    plot(zm, U_profile, "r-", linewidth=2)
+    xlabel("z")
+    ylabel("U velocity")
+    title("U velocity along centerline")
+    grid(true)
+    
+    # Plot V velocity
+    subplot(2, 2, 3)
+    plot(zm, V_profile, "g-", linewidth=2)
+    xlabel("z")
+    ylabel("V velocity")
+    title("V velocity along centerline")
+    grid(true)
+    
+    # Plot W velocity
+    subplot(2, 2, 4)
+    plot(zm, W_profile, "m-", linewidth=2)
+    xlabel("z")
+    ylabel("W velocity")
+    title("W velocity along centerline")
+    grid(true)
+    
+    tight_layout()
+    return fig
+end
+
+"""
+    plot_3d_diagnostics(M, xm, ym, zm, Np, Nz, Nmom; save_figures=false, output_dir=".")
+
+Comprehensive 3D diagnostic visualization suite.
+
+Creates multiple figures showing:
+- Multi-slice contours for density and velocities
+- C-moment slices
+- Realizability metrics (Delta1, Delta2, H200, H020)
+- Centerline profiles
+
+# Arguments
+- `M`: 4D moment array (Np x Np x Nz x Nmom)
+- `xm`: X-coordinates
+- `ym`: Y-coordinates
+- `zm`: Z-coordinates
+- `Np`: Grid size
+- `Nz`: Grid size in z
+- `Nmom`: Number of moments
+- `save_figures`: Save to disk (default: false)
+- `output_dir`: Output directory (default: ".")
+"""
+function plot_3d_diagnostics(M, xm, ym, zm, Np, Nz, Nmom; save_figures=false, output_dir=".")
+    println("\n" * "="^70)
+    println("Creating 3D Diagnostic Plots...")
+    println("="^70)
+    
+    # Figure 101: Density slices
+    println("Figure 101: Density z-slices...")
+    fig101 = plot_multiple_z_slices(M, xm, ym, zm, "density", nslices=6, fignum=101)
+    fig101.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig101_density_slices.png"), dpi=150)
+    end
+    
+    # Figure 102: U velocity slices
+    println("Figure 102: U velocity z-slices...")
+    fig102 = plot_multiple_z_slices(M, xm, ym, zm, "U", nslices=6, fignum=102)
+    fig102.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig102_U_slices.png"), dpi=150)
+    end
+    
+    # Figure 103: V velocity slices
+    println("Figure 103: V velocity z-slices...")
+    fig103 = plot_multiple_z_slices(M, xm, ym, zm, "V", nslices=6, fignum=103)
+    fig103.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig103_V_slices.png"), dpi=150)
+    end
+    
+    # Figure 104: W velocity slices
+    println("Figure 104: W velocity z-slices...")
+    fig104 = plot_multiple_z_slices(M, xm, ym, zm, "W", nslices=6, fignum=104)
+    fig104.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig104_W_slices.png"), dpi=150)
+    end
+    
+    # Figure 105: C200 slices
+    println("Figure 105: C200 z-slices...")
+    fig105 = plot_multiple_z_slices(M, xm, ym, zm, "C200", nslices=6, fignum=105)
+    fig105.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig105_C200_slices.png"), dpi=150)
+    end
+    
+    # Figure 106: C020 slices
+    println("Figure 106: C020 z-slices...")
+    fig106 = plot_multiple_z_slices(M, xm, ym, zm, "C020", nslices=6, fignum=106)
+    fig106.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig106_C020_slices.png"), dpi=150)
+    end
+    
+    # Figure 107: C002 slices
+    println("Figure 107: C002 z-slices...")
+    fig107 = plot_multiple_z_slices(M, xm, ym, zm, "C002", nslices=6, fignum=107)
+    fig107.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig107_C002_slices.png"), dpi=150)
+    end
+    
+    # Figure 108: Centerline profiles
+    println("Figure 108: Centerline profiles...")
+    fig108 = plot_centerline_profiles(M, xm, ym, zm, Np, Nz, fignum=108)
+    fig108.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig108_centerline_profiles.png"), dpi=150)
+    end
+    
+    # Figure 109: Realizability metrics at multiple z-slices
+    println("Figure 109: Delta1 and H200 z-slices...")
+    fig109 = figure(109)
+    clf()
+    
+    # Select 4 z-slices
+    z_indices = round.(Int, range(1, Nz, length=4))
+    X, Y = meshgrid(xm, ym)
+    set_sky_colormap()
+    
+    for (panel_idx, k) in enumerate(z_indices)
+        # Compute S moments for this slice
+        S = zeros(Np, Np, Nmom)
+        for i = 1:Np
+            for j = 1:Np
+                MOM = M[i, j, k, :]
+                _, SS = M2CS4_35(MOM)
+                S[i, j, :] = SS
+            end
+        end
+        
+        # Top row: Delta1
+        subplot(2, 4, panel_idx)
+        Delta1 = 1 .+ 2 .* S[:, :, 7] .* S[:, :, 17] .* S[:, :, 26] .- 
+                 S[:, :, 7].^2 .- S[:, :, 17].^2 .- S[:, :, 26].^2
+        contourf(X, Y, Delta1', 50, cmap="sky")
+        axis("square")
+        title("Δ₁ (z=$(round(zm[k], digits=3)))")
+        format_colorbar(shrink=0.9, aspect=15)
+        
+        # Bottom row: H200
+        subplot(2, 4, panel_idx + 4)
+        H200 = max.(0, S[:, :, 5] .- S[:, :, 4].^2 .- 1)
+        contourf(X, Y, H200', 50, cmap="sky")
+        axis("square")
+        title("H₂₀₀ (z=$(round(zm[k], digits=3)))")
+        format_colorbar(shrink=0.9, aspect=15)
+    end
+    
+    tight_layout()
+    fig109.canvas.draw()
+    if save_figures
+        savefig(joinpath(output_dir, "fig109_realizability_slices.png"), dpi=150)
+    end
+    
+    # Figure 110: 3D Isosurface of density
+    println("Figure 110: 3D density isosurface...")
+    try
+        # Choose isovalue as midpoint between background and jet density
+        rho_min = minimum(M[:, :, :, 1])
+        rho_max = maximum(M[:, :, :, 1])
+        isovalue = 0.3 * (rho_max - rho_min) + rho_min
+        
+        fig110 = plot_3d_isosurface(M, xm, ym, zm, "density", isovalue, fignum=110, alpha=0.6)
+        fig110.canvas.draw()
+        if save_figures
+            savefig(joinpath(output_dir, "fig110_density_isosurface.png"), dpi=150)
+        end
+    catch e
+        @warn "Could not create 3D isosurface plot" exception=e
+    end
+    
+    println("="^70)
+    println("3D diagnostic plots complete!")
+    println("="^70)
 end
 

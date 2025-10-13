@@ -129,25 +129,26 @@ function create_goldenfiles(mode)
                 grid_final = results.grid;
             end
             
-            % Package golden data
+            % Package golden data in nested structure to match main.m output
             golden_data = struct();
-            golden_data.M = M_final;
-            golden_data.Np = Np;
-            golden_data.tmax = GOLDEN_TMAX;
-            golden_data.final_time = results.parameters.final_time;
-            golden_data.time_steps = results.parameters.time_steps;
-            golden_data.num_ranks = num_ranks;
-            golden_data.xm = grid_final.xm;
-            golden_data.ym = grid_final.ym;
-            golden_data.creation_date = char(datetime("now", 'Format', 'dd-MMM-yyyy HH:mm:ss'));
-            golden_data.matlab_version = version;
+            golden_data.moments = struct('M', M_final);
+            golden_data.parameters = struct();
+            golden_data.parameters.Np = Np;
+            golden_data.parameters.tmax = GOLDEN_TMAX;
+            golden_data.parameters.final_time = results.parameters.final_time;
+            golden_data.parameters.time_steps = results.parameters.time_steps;
+            golden_data.parameters.num_workers = num_ranks;
+            golden_data.grid = struct('xm', grid_final.xm, 'ym', grid_final.ym);
+            golden_data.metadata = struct();
+            golden_data.metadata.creation_date = char(datetime("now", 'Format', 'dd-MMM-yyyy HH:mm:ss'));
+            golden_data.metadata.matlab_version = version;
             
             % Get git branch if available
             [status, git_branch] = system('git rev-parse --abbrev-ref HEAD 2>/dev/null');
             if status == 0
-                golden_data.git_branch = strtrim(git_branch);
+                golden_data.metadata.git_branch = strtrim(git_branch);
             else
-                golden_data.git_branch = 'unknown';
+                golden_data.metadata.git_branch = 'unknown';
             end
             
             % Save golden file

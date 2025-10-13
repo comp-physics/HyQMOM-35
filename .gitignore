@@ -1,6 +1,8 @@
 # Ignore all .mat files except golden files
 *.mat
 !tests/goldenfiles/*.mat
+!goldenfiles/*.mat
+!2D_MATLAB/goldenfiles/*.mat
 
 # System files
 .DS_Store
@@ -12,3 +14,6 @@
 .cursor/
 .cursorrules
 .rubies
+Manifest.toml
+*/Manifest.toml
+**/Manifest.toml
