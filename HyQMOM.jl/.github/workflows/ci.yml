@@ -1,15 +1,7 @@
 name: CI
 on:
   push:
-    branches:
-      - main
-      - master
-      - julia3
   pull_request:
-    branches:
-      - main
-      - master
-      - julia3
 
 jobs:
   test:

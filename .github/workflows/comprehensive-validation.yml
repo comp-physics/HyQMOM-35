@@ -2,9 +2,7 @@ name: Comprehensive Validation (MATLAB + Julia)
 
 on:
   push:
-    branches: [main, master, julia, develop]
   pull_request:
-    branches: [main, master, julia, develop]
   workflow_dispatch:
 
 jobs:
