@@ -49,7 +49,7 @@ function get_default_params()
         CFL = 0.7,
         
         # Physical parameters
-        Ma = 1.0,
+        Ma = 0.0,
         Kn = 1.0,
         T = 1.0,
         

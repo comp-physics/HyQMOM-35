@@ -272,7 +272,7 @@ end
 
 """
     crossing_jets_ic(Np, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
-                    Ma=1.0, rhol=1.0, rhor=0.01, T=1.0, 
+                    Ma=0.0, rhol=1.0, rhor=0.01, T=1.0, 
                     jet_size=0.1, jet_offset=0.0)
 
 Create standard crossing jets initial condition using the flexible system.
@@ -293,7 +293,7 @@ This is a convenience function that creates the classic two-jet configuration.
 - `regions::Vector{CubicRegion}` with two jets
 """
 function crossing_jets_ic(Np, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
-                         Ma=1.0, rhol=1.0, rhor=0.01, T=1.0, 
+                         Ma=0.0, rhol=1.0, rhor=0.01, T=1.0, 
                          jet_size=0.1, jet_offset=0.0)
     
     # Domain center and size

@@ -191,7 +191,7 @@ params = (
     Np = 40,
     Nz = 40,
     tmax = 0.1,
-    Ma = 1.0,
+    Ma = 0.0,
     Kn = 1.0,
     CFL = 0.7,
     # ... see examples/parse_params.jl for all options
