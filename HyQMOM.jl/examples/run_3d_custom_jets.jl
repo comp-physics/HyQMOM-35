@@ -254,10 +254,10 @@ rank = MPI.Comm_rank(comm)
 # Parse parameters with custom config option
 params = parse_simulation_params(
     # Code defaults (can be overridden with command-line args)
-    Np = 40,
-    Nz = 40,
+    Np = 20,
+    Nz = 20,
     tmax = 0.1,
-    Ma = 1.0,
+    Ma = 0.0,
     Kn = 1.0,
     CFL = 0.3,
     xmin = -0.5,
