@@ -210,16 +210,6 @@ jobs:
             println("="^70)
           '
       
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-julia-${{ matrix.julia-version }}-${{ matrix.os }}
-          path: |
-            HyQMOM.jl/test_results.txt
-            HyQMOM.jl/test/*.log
-          if-no-files-found: ignore
-      
       - name: Process coverage
         if: matrix.julia-version == '1' && matrix.os == 'ubuntu-latest'
         working-directory: HyQMOM.jl

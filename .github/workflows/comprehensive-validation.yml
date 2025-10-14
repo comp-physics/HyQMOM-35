@@ -87,13 +87,6 @@ jobs:
             fprintf('  Created: %s\n', gd.metadata.creation_date);
             fprintf('  Branch: %s\n', gd.metadata.git_branch);
             fprintf('OK Golden file structure validated\n');
-      
-      - name: Upload MATLAB validation results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: matlab-validation-results
-          path: test-results/
 
   # Job 2: Test Julia against MATLAB golden files
   validate-julia:
@@ -268,84 +261,3 @@ jobs:
             println("  Typical agreement: ~1e-15 (machine precision)")
             println("="^70)
           '
-      
-      - name: Upload Julia test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: julia-test-results-${{ matrix.test-type }}
-          path: HyQMOM.jl/test/*.log
-          if-no-files-found: ignore
-
-  # Job 3: Final validation report
-  report:
-    name: Generate Validation Report
-    needs: [validate-matlab, validate-julia]
-    if: always()
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: validation-results
-      
-      - name: Generate summary report
-        run: |
-          echo "# Validation Report" > validation_report.md
-          echo "" >> validation_report.md
-          echo "## Test Summary" >> validation_report.md
-          echo "" >> validation_report.md
-          echo "- **Date**: $(date)" >> validation_report.md
-          echo "- **Branch**: ${{ github.ref_name }}" >> validation_report.md
-          echo "- **Commit**: ${{ github.sha }}" >> validation_report.md
-          echo "" >> validation_report.md
-          
-          if [ "${{ needs.validate-matlab.result }}" == "success" ]; then
-            echo "OK MATLAB validation: **PASSED**" >> validation_report.md
-          else
-            echo "FAIL MATLAB validation: **FAILED**" >> validation_report.md
-          fi
-          
-          if [ "${{ needs.validate-julia.result }}" == "success" ]; then
-            echo "OK Julia validation: **PASSED**" >> validation_report.md
-          else
-            echo "FAIL Julia validation: **FAILED**" >> validation_report.md
-          fi
-          
-          echo "" >> validation_report.md
-          echo "## Details" >> validation_report.md
-          echo "" >> validation_report.md
-          echo "Julia tests validate that the Julia implementation produces" >> validation_report.md
-          echo "identical results to the MATLAB reference implementation by" >> validation_report.md
-          echo "comparing against pre-generated golden files." >> validation_report.md
-          echo "" >> validation_report.md
-          echo "Expected agreement: machine precision (~10^-^1^5)" >> validation_report.md
-          
-          cat validation_report.md
-      
-      - name: Upload validation report
-        uses: actions/upload-artifact@v4
-        with:
-          name: validation-report
-          path: validation_report.md
-      
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('validation_report.md', 'utf8');
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: report
-            });
-
-
