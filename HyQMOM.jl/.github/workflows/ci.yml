@@ -43,7 +43,20 @@ jobs:
       # Remove GLMakie from Project.toml for CI (headless environment)
       - name: Remove GLMakie dependency for CI
         run: |
-          julia --project=. -e 'using Pkg; Pkg.rm("GLMakie"; mode=PKGMODE_PROJECT)'
+          echo "Removing GLMakie to avoid X11/GLFW errors in CI..."
+          # Remove GLMakie from Project.toml before building
+          if grep -q "GLMakie" Project.toml; then
+            echo "Found GLMakie in Project.toml, removing..."
+            sed -i '/^GLMakie = /d' Project.toml
+            echo "GLMakie removed from Project.toml"
+          else
+            echo "GLMakie not found in Project.toml"
+          fi
+          # Remove Manifest to force clean resolve
+          if [ -f Manifest.toml ]; then
+            rm -f Manifest.toml
+            echo "Manifest.toml removed for clean resolve"
+          fi
       
       - uses: julia-actions/julia-buildpkg@v1
       

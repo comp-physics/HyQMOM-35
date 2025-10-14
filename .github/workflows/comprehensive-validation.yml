@@ -140,8 +140,21 @@ jobs:
           HYQMOM_SKIP_PLOTTING: "true"
         run: |
           echo "Removing GLMakie to avoid X11/GLFW errors in CI..."
-          julia --project -e 'using Pkg; Pkg.rm("GLMakie")' || true
-          echo "GLMakie removed from dependencies"
+          # Remove GLMakie from Project.toml before instantiate
+          if grep -q "GLMakie" Project.toml; then
+            echo "Found GLMakie in Project.toml, removing..."
+            # Remove GLMakie entry from [deps] section
+            sed -i '/^GLMakie = /d' Project.toml
+            echo "GLMakie removed from Project.toml"
+          else
+            echo "GLMakie not found in Project.toml"
+          fi
+          # Also remove from Manifest if it exists
+          if [ -f Manifest.toml ]; then
+            echo "Cleaning Manifest.toml to force re-resolve..."
+            rm -f Manifest.toml
+          fi
+          echo "Ready to install without GLMakie"
       
       - name: Install dependencies
         working-directory: HyQMOM.jl
