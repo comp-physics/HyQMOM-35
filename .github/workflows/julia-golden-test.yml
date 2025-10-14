@@ -91,11 +91,20 @@ jobs:
           HYQMOM_SKIP_PLOTTING: "true"
         run: |
           echo "Removing GLMakie to avoid X11/GLFW errors in CI..."
-          # Remove GLMakie from Project.toml before instantiate
+          # Remove GLMakie from Project.toml in multiple sections
           if grep -q "GLMakie" Project.toml; then
-            echo "Found GLMakie in Project.toml, removing..."
+            echo "Found GLMakie in Project.toml, removing from all sections..."
+            # Remove from [deps]
             sed -i.bak '/^GLMakie = /d' Project.toml
+            # Remove from [compat]
+            sed -i.bak '/^GLMakie = /d' Project.toml
+            # Remove GLMakie from [targets] test array
+            sed -i.bak 's/, "GLMakie"//g' Project.toml
+            sed -i.bak 's/"GLMakie", //g' Project.toml
+            sed -i.bak 's/"GLMakie"//g' Project.toml
             echo "GLMakie removed from Project.toml"
+            echo "Modified Project.toml:"
+            cat Project.toml
           else
             echo "GLMakie not found in Project.toml"
           fi
