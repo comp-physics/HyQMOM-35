@@ -2,9 +2,7 @@ name: Comprehensive Validation (MATLAB + Julia)
 
 on:
   push:
-    branches: [main, master, julia, develop]
   pull_request:
-    branches: [main, master, julia, develop]
   workflow_dispatch:
 
 jobs:
@@ -89,13 +87,6 @@ jobs:
             fprintf('  Created: %s\n', gd.metadata.creation_date);
             fprintf('  Branch: %s\n', gd.metadata.git_branch);
             fprintf('OK Golden file structure validated\n');
-      
-      - name: Upload MATLAB validation results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: matlab-validation-results
-          path: test-results/
 
   # Job 2: Test Julia against MATLAB golden files
   validate-julia:
@@ -126,85 +117,76 @@ jobs:
           sudo apt-get install -y mpich libmpich-dev
           mpiexec --version
       
-      - name: Cache Julia packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.julia
-          key: ${{ runner.os }}-julia-1-${{ hashFiles('HyQMOM.jl/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-julia-1-
+      - name: Remove GLMakie (headless CI environment)
+        working-directory: HyQMOM.jl
+        env:
+          HYQMOM_SKIP_PLOTTING: "true"
+        run: |
+          echo "Removing GLMakie to avoid X11/GLFW errors in CI..."
+          # Remove GLMakie from Project.toml in multiple sections
+          if grep -q "GLMakie" Project.toml; then
+            echo "Found GLMakie in Project.toml, removing from all sections..."
+            # Remove from [deps]
+            sed -i '/^GLMakie = /d' Project.toml
+            # Remove from [compat]
+            sed -i '/^GLMakie = /d' Project.toml
+            # Remove GLMakie from [targets] test array
+            sed -i 's/, "GLMakie"//g' Project.toml
+            sed -i 's/"GLMakie", //g' Project.toml
+            sed -i 's/"GLMakie"//g' Project.toml
+            echo "GLMakie removed from Project.toml"
+            echo "Modified Project.toml:"
+            cat Project.toml
+          else
+            echo "GLMakie not found in Project.toml"
+          fi
+          # Remove Manifest to force clean resolve
+          if [ -f Manifest.toml ]; then
+            echo "Cleaning Manifest.toml to force re-resolve..."
+            rm -f Manifest.toml
+          fi
+          echo "Ready to install without GLMakie"
       
       - name: Install dependencies
         working-directory: HyQMOM.jl
+        env:
+          HYQMOM_SKIP_PLOTTING: "true"
         run: |
-          # Retry logic for robustness
-          for i in {1..3}; do
-            echo "============================================================"
-            echo "Package installation attempt $i/3"
-            echo "============================================================"
+          julia --project --color=yes -e '
+            using Pkg
             
-            # On retry, clean up potentially corrupted cache
-            if [ $i -gt 1 ]; then
-              echo "Cleaning up package cache before retry..."
-              julia --project -e 'using Pkg; Pkg.gc(; collect_delay=0.0)' || true
-              rm -rf ~/.julia/compiled/v* || true
-              echo "Cache cleaned"
-            fi
+            println("Julia version: ", VERSION)
+            println("Project: ", Base.active_project())
+            println()
             
-            if julia --project --color=yes -e '
-              using Pkg
-              
-              println("Julia version: ", VERSION)
-              println("Project: ", Base.active_project())
-              println()
-              
-              # Update registry
-              println("Updating package registry...")
-              try
-                Pkg.Registry.update()
-                println("OK Registry updated")
-              catch e
-                @warn "Registry update failed, continuing anyway" exception=(e, catch_backtrace())
-              end
-              println()
-              
-              # Install packages
-              println("Installing packages...")
-              Pkg.instantiate(verbose=true)
-              println()
-              
-              println("Resolving dependencies...")
-              Pkg.resolve()
-              println()
-              
-              println("Precompiling packages...")
-              Pkg.precompile()
-              println()
-              
-              println("Package status:")
-              Pkg.status()
-              println()
-              println("OK All packages installed successfully")
-            '; then
-              echo "OK Installation successful on attempt $i"
-              break
-            else
-              echo "WARNING Attempt $i failed"
-              if [ $i -lt 3 ]; then
-                echo "Cleaning precompile cache..."
-                rm -rf ~/.julia/compiled/v* || true
-                echo "Waiting 15 seconds before retry..."
-                sleep 15
-              fi
-            fi
+            # Update registry
+            println("Updating package registry...")
+            try
+              Pkg.Registry.update()
+              println("OK Registry updated")
+            catch e
+              @warn "Registry update failed, continuing anyway" exception=(e, catch_backtrace())
+            end
+            println()
             
-            if [ $i -eq 3 ]; then
-              echo "============================================================"
-              echo "FAIL Package installation failed after 3 attempts"
-              echo "============================================================"
-              exit 1
-            fi
-          done
+            # Install packages
+            println("Installing packages...")
+            Pkg.instantiate(verbose=true)
+            println()
+            
+            println("Resolving dependencies...")
+            Pkg.resolve()
+            println()
+            
+            println("Precompiling packages...")
+            Pkg.precompile()
+            println()
+            
+            println("Package status:")
+            Pkg.status()
+            println()
+            println("OK All packages installed successfully")
+          '
           
           # Build MPI separately
           julia --project -e '
@@ -279,84 +261,3 @@ jobs:
             println("  Typical agreement: ~1e-15 (machine precision)")
             println("="^70)
           '
-      
-      - name: Upload Julia test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: julia-test-results-${{ matrix.test-type }}
-          path: HyQMOM.jl/test/*.log
-          if-no-files-found: ignore
-
-  # Job 3: Final validation report
-  report:
-    name: Generate Validation Report
-    needs: [validate-matlab, validate-julia]
-    if: always()
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: validation-results
-      
-      - name: Generate summary report
-        run: |
-          echo "# Validation Report" > validation_report.md
-          echo "" >> validation_report.md
-          echo "## Test Summary" >> validation_report.md
-          echo "" >> validation_report.md
-          echo "- **Date**: $(date)" >> validation_report.md
-          echo "- **Branch**: ${{ github.ref_name }}" >> validation_report.md
-          echo "- **Commit**: ${{ github.sha }}" >> validation_report.md
-          echo "" >> validation_report.md
-          
-          if [ "${{ needs.validate-matlab.result }}" == "success" ]; then
-            echo "OK MATLAB validation: **PASSED**" >> validation_report.md
-          else
-            echo "FAIL MATLAB validation: **FAILED**" >> validation_report.md
-          fi
-          
-          if [ "${{ needs.validate-julia.result }}" == "success" ]; then
-            echo "OK Julia validation: **PASSED**" >> validation_report.md
-          else
-            echo "FAIL Julia validation: **FAILED**" >> validation_report.md
-          fi
-          
-          echo "" >> validation_report.md
-          echo "## Details" >> validation_report.md
-          echo "" >> validation_report.md
-          echo "Julia tests validate that the Julia implementation produces" >> validation_report.md
-          echo "identical results to the MATLAB reference implementation by" >> validation_report.md
-          echo "comparing against pre-generated golden files." >> validation_report.md
-          echo "" >> validation_report.md
-          echo "Expected agreement: machine precision (~10^-^1^5)" >> validation_report.md
-          
-          cat validation_report.md
-      
-      - name: Upload validation report
-        uses: actions/upload-artifact@v4
-        with:
-          name: validation-report
-          path: validation_report.md
-      
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('validation_report.md', 'utf8');
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: report
-            });
-
-

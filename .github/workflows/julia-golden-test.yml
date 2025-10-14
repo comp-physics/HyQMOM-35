@@ -58,18 +58,6 @@ jobs:
           julia --version
           julia -e 'using InteractiveUtils; versioninfo()'
       
-      - name: Cache Julia packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.julia/packages
-            ~/.julia/artifacts
-            ~/.julia/compiled
-          key: ${{ runner.os }}-julia-${{ matrix.julia-version }}-${{ hashFiles('HyQMOM.jl/Project.toml', 'HyQMOM.jl/Manifest.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-julia-${{ matrix.julia-version }}-
-            ${{ runner.os }}-julia-
-      
       - name: Install MPI (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -85,80 +73,79 @@ jobs:
           which mpiexec
           mpiexec --version
       
+      - name: Remove GLMakie (headless CI environment)
+        working-directory: HyQMOM.jl
+        env:
+          HYQMOM_SKIP_PLOTTING: "true"
+        run: |
+          echo "Removing GLMakie to avoid X11/GLFW errors in CI..."
+          # Remove GLMakie from Project.toml in multiple sections
+          if grep -q "GLMakie" Project.toml; then
+            echo "Found GLMakie in Project.toml, removing from all sections..."
+            # Remove from [deps]
+            sed -i.bak '/^GLMakie = /d' Project.toml
+            # Remove from [compat]
+            sed -i.bak '/^GLMakie = /d' Project.toml
+            # Remove GLMakie from [targets] test array
+            sed -i.bak 's/, "GLMakie"//g' Project.toml
+            sed -i.bak 's/"GLMakie", //g' Project.toml
+            sed -i.bak 's/"GLMakie"//g' Project.toml
+            echo "GLMakie removed from Project.toml"
+            echo "Modified Project.toml:"
+            cat Project.toml
+          else
+            echo "GLMakie not found in Project.toml"
+          fi
+          # Remove Manifest to force clean resolve
+          if [ -f Manifest.toml ]; then
+            echo "Cleaning Manifest.toml to force re-resolve..."
+            rm -f Manifest.toml
+          fi
+          echo "Ready to install without GLMakie"
+      
       - name: Install Julia dependencies
         working-directory: HyQMOM.jl
+        env:
+          HYQMOM_SKIP_PLOTTING: "true"
         run: |
-          # Retry logic for package installation (handles transient network issues)
-          for i in {1..3}; do
-            echo "============================================================"
-            echo "Package installation attempt $i/3"
-            echo "============================================================"
+          julia --project --color=yes -e '
+            using Pkg
             
-            # On retry, clean up potentially corrupted cache
-            if [ $i -gt 1 ]; then
-              echo "Cleaning up package cache before retry..."
-              julia --project -e 'using Pkg; Pkg.gc(; collect_delay=0.0)' || true
-              rm -rf ~/.julia/compiled/v* || true
-              echo "Cache cleaned"
-            fi
+            println("Julia version: ", VERSION)
+            println("Project: ", Base.active_project())
+            println()
             
-            if julia --project --color=yes -e '
-              using Pkg
-              
-              println("Julia version: ", VERSION)
-              println("Project: ", Base.active_project())
-              println()
-              
-              # Update registry
-              println("Updating package registry...")
-              try
-                Pkg.Registry.update()
-                println("OK Registry updated")
-              catch e
-                @warn "Registry update failed, continuing anyway" exception=(e, catch_backtrace())
-              end
-              println()
-              
-              # Instantiate packages
-              println("Installing packages...")
-              Pkg.instantiate(verbose=true)
-              println()
-              
-              # Resolve dependencies
-              println("Resolving dependencies...")
-              Pkg.resolve()
-              println()
-              
-              # Precompile
-              println("Precompiling packages...")
-              Pkg.precompile()
-              println()
-              
-              # Show final status
-              println("Package status:")
-              Pkg.status()
-              println()
-              println("OK All packages installed successfully")
-            '; then
-              echo "OK Installation successful on attempt $i"
-              break
-            else
-              echo "WARNING Attempt $i failed"
-              if [ $i -lt 3 ]; then
-                echo "Cleaning precompile cache..."
-                rm -rf ~/.julia/compiled/v* || true
-                echo "Waiting 15 seconds before retry..."
-                sleep 15
-              fi
-            fi
+            # Update registry
+            println("Updating package registry...")
+            try
+              Pkg.Registry.update()
+              println("OK Registry updated")
+            catch e
+              @warn "Registry update failed, continuing anyway" exception=(e, catch_backtrace())
+            end
+            println()
             
-            if [ $i -eq 3 ]; then
-              echo "============================================================"
-              echo "FAIL Package installation failed after 3 attempts"
-              echo "============================================================"
-              exit 1
-            fi
-          done
+            # Instantiate packages
+            println("Installing packages...")
+            Pkg.instantiate(verbose=true)
+            println()
+            
+            # Resolve dependencies
+            println("Resolving dependencies...")
+            Pkg.resolve()
+            println()
+            
+            # Precompile
+            println("Precompiling packages...")
+            Pkg.precompile()
+            println()
+            
+            # Show final status
+            println("Package status:")
+            Pkg.status()
+            println()
+            println("OK All packages installed successfully")
+          '
       
       - name: Build MPI.jl
         working-directory: HyQMOM.jl
@@ -222,16 +209,6 @@ jobs:
             end
             println("="^70)
           '
-      
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-julia-${{ matrix.julia-version }}-${{ matrix.os }}
-          path: |
-            HyQMOM.jl/test_results.txt
-            HyQMOM.jl/test/*.log
-          if-no-files-found: ignore
       
       - name: Process coverage
         if: matrix.julia-version == '1' && matrix.os == 'ubuntu-latest'

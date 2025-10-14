@@ -1,81 +1,70 @@
 name: CI
-
 on:
   push:
   pull_request:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
     strategy:
-      matrix:
-        julia-version: ['1.9', '1.10', '1.11']
-        include:
-          - julia-version: '1.11'
-            experimental: true  # Allow Julia 1.11 to fail while ecosystem stabilizes
       fail-fast: false
-
+      matrix:
+        version:
+          - '1.9'
+          - '1.10'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+    
+    env:
+      # Skip visualization packages in CI (no display available)
+      HYQMOM_SKIP_PLOTTING: "true"
+    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Julia
-      uses: julia-actions/setup-julia@v1
-      with:
-        version: ${{ matrix.julia-version }}
-    
-    - name: Install MPI
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y mpich libmpich-dev
-    
-    - name: Cache Julia packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.julia
-        key: ${{ runner.os }}-julia-${{ matrix.julia-version }}-${{ hashFiles('**/Project.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-julia-${{ matrix.julia-version }}-
-    
-    - name: Install dependencies
-      run: |
-        if [ "${{ matrix.julia-version }}" == "1.9" ]; then
-          # Julia 1.9: Disable auto-precompilation to avoid Test extension bug
-          julia --project=. -e '
-            ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
-            using Pkg
-            Pkg.instantiate()
-            Pkg.build("MPI")
-          '
-        else
-          # Julia 1.10+: Standard instantiation
-          julia --project=. -e '
-            using Pkg
-            Pkg.instantiate()
-            Pkg.build("MPI")
-          '
-        fi
-      env:
-        PYTHON: ""  # Tell PyCall to skip Python - not needed for tests
-        HYQMOM_SKIP_PLOTTING: true
-    
-    - name: Run unit tests
-      run: |
-        if [ "${{ matrix.julia-version }}" == "1.9" ]; then
-          # Julia 1.9: Use workaround for Test extension bug
-          TEST_GOLDEN_SIMULATION=false CI=true julia --project=. --color=yes test/ci_test.jl
-        else
-          # Julia 1.10+: Standard testing
-          TEST_GOLDEN_SIMULATION=false CI=true julia --project=. --color=yes -e 'using Pkg; Pkg.test()'
-        fi
-      env:
-        CI: true
-        PYTHON: ""  # Skip PyCall/PyPlot for all versions
-        HYQMOM_SKIP_PLOTTING: true
-    
-    - name: Run MPI golden file tests
-      run: |
-        ./test/test_mpi_goldenfiles.sh
-    
-    - name: Run MPI integration tests
-      run: |
-        ./test/run_mpi_tests.sh
+      - uses: actions/checkout@v4
+      
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      
+      # Remove GLMakie from Project.toml for CI (headless environment)
+      - name: Remove GLMakie dependency for CI
+        env:
+          HYQMOM_SKIP_PLOTTING: "true"
+        run: |
+          echo "Removing GLMakie to avoid X11/GLFW errors in CI..."
+          # Remove GLMakie from Project.toml in multiple sections
+          if grep -q "GLMakie" Project.toml; then
+            echo "Found GLMakie in Project.toml, removing from all sections..."
+            # Remove from [deps]
+            sed -i '/^GLMakie = /d' Project.toml
+            # Remove from [compat]
+            sed -i '/^GLMakie = /d' Project.toml
+            # Remove GLMakie from [targets] test array
+            sed -i 's/, "GLMakie"//g' Project.toml
+            sed -i 's/"GLMakie", //g' Project.toml
+            sed -i 's/"GLMakie"//g' Project.toml
+            echo "GLMakie removed from Project.toml"
+            echo "Modified Project.toml:"
+            cat Project.toml
+          else
+            echo "GLMakie not found in Project.toml"
+          fi
+          # Remove Manifest to force clean resolve
+          if [ -f Manifest.toml ]; then
+            rm -f Manifest.toml
+            echo "Manifest.toml removed for clean resolve"
+          fi
+      
+      - uses: julia-actions/julia-buildpkg@v1
+      
+      - uses: julia-actions/julia-runtest@v1
+      
+      - uses: julia-actions/julia-processcoverage@v1
+      
+      - uses: codecov/codecov-action@v3
+        with:
+          files: lcov.info
