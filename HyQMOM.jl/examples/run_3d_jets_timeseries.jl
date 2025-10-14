@@ -8,6 +8,10 @@ Demonstrates:
 - Interactive 3D visualization over time
 - Automatic MPI support (serial or parallel)
 
+Requirements:
+  GLMakie must be installed for visualization. To install:
+    julia --project=. -e 'using Pkg; Pkg.add("GLMakie")'
+
 Usage:
   # Serial
   julia --project=. examples/run_3d_jets_timeseries.jl
@@ -17,6 +21,18 @@ Usage:
   mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100
   mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120 --snapshot-interval 5
 """
+
+# Load GLMakie first to enable visualization support in HyQMOM
+try
+    import GLMakie
+catch e
+    @error """
+    GLMakie is required for this example but is not installed.
+    Please install it by running:
+        julia --project=. -e 'using Pkg; Pkg.add("GLMakie")'
+    """
+    exit(1)
+end
 
 using HyQMOM
 using MPI

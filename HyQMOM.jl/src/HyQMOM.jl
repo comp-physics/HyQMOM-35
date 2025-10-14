@@ -105,14 +105,20 @@ const PYPLOT_AVAILABLE = !SKIP_PLOTTING &&
 
 if PYPLOT_AVAILABLE
     try
-        include("visualization/plotting.jl")
+        # Load PyPlot and PyCall as optional dependencies
+        # Use @eval to delay the loading until runtime
+        @eval begin
+            using PyPlot
+            using PyCall
+            include($(joinpath(@__DIR__, "visualization", "plotting.jl")))
+        end
     catch e
-        @warn "Failed to load plotting module" exception=(e, catch_backtrace())
+        if !SKIP_PLOTTING
+            @debug "Failed to load plotting module - PyPlot may not be installed" exception=(e, catch_backtrace())
+        end
     end
 elseif !SKIP_PLOTTING
-    @info "PyPlot not available - plotting functions disabled"
-else
-    @info "Plotting disabled (CI mode or HYQMOM_SKIP_PLOTTING=true)"
+    @debug "PyPlot not available - plotting functions disabled"
 end
 
 # Check if GLMakie is available for interactive 3D visualization
@@ -125,13 +131,20 @@ const GLMAKIE_AVAILABLE = !SKIP_PLOTTING &&
 
 if GLMAKIE_AVAILABLE
     try
-        include("visualization/interactive_3d_volume.jl")
-        include("visualization/interactive_3d_timeseries.jl")
+        # Load GLMakie as optional dependency
+        # Use @eval to delay the loading until runtime
+        @eval begin
+            import GLMakie
+            include($(joinpath(@__DIR__, "visualization", "interactive_3d_volume.jl")))
+            include($(joinpath(@__DIR__, "visualization", "interactive_3d_timeseries.jl")))
+        end
     catch e
-        @warn "Failed to load interactive 3D visualization module" exception=(e, catch_backtrace())
+        if !SKIP_PLOTTING
+            @debug "Failed to load interactive 3D visualization - GLMakie may not be installed" exception=(e, catch_backtrace())
+        end
     end
 elseif !SKIP_PLOTTING
-    @info "GLMakie not available - interactive 3D visualization disabled"
+    @debug "GLMakie not available - interactive 3D visualization disabled"
 end
 
 end # module
