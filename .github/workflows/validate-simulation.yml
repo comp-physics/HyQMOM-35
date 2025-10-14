@@ -37,11 +37,11 @@ jobs:
       - name: Run comprehensive test suite
         uses: matlab-actions/run-command@v2
         with:
-          command: "addpath('tests'); exit_code = run_all_tests(); exit(exit_code)"
+          command: "addpath('3D_MATLAB/tests'); exit_code = run_all_tests(); exit(exit_code)"
 
       - name: Run existing MATLAB tests
         uses: matlab-actions/run-tests@v2
         with:
           test-results-junit: test-results/results.xml
           source-folder: .
-          select-by-folder: tests
+          select-by-folder: 3D_MATLAB/tests

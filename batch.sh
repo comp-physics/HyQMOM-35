@@ -13,5 +13,8 @@ module load julia/1.11
 export JULIA_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 
+# Change to Julia package directory
+cd HyQMOM.jl
+
 # Run: mpirun will respect the Slurm allocation
-srun --mpi=pmi2 julia --project=. src/main.jl --no-matplotlib --Np 600 --tmax 0.03
+srun --mpi=pmi2 julia --project=. examples/run_3d_jets_timeseries.jl --no-matplotlib --Np 600 --tmax 0.03
