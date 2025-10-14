@@ -72,6 +72,9 @@ function get_default_params()
         
         # Snapshot control
         snapshot_interval = 0,  # 0 = disabled
+        
+        # Initial condition configuration
+        config = "crossing",  # Configuration name for custom ICs
     )
 end
 
@@ -185,6 +188,9 @@ function print_help()
       --rhor R              Background density (default: 0.01)
       
       --snapshot-interval N Save snapshot every N steps (default: 0=disabled)
+      
+      --config NAME         Initial condition configuration (default: crossing)
+                           Options: crossing, triple-jet, quad-jet, vertical-jet, spiral
       
       --homogeneous-z BOOL  Use z-homogeneous mode (default: false)
       --debug-output BOOL   Enable debug output (default: false)

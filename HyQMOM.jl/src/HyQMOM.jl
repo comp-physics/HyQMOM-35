@@ -22,6 +22,9 @@ export plot_final_results, plot_multiple_z_slices, plot_3d_isosurface
 export plot_centerline_profiles, plot_3d_diagnostics
 export interactive_3d_volume, interactive_3d_timeseries
 
+# Export initial condition utilities
+export CubicRegion, initialize_moment_field, initialize_moment_field_mpi, crossing_jets_ic
+
 # Export key functions for testing
 export InitializeM4_35, M2CS4_35, Moments5_3D, hyqmom_3D
 export realizability, realizable_2D, realizable_3D
@@ -85,6 +88,9 @@ include("utils/moment_idx.jl")
 include("utils/axis_moment_slice.jl")
 include("utils/moment_array_utils.jl")
 include("utils/diagnostics.jl")
+
+# Initial conditions
+include("initial_conditions.jl")
 
 # Main simulation
 include("simulation_runner.jl")

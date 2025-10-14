@@ -158,67 +158,82 @@ function simulation_runner(params)
     v6zmax = zeros(Float64, nx, ny, nz)
     
     # Build initial conditions locally
-    U0, V0, W0 = 0.0, 0.0, 0.0
-    
-    # Covariance matrix
-    C200 = T
-    C020 = T
-    C002 = T
-    C110 = r110 * sqrt(C200 * C020)
-    C101 = r101 * sqrt(C200 * C002)
-    C011 = r011 * sqrt(C020 * C002)
-    
-    # Background state (low density)
-    Mr_bg = InitializeM4_35(rhor, U0, V0, W0, C200, C110, C101, C020, C011, C002)
-    
-    # Crossing jets states
-    Uc = Ma / sqrt(2.0)
-    Mt = InitializeM4_35(rhol, -Uc, -Uc, W0, C200, C110, C101, C020, C011, C002)
-    Mb = InitializeM4_35(rhol,  Uc,  Uc, W0, C200, C110, C101, C020, C011, C002)
-    
-    # Jet region bounds (global indices)
-    # x-y plane: 10% of domain size
-    Csize = floor(Int, 0.1 * Np)
-    Mint = div(Np, 2) + 1
-    Maxt = div(Np, 2) + 1 + Csize
-    Minb = div(Np, 2) - Csize
-    Maxb = div(Np, 2)
-    
-    # z-direction: Create cubes (not extruded squares)
-    # Cubes centered at z=0
-    Csize_z = Csize  # Same size as x-y for cubic regions
-    Mint_z = div(Nz, 2) + 1 - div(Csize_z, 2)
-    Maxt_z = div(Nz, 2) + 1 + div(Csize_z, 2)
-    
-    # Fill local subdomain with appropriate IC (sharp transitions)
-    # Note: Sharp transitions work better than smooth blending because
-    # blending moment vectors doesn't preserve realizability
-    for kk in 1:nz
-        gk = k0k1[1] + kk - 1  # global k index
+    # Check if custom ICs are provided
+    if haskey(params, :use_custom_ic) && params.use_custom_ic
+        # Use flexible custom IC system
+        # Need global grid for custom ICs
+        xm_global = collect(range(xmin + dx_global/2, step=dx_global, length=Np))
+        ym_global = collect(range(ymin + dy_global/2, step=dy_global, length=Np))
+        zm_global = collect(range(zmin + dz_global/2, step=dz_global, length=Nz))
         
-        for ii in 1:nx
-            gi = i0i1[1] + ii - 1  # global i index
-            for jj in 1:ny
-                gj = j0j1[1] + jj - 1  # global j index
-                
-                # Default: background
-                Mr = Mr_bg
-                
-                # Bottom jet cube: check x, y, AND z bounds
-                if (gi >= Minb && gi <= Maxb && 
-                    gj >= Minb && gj <= Maxb &&
-                    gk >= Mint_z && gk <= Maxt_z)
-                    Mr = Mb
+        grid_params = (Np=Np, Nz=Nz, xm=xm_global, ym=ym_global, zm=zm_global)
+        M = initialize_moment_field_mpi(decomp, grid_params, 
+                                       params.ic_background, params.ic_jets;
+                                       r110=r110, r101=r101, r011=r011, halo=halo)
+    else
+        # Use original hardcoded crossing jets IC
+        U0, V0, W0 = 0.0, 0.0, 0.0
+        
+        # Covariance matrix
+        C200 = T
+        C020 = T
+        C002 = T
+        C110 = r110 * sqrt(C200 * C020)
+        C101 = r101 * sqrt(C200 * C002)
+        C011 = r011 * sqrt(C020 * C002)
+        
+        # Background state (low density)
+        Mr_bg = InitializeM4_35(rhor, U0, V0, W0, C200, C110, C101, C020, C011, C002)
+        
+        # Crossing jets states
+        Uc = Ma / sqrt(2.0)
+        Mt = InitializeM4_35(rhol, -Uc, -Uc, W0, C200, C110, C101, C020, C011, C002)
+        Mb = InitializeM4_35(rhol,  Uc,  Uc, W0, C200, C110, C101, C020, C011, C002)
+        
+        # Jet region bounds (global indices)
+        # x-y plane: 10% of domain size
+        Csize = floor(Int, 0.1 * Np)
+        Mint = div(Np, 2) + 1
+        Maxt = div(Np, 2) + 1 + Csize
+        Minb = div(Np, 2) - Csize
+        Maxb = div(Np, 2)
+        
+        # z-direction: Create cubes (not extruded squares)
+        # Cubes centered at z=0
+        Csize_z = Csize  # Same size as x-y for cubic regions
+        Mint_z = div(Nz, 2) + 1 - div(Csize_z, 2)
+        Maxt_z = div(Nz, 2) + 1 + div(Csize_z, 2)
+        
+        # Fill local subdomain with appropriate IC (sharp transitions)
+        # Note: Sharp transitions work better than smooth blending because
+        # blending moment vectors doesn't preserve realizability
+        for kk in 1:nz
+            gk = k0k1[1] + kk - 1  # global k index
+            
+            for ii in 1:nx
+                gi = i0i1[1] + ii - 1  # global i index
+                for jj in 1:ny
+                    gj = j0j1[1] + jj - 1  # global j index
+                    
+                    # Default: background
+                    Mr = Mr_bg
+                    
+                    # Bottom jet cube: check x, y, AND z bounds
+                    if (gi >= Minb && gi <= Maxb && 
+                        gj >= Minb && gj <= Maxb &&
+                        gk >= Mint_z && gk <= Maxt_z)
+                        Mr = Mb
+                    end
+                    
+                    # Top jet cube: check x, y, AND z bounds (overwrites if overlapping)
+                    if (gi >= Mint && gi <= Maxt && 
+                        gj >= Mint && gj <= Maxt &&
+                        gk >= Mint_z && gk <= Maxt_z)
+                        Mr = Mt
+                    end
+                    
+                    M[ii + halo, jj + halo, kk, :] = Mr
                 end
-                
-                # Top jet cube: check x, y, AND z bounds (overwrites if overlapping)
-                if (gi >= Mint && gi <= Maxt && 
-                    gj >= Mint && gj <= Maxt &&
-                    gk >= Mint_z && gk <= Maxt_z)
-                    Mr = Mt
-                end
-                
-                M[ii + halo, jj + halo, kk, :] = Mr
             end
         end
     end

@@ -77,6 +77,27 @@ Features:
 - Multiple quantities (density, U/V/W velocities, pressure, temperature)
 - Works in both serial and MPI parallel modes
 
+### Custom Initial Conditions 
+
+**`examples/run_3d_custom_jets.jl`** - Flexible jet configurations
+
+```bash
+# Triple jet configuration
+julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
+
+# Four jets converging to center
+julia --project=. examples/run_3d_custom_jets.jl --config quad-jet
+
+# Create your own configurations!
+```
+
+Features:
+- Predefined configurations: crossing, triple-jet, quad-jet, vertical-jet, spiral
+- Fully customizable: specify center, width, velocity for each cubic region
+- Easy to add new configurations
+
+See `examples/CUSTOM_INITIAL_CONDITIONS.md` for detailed documentation.
+
 ### Static Plots
 
 **`examples/run_3d_crossing_jets.jl`** - Static PyPlot visualization
@@ -125,8 +146,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v1
-      - run: julia --project=. -e 'using Pkg; Pkg.test()'
+      - uses: julia-actions/cache@v1
+      # Remove GLMakie to avoid X11/display errors in CI
+      - run: julia --project=. -e 'using Pkg; Pkg.rm("GLMakie")'
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
 ```
+
+See `.github/workflows/ci.yml` for the complete CI configuration.
 
 ## MPI Parallelization
 

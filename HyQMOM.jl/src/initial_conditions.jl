@@ -1,0 +1,352 @@
+"""
+Initial Condition Utilities for HyQMOM
+
+Provides flexible setup for initial moment distributions including:
+- Uniform background states
+- Cubic/box regions with specified velocities and densities
+- Coordinate-based placement (physical or index-based)
+"""
+
+"""
+    CubicRegion
+
+Defines a cubic/box region with specified moment properties.
+
+# Fields
+- `center::NTuple{3,Float64}`: Center position (x, y, z) in physical coordinates
+- `width::NTuple{3,Float64}`: Width in each direction (dx, dy, dz)
+- `density::Float64`: Density (ρ) in the region
+- `velocity::NTuple{3,Float64}`: Mean velocity (U, V, W)
+- `temperature::Float64`: Temperature (for covariance matrix)
+
+# Example
+```julia
+# Cube centered at origin, 0.2 units wide, moving in +x direction
+cube = CubicRegion(
+    center = (0.0, 0.0, 0.0),
+    width = (0.2, 0.2, 0.2),
+    density = 1.0,
+    velocity = (0.5, 0.0, 0.0),
+    temperature = 1.0
+)
+```
+"""
+struct CubicRegion
+    center::NTuple{3,Float64}
+    width::NTuple{3,Float64}
+    density::Float64
+    velocity::NTuple{3,Float64}
+    temperature::Float64
+end
+
+"""
+    CubicRegion(; center, width, density, velocity, temperature=1.0)
+
+Keyword constructor for CubicRegion.
+"""
+function CubicRegion(; center, width, density, velocity, temperature=1.0)
+    return CubicRegion(
+        Tuple(Float64.(center)),
+        Tuple(Float64.(width)),
+        Float64(density),
+        Tuple(Float64.(velocity)),
+        Float64(temperature)
+    )
+end
+
+"""
+    initialize_moment_field(grid_params, background, regions; 
+                           r110=0.0, r101=0.0, r011=0.0)
+
+Initialize a 3D moment field with background state and cubic regions.
+
+# Arguments
+- `grid_params`: NamedTuple with (Np, Nz, xmin, xmax, ymin, ymax, zmin, zmax, xm, ym, zm)
+- `background`: CubicRegion defining the background state (uniform)
+- `regions`: Vector of CubicRegion objects to place in the domain
+- `r110`, `r101`, `r011`: Correlation coefficients for covariance matrix
+
+# Returns
+- `M`: 4D array (nx, ny, nz, Nmom) of initialized moments
+
+# Example
+```julia
+# Background at rest with low density
+background = CubicRegion(
+    center = (0.0, 0.0, 0.0),
+    width = (Inf, Inf, Inf),  # Fills entire domain
+    density = 0.01,
+    velocity = (0.0, 0.0, 0.0),
+    temperature = 1.0
+)
+
+# Two crossing jets
+jet1 = CubicRegion(
+    center = (-0.25, -0.25, 0.0),
+    width = (0.1, 0.1, 0.1),
+    density = 1.0,
+    velocity = (0.707, 0.707, 0.0),  # Moving ↗
+    temperature = 1.0
+)
+
+jet2 = CubicRegion(
+    center = (0.25, 0.25, 0.0),
+    width = (0.1, 0.1, 0.1),
+    density = 1.0,
+    velocity = (-0.707, -0.707, 0.0),  # Moving ↙
+    temperature = 1.0
+)
+
+M = initialize_moment_field(grid_params, background, [jet1, jet2])
+```
+"""
+function initialize_moment_field(grid_params, background::CubicRegion, 
+                                regions::Vector{CubicRegion};
+                                r110=0.0, r101=0.0, r011=0.0)
+    
+    Np = grid_params.Np
+    Nz = grid_params.Nz
+    xm = grid_params.xm
+    ym = grid_params.ym
+    zm = grid_params.zm
+    Nmom = 35
+    
+    M = zeros(Float64, Np, Nz, Nz, Nmom)
+    
+    # Build covariance matrix (same for all regions, using temperature)
+    # Each region can have different temperature
+    
+    # Initialize with background
+    for k in 1:Nz
+        for j in 1:Np
+            for i in 1:Np
+                M[i, j, k, :] = region_to_moments(background, r110, r101, r011)
+            end
+        end
+    end
+    
+    # Place each cubic region
+    for region in regions
+        place_cubic_region!(M, region, xm, ym, zm, r110, r101, r011)
+    end
+    
+    return M
+end
+
+"""
+    initialize_moment_field_mpi(decomp, grid_params, background, regions; kwargs...)
+
+MPI-aware version that only initializes local subdomain.
+
+# Arguments
+- `decomp`: MPI decomposition structure
+- `grid_params`: Grid parameters
+- `background`: Background CubicRegion
+- `regions`: Vector of CubicRegion objects
+- `halo`: Halo size (default: 2)
+
+# Returns
+- `M`: 4D array with halos (nx+2*halo, ny+2*halo, nz, Nmom)
+"""
+function initialize_moment_field_mpi(decomp, grid_params, background::CubicRegion,
+                                    regions::Vector{CubicRegion};
+                                    r110=0.0, r101=0.0, r011=0.0, halo=2)
+    
+    Np = grid_params.Np
+    Nz = grid_params.Nz
+    xm = grid_params.xm
+    ym = grid_params.ym
+    zm = grid_params.zm
+    Nmom = 35
+    
+    # Local grid size
+    nx = decomp.local_size[1]
+    ny = decomp.local_size[2]
+    nz = decomp.local_size[3]
+    
+    # Global index ranges
+    i0i1 = decomp.istart_iend
+    j0j1 = decomp.jstart_jend
+    k0k1 = decomp.kstart_kend
+    
+    # Allocate with halos
+    M = zeros(Float64, nx + 2*halo, ny + 2*halo, nz, Nmom)
+    
+    # Background moments
+    Mr_bg = region_to_moments(background, r110, r101, r011)
+    
+    # Fill local subdomain
+    for kk in 1:nz
+        gk = k0k1[1] + kk - 1  # global k index
+        z_coord = zm[gk]
+        
+        for ii in 1:nx
+            gi = i0i1[1] + ii - 1  # global i index
+            x_coord = xm[gi]
+            
+            for jj in 1:ny
+                gj = j0j1[1] + jj - 1  # global j index
+                y_coord = ym[gj]
+                
+                # Default: background
+                Mr = Mr_bg
+                
+                # Check each region (later regions overwrite earlier ones)
+                for region in regions
+                    if point_in_cube((x_coord, y_coord, z_coord), region)
+                        Mr = region_to_moments(region, r110, r101, r011)
+                    end
+                end
+                
+                M[ii + halo, jj + halo, kk, :] = Mr
+            end
+        end
+    end
+    
+    return M
+end
+
+"""
+    region_to_moments(region::CubicRegion, r110, r101, r011)
+
+Convert a CubicRegion specification to a moment vector.
+"""
+function region_to_moments(region::CubicRegion, r110, r101, r011)
+    U, V, W = region.velocity
+    ρ = region.density
+    T = region.temperature
+    
+    # Covariance matrix components
+    C200 = T
+    C020 = T
+    C002 = T
+    C110 = r110 * sqrt(C200 * C020)
+    C101 = r101 * sqrt(C200 * C002)
+    C011 = r011 * sqrt(C020 * C002)
+    
+    return InitializeM4_35(ρ, U, V, W, C200, C110, C101, C020, C011, C002)
+end
+
+"""
+    point_in_cube(point::NTuple{3,Float64}, cube::CubicRegion)
+
+Check if a point (x, y, z) is inside a cubic region.
+"""
+function point_in_cube(point::NTuple{3,Float64}, cube::CubicRegion)
+    x, y, z = point
+    cx, cy, cz = cube.center
+    wx, wy, wz = cube.width
+    
+    # Handle infinite width (background)
+    wx = isinf(wx) ? Inf : wx / 2.0
+    wy = isinf(wy) ? Inf : wy / 2.0
+    wz = isinf(wz) ? Inf : wz / 2.0
+    
+    return (abs(x - cx) <= wx &&
+            abs(y - cy) <= wy &&
+            abs(z - cz) <= wz)
+end
+
+"""
+    place_cubic_region!(M, region::CubicRegion, xm, ym, zm, r110, r101, r011)
+
+Place a cubic region into an existing moment field (modifies M in-place).
+"""
+function place_cubic_region!(M, region::CubicRegion, xm, ym, zm, r110, r101, r011)
+    Np = length(xm)
+    Nz = length(zm)
+    
+    Mr = region_to_moments(region, r110, r101, r011)
+    
+    for k in 1:Nz
+        for j in 1:Np
+            for i in 1:Np
+                point = (xm[i], ym[j], zm[k])
+                if point_in_cube(point, region)
+                    M[i, j, k, :] = Mr
+                end
+            end
+        end
+    end
+end
+
+"""
+    crossing_jets_ic(Np, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
+                    Ma=1.0, rhol=1.0, rhor=0.01, T=1.0, 
+                    jet_size=0.1, jet_offset=0.0)
+
+Create standard crossing jets initial condition using the flexible system.
+
+This is a convenience function that creates the classic two-jet configuration.
+
+# Arguments
+- Grid parameters: `Np`, `Nz`, domain bounds
+- `Ma`: Mach number (determines jet velocity magnitude)
+- `rhol`: Jet density
+- `rhor`: Background density
+- `T`: Temperature
+- `jet_size`: Fraction of domain for jet width (default: 0.1 = 10%)
+- `jet_offset`: Offset from center in units of jet_size (default: 0)
+
+# Returns
+- `background::CubicRegion`
+- `regions::Vector{CubicRegion}` with two jets
+"""
+function crossing_jets_ic(Np, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
+                         Ma=1.0, rhol=1.0, rhor=0.01, T=1.0, 
+                         jet_size=0.1, jet_offset=0.0)
+    
+    # Domain center and size
+    x_center = (xmin + xmax) / 2.0
+    y_center = (ymin + ymax) / 2.0
+    z_center = (zmin + zmax) / 2.0
+    
+    Lx = xmax - xmin
+    Ly = ymax - ymin
+    Lz = zmax - zmin
+    
+    # Jet dimensions
+    jet_width_x = jet_size * Lx
+    jet_width_y = jet_size * Ly
+    jet_width_z = jet_size * Lz
+    
+    # Jet positions (offset from center)
+    offset_dist = jet_offset * jet_width_x
+    
+    # Crossing jets velocity
+    Uc = Ma / sqrt(2.0)
+    
+    # Background at rest
+    background = CubicRegion(
+        center = (x_center, y_center, z_center),
+        width = (Inf, Inf, Inf),
+        density = rhor,
+        velocity = (0.0, 0.0, 0.0),
+        temperature = T
+    )
+    
+    # Bottom-left jet (moving ↗)
+    jet1 = CubicRegion(
+        center = (x_center - offset_dist - jet_width_x/2, 
+                  y_center - offset_dist - jet_width_y/2, 
+                  z_center),
+        width = (jet_width_x, jet_width_y, jet_width_z),
+        density = rhol,
+        velocity = (Uc, Uc, 0.0),
+        temperature = T
+    )
+    
+    # Top-right jet (moving ↙)
+    jet2 = CubicRegion(
+        center = (x_center + offset_dist + jet_width_x/2,
+                  y_center + offset_dist + jet_width_y/2,
+                  z_center),
+        width = (jet_width_x, jet_width_y, jet_width_z),
+        density = rhol,
+        velocity = (-Uc, -Uc, 0.0),
+        temperature = T
+    )
+    
+    return background, [jet1, jet2]
+end
+
