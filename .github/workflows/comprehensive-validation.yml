@@ -134,8 +134,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-julia-1-
       
+      - name: Remove GLMakie (headless CI environment)
+        working-directory: HyQMOM.jl
+        env:
+          HYQMOM_SKIP_PLOTTING: "true"
+        run: |
+          echo "Removing GLMakie to avoid X11/GLFW errors in CI..."
+          julia --project -e 'using Pkg; Pkg.rm("GLMakie")' || true
+          echo "GLMakie removed from dependencies"
+      
       - name: Install dependencies
         working-directory: HyQMOM.jl
+        env:
+          HYQMOM_SKIP_PLOTTING: "true"
         run: |
           # Retry logic for robustness
           for i in {1..3}; do
