@@ -30,8 +30,6 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       
-      - uses: julia-actions/cache@v1
-      
       # Remove GLMakie from Project.toml for CI (headless environment)
       - name: Remove GLMakie dependency for CI
         env:

@@ -58,18 +58,6 @@ jobs:
           julia --version
           julia -e 'using InteractiveUtils; versioninfo()'
       
-      - name: Cache Julia packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.julia/packages
-            ~/.julia/artifacts
-            ~/.julia/compiled
-          key: ${{ runner.os }}-julia-${{ matrix.julia-version }}-${{ hashFiles('HyQMOM.jl/Project.toml', 'HyQMOM.jl/Manifest.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-julia-${{ matrix.julia-version }}-
-            ${{ runner.os }}-julia-
-      
       - name: Install MPI (Linux)
         if: runner.os == 'Linux'
         run: |

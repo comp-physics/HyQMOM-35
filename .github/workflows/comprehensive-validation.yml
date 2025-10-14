@@ -124,14 +124,6 @@ jobs:
           sudo apt-get install -y mpich libmpich-dev
           mpiexec --version
       
-      - name: Cache Julia packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.julia
-          key: ${{ runner.os }}-julia-1-${{ hashFiles('HyQMOM.jl/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-julia-1-
-      
       - name: Remove GLMakie (headless CI environment)
         working-directory: HyQMOM.jl
         env:
