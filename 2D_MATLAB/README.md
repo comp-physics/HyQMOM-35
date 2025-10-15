@@ -203,7 +203,7 @@ addpath(genpath('src'));
 - Regenerate with current code: `create_goldenfiles('ci')`
 - Check consistent parameters across runs
 
-## Key Algorithms
+## Some Key Algorithms
 
 ### Moment System
 Evolves 35 moments even in 2D (for consistency with 3D):
@@ -220,30 +220,6 @@ Evolves 35 moments even in 2D (for consistency with 3D):
 - Forward Euler with operator splitting
 - Hyperbolic step + collision step
 - CFL-limited time stepping
-
-## Visualization
-
-```matlab
-% After running simulation
-simulation_plots
-```
-
-Generates plots of:
-- Density field
-- Velocity components
-- Temperature field
-- Time evolution
-
-## Citation
-
-```bibtex
-@software{hyqmom_2d_matlab,
-  title = {HyQMOM 2D: Hyperbolic Quadrature Method of Moments},
-  author = {Spencer H. Bryngelson and contributors},
-  year = {2024},
-  note = {2D MATLAB Implementation}
-}
-```
 
 ## Further Reading
 

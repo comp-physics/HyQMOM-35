@@ -38,9 +38,9 @@ const REF_DIR = @__DIR__
 
 # Test configurations
 const TEST_CONFIGS = Dict(
-    "small" => (Np=20, tmax=0.05),
-    "medium" => (Np=40, tmax=0.05),
-    "quick" => (Np=20, tmax=0.02)  # For fast testing
+    "small" => (Nx=20, Ny=20, tmax=0.05),
+    "medium" => (Nx=40, Ny=40, tmax=0.05),
+    "quick" => (Nx=20, Ny=20, tmax=0.02)  # For fast testing
 )
 
 # Check if we're running standalone or within Test framework

@@ -16,8 +16,9 @@ This is the core time-stepping loop that orchestrates all components:
 
 # Arguments
 - `params`: Named tuple with simulation parameters:
-  - `Np`: Global grid size (Np x Np)
-  - `Nz`: Global grid size in z
+  - `Nx`: Global grid size in x direction
+  - `Ny`: Global grid size in y direction
+  - `Nz`: Global grid size in z direction
   - `tmax`: Maximum simulation time
   - `Kn`: Knudsen number
   - `Ma`: Mach number
@@ -58,7 +59,8 @@ function simulation_runner(params)
     bc = :copy
     
     # Unpack parameters
-    Np = params.Np
+    Nx = params.Nx
+    Ny = params.Ny
     Nz = params.Nz
     tmax = params.tmax
     Kn = params.Kn
@@ -88,7 +90,7 @@ function simulation_runner(params)
     snapshots = []  # Will store (M, t, step) tuples on rank 0
     
     # Setup domain decomposition (2D in x-y, no decomposition in z)
-    decomp = setup_mpi_cartesian_3d(Np, Nz, halo, comm)
+    decomp = setup_mpi_cartesian_3d(Nx, Ny, Nz, halo, comm)
     nx = decomp.local_size[1]
     ny = decomp.local_size[2]
     nz = decomp.local_size[3]  # Always equals Nz (no decomposition)
@@ -103,8 +105,8 @@ function simulation_runner(params)
     
     # Compute grid spacing from domain extents and resolution
     # Note: dx, dy, dz are always computed automatically and never read from params
-    dx_global = (xmax - xmin) / Np
-    dy_global = (ymax - ymin) / Np
+    dx_global = (xmax - xmin) / Nx
+    dy_global = (ymax - ymin) / Ny
     dz_global = (zmax - zmin) / Nz
     
     dx = dx_global
@@ -162,11 +164,11 @@ function simulation_runner(params)
     if haskey(params, :use_custom_ic) && params.use_custom_ic
         # Use flexible custom IC system
         # Need global grid for custom ICs
-        xm_global = collect(range(xmin + dx_global/2, step=dx_global, length=Np))
-        ym_global = collect(range(ymin + dy_global/2, step=dy_global, length=Np))
+        xm_global = collect(range(xmin + dx_global/2, step=dx_global, length=Nx))
+        ym_global = collect(range(ymin + dy_global/2, step=dy_global, length=Ny))
         zm_global = collect(range(zmin + dz_global/2, step=dz_global, length=Nz))
         
-        grid_params = (Np=Np, Nz=Nz, xm=xm_global, ym=ym_global, zm=zm_global)
+        grid_params = (Nx=Nx, Ny=Ny, Nz=Nz, xm=xm_global, ym=ym_global, zm=zm_global)
         M = initialize_moment_field_mpi(decomp, grid_params, 
                                        params.ic_background, params.ic_jets;
                                        r110=r110, r101=r101, r011=r011, halo=halo)
@@ -192,15 +194,20 @@ function simulation_runner(params)
         
         # Jet region bounds (global indices)
         # x-y plane: 10% of domain size
-        Csize = floor(Int, 0.1 * Np)
-        Mint = div(Np, 2) + 1
-        Maxt = div(Np, 2) + 1 + Csize
-        Minb = div(Np, 2) - Csize
-        Maxb = div(Np, 2)
+        Csize_x = floor(Int, 0.1 * Nx)
+        Csize_y = floor(Int, 0.1 * Ny)
+        Mint_x = div(Nx, 2) + 1
+        Maxt_x = div(Nx, 2) + 1 + Csize_x
+        Minb_x = div(Nx, 2) - Csize_x
+        Maxb_x = div(Nx, 2)
+        Mint_y = div(Ny, 2) + 1
+        Maxt_y = div(Ny, 2) + 1 + Csize_y
+        Minb_y = div(Ny, 2) - Csize_y
+        Maxb_y = div(Ny, 2)
         
         # z-direction: Create cubes (not extruded squares)
         # Cubes centered at z=0
-        Csize_z = Csize  # Same size as x-y for cubic regions
+        Csize_z = min(Csize_x, Csize_y)  # Use smaller of x,y sizes for cubic regions
         Mint_z = div(Nz, 2) + 1 - div(Csize_z, 2)
         Maxt_z = div(Nz, 2) + 1 + div(Csize_z, 2)
         
@@ -219,15 +226,15 @@ function simulation_runner(params)
                     Mr = Mr_bg
                     
                     # Bottom jet cube: check x, y, AND z bounds
-                    if (gi >= Minb && gi <= Maxb && 
-                        gj >= Minb && gj <= Maxb &&
+                    if (gi >= Minb_x && gi <= Maxb_x && 
+                        gj >= Minb_y && gj <= Maxb_y &&
                         gk >= Mint_z && gk <= Maxt_z)
                         Mr = Mb
                     end
                     
                     # Top jet cube: check x, y, AND z bounds (overwrites if overlapping)
-                    if (gi >= Mint && gi <= Maxt && 
-                        gj >= Mint && gj <= Maxt &&
+                    if (gi >= Mint_x && gi <= Maxt_x && 
+                        gj >= Mint_y && gj <= Maxt_y &&
                         gk >= Mint_z && gk <= Maxt_z)
                         Mr = Mt
                     end
@@ -249,13 +256,13 @@ function simulation_runner(params)
     if save_snapshots
         M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
         if rank == 0
-            M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+            M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
             push!(snapshots, (M=copy(M_gathered), t=0.0, step=0))
             if debug_output
                 println("Saved snapshot 1: t=0.0, step=0")
             end
         else
-            gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+            gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
         end
     end
     
@@ -265,7 +272,7 @@ function simulation_runner(params)
     
     if rank == 0
         println("Starting time evolution...")
-        println("  Grid: $(Np)x$(Np)x$(Nz), Ranks: $(nprocs), Local: $(nx)x$(ny)x$(nz)")
+        println("  Grid: $(Nx)x$(Ny)x$(Nz), Ranks: $(nprocs), Local: $(nx)x$(ny)x$(nz)")
         println("  tmax: $(tmax), CFL: $(CFL), Ma: $(Ma), Kn: $(Kn)")
         println("  homogeneous_z: $(homogeneous_z)")
         if save_snapshots
@@ -425,7 +432,7 @@ function simulation_runner(params)
         # Exchange halos for next iteration
         halo_exchange_3d!(M, decomp, bc)
         
-        # Symmetry check: test that M(i,i,k) ≈ M(Np+1-i, Np+1-i, k) along diagonal
+        # Symmetry check: test that M(i,i,k) ≈ M(Nx+1-i, Ny+1-i, k) along diagonal (for square grids)
         # Only check every symmetry_check_interval steps to reduce overhead
         MaxDiff = 0.0
         if mod(nn, symmetry_check_interval) == 0 || nn == 1
@@ -451,9 +458,9 @@ function simulation_runner(params)
                 diag5_local[idx, 5] = M[halo+ii, halo+jj, 1, 5]   # M400
             end
             
-            # Gather to rank 0
+            # Gather to rank 0 (only works for square grids where Nx==Ny)
             if rank == 0
-                diag5_global = zeros(Np, 5)
+                diag5_global = zeros(min(Nx, Ny), 5)
                 # Copy local contribution
                 for (idx, gi) in enumerate(diag_i_global)
                     diag5_global[gi, :] = diag5_local[idx, :]
@@ -474,10 +481,11 @@ function simulation_runner(params)
                     end
                 end
                 
-                # Compute symmetry differences: M(i,i,k) vs M(Np+1-i,Np+1-i,k)
-                Diff = zeros(Np, 5)
-                for i = 1:Np
-                    j = Np + 1 - i
+                # Compute symmetry differences: M(i,i,k) vs M(Nx+1-i,Ny+1-i,k)
+                Ndiag = min(Nx, Ny)
+                Diff = zeros(Ndiag, 5)
+                for i = 1:Ndiag
+                    j = Ndiag + 1 - i
                     Diff[i, 1] = diag5_global[i, 1] - diag5_global[j, 1]  # M000 (symmetric)
                     Diff[i, 2] = diag5_global[i, 2] + diag5_global[j, 2]  # M100 (antisymmetric)
                     Diff[i, 3] = diag5_global[i, 3] - diag5_global[j, 3]  # M010 (symmetric)
@@ -504,7 +512,7 @@ function simulation_runner(params)
         # Timing: compute per global grid point for fair comparison across ranks
         step_time = time() - step_start_time
         max_step_time = MPI.Allreduce(step_time, max, comm)
-        global_grid_points = Np * Np * Nz
+        global_grid_points = Nx * Ny * Nz
         time_per_point_global = max_step_time / global_grid_points
         
         # Print timestep info
@@ -522,11 +530,11 @@ function simulation_runner(params)
         if save_snapshots && (mod(nn, snapshot_interval) == 0 || t >= tmax || nn == nnmax)
             M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
             if rank == 0
-                M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+                M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
                 push!(snapshots, (M=copy(M_gathered), t=t, step=nn))
                 println("Saved snapshot $(length(snapshots)): t=$(round(t, digits=4)), step=$nn")
             else
-                gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+                gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
             end
         end
     end
@@ -541,14 +549,14 @@ function simulation_runner(params)
     # Create global grid structure
     grid_out = nothing
     if rank == 0
-        grid_out = (x = collect(range(xmin, xmax, length=Np+1)),
-                   y = collect(range(ymin, ymax, length=Np+1)),
+        grid_out = (x = collect(range(xmin, xmax, length=Nx+1)),
+                   y = collect(range(ymin, ymax, length=Ny+1)),
                    z = collect(range(zmin, zmax, length=Nz+1)),
                    dx = dx_global,
                    dy = dy_global,
                    dz = dz_global,
-                   xm = collect(range(xmin + dx_global/2, step=dx_global, length=Np)),
-                   ym = collect(range(ymin + dy_global/2, step=dy_global, length=Np)),
+                   xm = collect(range(xmin + dx_global/2, step=dx_global, length=Nx)),
+                   ym = collect(range(ymin + dy_global/2, step=dy_global, length=Ny)),
                    zm = collect(range(zmin + dz_global/2, step=dz_global, length=Nz)))
     end
     
@@ -565,26 +573,28 @@ function simulation_runner(params)
         M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
         
         if rank == 0
-            M_final = gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+            M_final = gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
             final_time = t
             time_steps = nn
             return M_final, final_time, time_steps, grid_out
         else
             # Other ranks send to rank 0
-            gather_M(M_interior, i0i1, j0j1, k0k1, Np, Nz, Nmom, comm)
+            gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
             return nothing, t, nn, nothing
         end
     end
 end
 
 """
-    run_simulation(; Np=20, tmax=0.1, num_workers=1, kwargs...)
+    run_simulation(; Np=nothing, Nx=20, Ny=20, tmax=0.1, num_workers=1, kwargs...)
 
 High-level wrapper for running simulations with sensible defaults.
 
 # Arguments
-- `Np`: Global grid size (Np x Np), default 20
-- `Nz`: Global grid size in z, default 1
+- `Np`: (Legacy) Global grid size for square grid (Np x Np), overrides Nx/Ny if provided
+- `Nx`: Global grid size in x direction, default 20
+- `Ny`: Global grid size in y direction, default 20
+- `Nz`: Global grid size in z direction, default 1
 - `tmax`: Maximum simulation time, default 0.1
 - `num_workers`: Number of MPI ranks (must match mpiexec -n), default 1
 - `verbose`: Print progress information, default true
@@ -600,26 +610,29 @@ High-level wrapper for running simulations with sensible defaults.
 
 # Returns
 Dictionary with:
-- `:M`: Final moment field (NpxNpxNzx35) on rank 0, nothing on other ranks
+- `:M`: Final moment field (Nx x Ny x Nz x 35) on rank 0, nothing on other ranks
 - `:final_time`: Actual final time reached
 - `:time_steps`: Number of time steps taken
 - `:xm`, `:ym`, `:zm`: Grid coordinates (only on rank 0)
-- `:Np`, `:Nz`: Grid sizes
+- `:Nx`, `:Ny`, `:Nz`: Grid sizes
 - `:tmax`: Requested max time
 
 # Example
 ```julia
-# Single rank
-results = run_simulation(Np=20, tmax=0.1)
+# Single rank with square grid
+results = run_simulation(Nx=20, Ny=20, tmax=0.1)
 
 # Multi-rank (run with: mpiexec -n 4 julia script.jl)
-results = run_simulation(Np=40, tmax=0.2, num_workers=4)
+results = run_simulation(Nx=40, Ny=40, tmax=0.2, num_workers=4)
 
-# With visualization
-results = run_simulation(Np=40, tmax=0.1, enable_plots=true)
+# With visualization and non-square grid
+results = run_simulation(Nx=60, Ny=40, tmax=0.1, enable_plots=true)
+
+# Legacy: Use Np for square grids
+results = run_simulation(Np=40, tmax=0.1)
 ```
 """
-function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, save_output=false,
+function run_simulation(; Np=nothing, Nx=20, Ny=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, save_output=false,
                           enable_plots=false, save_figures=false, output_dir=".",
                           Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5, homogeneous_z=true, debug_output=false)
     # Initialize MPI if not already done
@@ -631,6 +644,12 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
     rank = MPI.Comm_rank(comm)
     nprocs = MPI.Comm_size(comm)
     
+    # Handle legacy Np parameter (for backward compatibility)
+    if Np !== nothing
+        Nx = Np
+        Ny = Np
+    end
+    
     # Verify num_workers matches actual MPI size
     if nprocs != num_workers
         if rank == 0
@@ -640,8 +659,8 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
     
     # Setup parameters
     # Domain is [-0.5, 0.5] x [-0.5, 0.5] x [-0.5, 0.5]
-    dx = 1.0 / Np
-    dy = 1.0 / Np
+    dx = 1.0 / Nx
+    dy = 1.0 / Ny
     dz = 1.0 / Nz
     dtmax = CFL * min(dx, dy, dz)
     nnmax = ceil(Int, tmax / dtmax) + 100  # Safety margin
@@ -655,7 +674,8 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
     r011 = 0.0
     
     params = (
-        Np = Np,
+        Nx = Nx,
+        Ny = Ny,
         Nz = Nz,
         tmax = tmax,
         Kn = Kn,
@@ -684,7 +704,7 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
         println("="^60)
         println("HyQMOM Simulation")
         println("="^60)
-        println("Grid: $(Np)x$(Np)x$(Nz)")
+        println("Grid: $(Nx)x$(Ny)x$(Nz)")
         println("MPI ranks: $nprocs")
         println("tmax: $tmax")
         println("Kn: $Kn, Ma: $Ma")
@@ -706,7 +726,7 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
     
     # Generate plots if requested (only on rank 0)
     if enable_plots && rank == 0 && !isnothing(M_final)
-        plot_final_results(M_final, grid_out.xm, grid_out.ym, Np, 35; 
+        plot_final_results(M_final, grid_out.xm, grid_out.ym, Nx, 35; 
                          save_figures=save_figures, output_dir=output_dir,
                          zm=grid_out.zm, Nz=Nz)
     end
@@ -720,7 +740,8 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
             :xm => grid_out.xm,
             :ym => grid_out.ym,
             :zm => grid_out.zm,
-            :Np => Np,
+            :Nx => Nx,
+            :Ny => Ny,
             :Nz => Nz,
             :tmax => tmax
         )
@@ -732,7 +753,8 @@ function run_simulation(; Np=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, sa
             :xm => nothing,
             :ym => nothing,
             :zm => nothing,
-            :Np => Np,
+            :Nx => Nx,
+            :Ny => Ny,
             :Nz => Nz,
             :tmax => tmax
         )

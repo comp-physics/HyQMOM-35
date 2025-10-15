@@ -172,13 +172,13 @@ Rank 0 receives data from all other ranks and assembles the full array.
 Other ranks send their data to rank 0.
 """
 function gather_M(M_interior::Array{T,4}, i0i1::Tuple{Int,Int}, j0j1::Tuple{Int,Int}, k0k1::Tuple{Int,Int},
-                 Np::Int, Nz::Int, Nmom::Int, comm::MPI.Comm) where T
+                 Nx::Int, Ny::Int, Nz::Int, Nmom::Int, comm::MPI.Comm) where T
     rank = MPI.Comm_rank(comm)
     nprocs = MPI.Comm_size(comm)
     
     if rank == 0
         # Initialize full array on rank 0
-        M_full = zeros(T, Np, Np, Nz, Nmom)
+        M_full = zeros(T, Nx, Ny, Nz, Nmom)
         
         # Place rank 0's data
         M_full[i0i1[1]:i0i1[2], j0j1[1]:j0j1[2], k0k1[1]:k0k1[2], :] = M_interior

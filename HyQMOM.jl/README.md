@@ -234,30 +234,6 @@ cd test && bash run_mpi_tests.sh
 HYQMOM_SKIP_PLOTTING=true julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-## Project Structure
-
-```
-HyQMOM.jl/
-├── src/
-│   ├── HyQMOM.jl              # Main module
-│   ├── moments/               # Moment operations (InitializeM4_35, hyqmom_3D, etc.)
-│   ├── realizability/         # Realizability checks
-│   ├── numerics/              # Flux closures, eigenvalues, collision operator
-│   ├── mpi/                   # MPI utilities and halo exchange
-│   ├── utils/                 # Utilities (moment indexing, diagnostics)
-│   ├── visualization/         # GLMakie visualization (optional)
-│   ├── simulation_runner.jl   # Main simulation loop
-│   └── autogen/               # Auto-generated symbolic code
-├── examples/
-│   ├── run_3d_jets_timeseries.jl   # Interactive visualization example
-│   ├── run_3d_crossing_jets.jl     # Static plots example
-│   ├── parse_params.jl             # Parameter parsing utilities
-│   └── README.md                    # Detailed examples documentation
-├── test/                      # Test suite
-├── Project.toml               # Package dependencies
-└── README.md                  # This file
-```
-
 ## Performance Tips
 
 ### For Quick Tests
@@ -288,7 +264,7 @@ mpiexec -n 8 julia ... --Np 100 --Nz 50 --snapshot-interval 0
 julia --project=. -e 'using GLMakie'
 
 # On remote systems, enable X11 forwarding
-ssh -X user@host
+ssh -Y user@host
 
 # Or use static plots instead
 julia --project=. examples/run_3d_crossing_jets.jl
@@ -373,13 +349,6 @@ If you use this code in your research, please cite:
 ## License
 
 See `license.md` for licensing information.
-
-## Contact
-
-For questions, issues, or contributions:
-- Open an issue on GitHub
-- See `examples/README.md` for detailed usage examples
-- Check the test suite in `test/` for API usage examples
 
 ---
 

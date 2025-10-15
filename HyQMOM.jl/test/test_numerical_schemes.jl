@@ -20,7 +20,8 @@ const TOL = 1e-10
     end
     
     @testset "pas_HLL basic" begin
-        Np = 10
+        Nx = 10
+        Ny = 10
         Nmom = 5
         
         M = ones(Np, Nmom)
@@ -43,7 +44,8 @@ const TOL = 1e-10
     end
     
     @testset "pas_HLL with boundary conditions" begin
-        Np = 10
+        Nx = 10
+        Ny = 10
         Nmom = 5
         
         M = ones(Np, Nmom)

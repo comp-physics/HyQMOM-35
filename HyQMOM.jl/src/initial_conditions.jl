@@ -61,7 +61,7 @@ end
 Initialize a 3D moment field with background state and cubic regions.
 
 # Arguments
-- `grid_params`: NamedTuple with (Np, Nz, xmin, xmax, ymin, ymax, zmin, zmax, xm, ym, zm)
+- `grid_params`: NamedTuple with (Nx, Ny, Nz, xmin, xmax, ymin, ymax, zmin, zmax, xm, ym, zm)
 - `background`: CubicRegion defining the background state (uniform)
 - `regions`: Vector of CubicRegion objects to place in the domain
 - `r110`, `r101`, `r011`: Correlation coefficients for covariance matrix
@@ -104,22 +104,23 @@ function initialize_moment_field(grid_params, background::CubicRegion,
                                 regions::Vector{CubicRegion};
                                 r110=0.0, r101=0.0, r011=0.0)
     
-    Np = grid_params.Np
+    Nx = grid_params.Nx
+    Ny = grid_params.Ny
     Nz = grid_params.Nz
     xm = grid_params.xm
     ym = grid_params.ym
     zm = grid_params.zm
     Nmom = 35
     
-    M = zeros(Float64, Np, Nz, Nz, Nmom)
+    M = zeros(Float64, Nx, Ny, Nz, Nmom)
     
     # Build covariance matrix (same for all regions, using temperature)
     # Each region can have different temperature
     
     # Initialize with background
     for k in 1:Nz
-        for j in 1:Np
-            for i in 1:Np
+        for j in 1:Ny
+            for i in 1:Nx
                 M[i, j, k, :] = region_to_moments(background, r110, r101, r011)
             end
         end
@@ -152,7 +153,8 @@ function initialize_moment_field_mpi(decomp, grid_params, background::CubicRegio
                                     regions::Vector{CubicRegion};
                                     r110=0.0, r101=0.0, r011=0.0, halo=2)
     
-    Np = grid_params.Np
+    Nx = grid_params.Nx
+    Ny = grid_params.Ny
     Nz = grid_params.Nz
     xm = grid_params.xm
     ym = grid_params.ym
@@ -253,14 +255,15 @@ end
 Place a cubic region into an existing moment field (modifies M in-place).
 """
 function place_cubic_region!(M, region::CubicRegion, xm, ym, zm, r110, r101, r011)
-    Np = length(xm)
+    Nx = length(xm)
+    Ny = length(ym)
     Nz = length(zm)
     
     Mr = region_to_moments(region, r110, r101, r011)
     
     for k in 1:Nz
-        for j in 1:Np
-            for i in 1:Np
+        for j in 1:Ny
+            for i in 1:Nx
                 point = (xm[i], ym[j], zm[k])
                 if point_in_cube(point, region)
                     M[i, j, k, :] = Mr
@@ -271,7 +274,7 @@ function place_cubic_region!(M, region::CubicRegion, xm, ym, zm, r110, r101, r01
 end
 
 """
-    crossing_jets_ic(Np, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
+    crossing_jets_ic(Nx, Ny, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
                     Ma=0.0, rhol=1.0, rhor=0.01, T=1.0, 
                     jet_size=0.1, jet_offset=0.0)
 
@@ -280,7 +283,7 @@ Create standard crossing jets initial condition using the flexible system.
 This is a convenience function that creates the classic two-jet configuration.
 
 # Arguments
-- Grid parameters: `Np`, `Nz`, domain bounds
+- Grid parameters: `Nx`, `Ny`, `Nz`, domain bounds
 - `Ma`: Mach number (determines jet velocity magnitude)
 - `rhol`: Jet density
 - `rhor`: Background density
@@ -292,7 +295,7 @@ This is a convenience function that creates the classic two-jet configuration.
 - `background::CubicRegion`
 - `regions::Vector{CubicRegion}` with two jets
 """
-function crossing_jets_ic(Np, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
+function crossing_jets_ic(Nx, Ny, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
                          Ma=0.0, rhol=1.0, rhor=0.01, T=1.0, 
                          jet_size=0.1, jet_offset=0.0)
     

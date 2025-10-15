@@ -14,7 +14,8 @@ println("Simple 2D vs 3D (Nz=1) Comparison")
 println("="^70)
 
 # Test parameters
-const Np = 20
+const Nx = 20
+const Ny = 20
 const tmax = 0.01
 const TEST_TOL_ABS = 1e-10
 const TEST_TOL_REL = 1e-8
@@ -46,7 +47,8 @@ push!(LOAD_PATH, joinpath(@__DIR__, ".."))
 using HyQMOM
 
 results_3d = run_simulation(
-    Np=Np,
+    Nx=Nx,
+    Ny=Ny,
     Nz=1,
     tmax=tmax,
     num_workers=1,

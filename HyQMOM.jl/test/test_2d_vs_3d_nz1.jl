@@ -9,7 +9,8 @@ using Test
 using Printf
 
 # Test configuration
-const Np = 20
+const Nx = 20
+const Ny = 20
 const tmax = 0.01  # Short simulation for quick comparison
 const TEST_TOL_ABS = 1e-10
 const TEST_TOL_REL = 1e-8
@@ -45,7 +46,7 @@ println("✓ Both modules loaded successfully")
         
         # Run 2D simulation
         params_2d = (
-            Np=Np, tmax=tmax, Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5,
+            Nx=Nx, Ny=Ny, tmax=tmax, Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5,
             dx=1.0/Np, dy=1.0/Np, Nmom=35, nnmax=20000000, dtmax=1.0,
             rhol=1.0, rhor=0.01, T=1.0, r110=0.0, r101=0.0, r011=0.0,
             symmetry_check_interval=10,
@@ -72,7 +73,7 @@ println("✓ Both modules loaded successfully")
         
         # Run 3D simulation with Nz=1
         params_3d = (
-            Np=Np, Nz=1, tmax=tmax, Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5,
+            Nx=Nx, Ny=Ny, Nz=1, tmax=tmax, Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5,
             dx=1.0/Np, dy=1.0/Np, dz=1.0, Nmom=35, nnmax=20000000, dtmax=1.0,
             rhol=1.0, rhor=0.01, T=1.0, r110=0.0, r101=0.0, r011=0.0,
             symmetry_check_interval=10,

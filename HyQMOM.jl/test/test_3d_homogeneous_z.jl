@@ -61,16 +61,17 @@ end
             end
             
             # Small grid for fast testing
-            Np = 10
+            Nx = 10
+            Ny = 10
             Nz = 4
             tmax = 0.001  # Very short time
             
             if rank == 0
-                println("Running 3D simulation (Np=$Np, Nz=$Nz, inhomogeneous_z=false)...")
+                println("Running 3D simulation (Nx=$Nx, Ny=$Ny, Nz=$Nz, inhomogeneous_z=false)...")
             end
             
             results = run_simulation(
-                Np=Np, Nz=Nz, tmax=tmax, 
+                Nx=Nx, Ny=Ny, Nz=Nz, tmax=tmax, 
                 num_workers=mpi_state.nprocs,
                 verbose=false,
                 homogeneous_z=false  # Jets only in lower z
@@ -113,7 +114,8 @@ end
                 println("\n=== Test: Homogeneous Z ===")
             end
             
-            Np = 10
+            Nx = 10
+            Ny = 10
             Nz = 4
             tmax = 0.001
             
@@ -122,7 +124,7 @@ end
             end
             
             results = run_simulation(
-                Np=Np, Nz=Nz, tmax=tmax,
+                Nx=Nx, Ny=Ny, Nz=Nz, tmax=tmax,
                 num_workers=mpi_state.nprocs,
                 verbose=false,
                 homogeneous_z=true  # Jets at all z levels
@@ -153,7 +155,8 @@ end
                 println("\n=== Test: Nz=1 (quasi-2D) ===")
             end
             
-            Np = 10
+            Nx = 10
+            Ny = 10
             Nz = 1
             tmax = 0.001
             
@@ -162,7 +165,7 @@ end
             end
             
             results = run_simulation(
-                Np=Np, Nz=Nz, tmax=tmax,
+                Nx=Nx, Ny=Ny, Nz=Nz, tmax=tmax,
                 num_workers=mpi_state.nprocs,
                 verbose=false,
                 homogeneous_z=true
@@ -193,7 +196,8 @@ end
                 println("\n=== Test: Z-slices Consistency ===")
             end
             
-            Np = 10
+            Nx = 10
+            Ny = 10
             Nz = 8
             tmax = 0.001
             
@@ -202,7 +206,7 @@ end
             end
             
             results = run_simulation(
-                Np=Np, Nz=Nz, tmax=tmax,
+                Nx=Nx, Ny=Ny, Nz=Nz, tmax=tmax,
                 num_workers=mpi_state.nprocs,
                 verbose=false,
                 homogeneous_z=false

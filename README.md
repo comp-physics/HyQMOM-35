@@ -11,7 +11,6 @@ The production-ready 3D Julia implementation with:
 - Interactive 3D visualization with GLMakie
 - MPI parallelization with 2D domain decomposition
 - Comprehensive test suite and examples
-- Modern software engineering practices
 
 **Start here for new development and production runs.**
 
@@ -63,7 +62,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. examples/run_3d_jets_timeseries.jl
 
 # With MPI parallelization
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 60
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60
 ```
 
 ### MATLAB (3D Reference)
@@ -166,13 +165,13 @@ See `.github/workflows/` for configuration details.
 ### Quick Testing
 ```bash
 # Julia: small grid, short time
-julia --project=HyQMOM.jl HyQMOM.jl/examples/run_3d_jets_timeseries.jl --Np 20 --tmax 0.01
+julia --project=HyQMOM.jl HyQMOM.jl/examples/run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --tmax 0.01
 ```
 
 ### Production Runs
 ```bash
 # Julia: high resolution, MPI parallel
-mpiexec -n 8 julia --project=HyQMOM.jl HyQMOM.jl/examples/run_3d_jets_timeseries.jl --Np 100 --tmax 0.5
+mpiexec -n 8 julia --project=HyQMOM.jl HyQMOM.jl/examples/run_3d_jets_timeseries.jl --Nx 100 --Ny 100 --tmax 0.5
 ```
 
 ## Documentation
@@ -219,7 +218,7 @@ sbatch batch.sh  # Submits Julia job with MPI
 
 Edit `batch.sh` to adjust:
 - Number of nodes and tasks
-- Grid resolution (`--Np`)
+- Grid resolution (`--Nx`, `--Ny`, `--Nz`)
 - Simulation time (`--tmax`)
 - Project account
 
@@ -260,7 +259,7 @@ cd HyQMOM.jl && julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=HyQMOM.jl HyQMOM.jl/examples/run_3d_jets_timeseries.jl
 
 # Run with MPI (4 ranks)
-mpiexec -n 4 julia --project=HyQMOM.jl HyQMOM.jl/examples/run_3d_jets_timeseries.jl --Np 60
+mpiexec -n 4 julia --project=HyQMOM.jl HyQMOM.jl/examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60
 
 # Run tests
 cd HyQMOM.jl && julia --project=. -e 'using Pkg; Pkg.test()'
@@ -283,8 +282,9 @@ run_all_tests()
 
 ### Common Parameters
 ```bash
---Np 40           # Grid resolution (x,y)
---Nz 40           # Grid resolution (z)
+--Nx 40           # Grid resolution in x direction
+--Ny 40           # Grid resolution in y direction
+--Nz 40           # Grid resolution in z direction
 --tmax 0.2        # Simulation time
 --Ma 1.0          # Mach number
 --Kn 1.0          # Knudsen number
@@ -293,4 +293,4 @@ run_all_tests()
 
 ---
 
-**For detailed usage, see [HyQMOM.jl/README.md](HyQMOM.jl/README.md)**
+**For detailed usage, see [HyQMOM.jl/README.md](HyQMOM.jl/README.md)** and the USERGUIDE.

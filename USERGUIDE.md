@@ -105,8 +105,8 @@ If you have Git installed:
 
 ```bash
 cd ~  # or wherever you want to put the code
-git clone https://github.com/YOUR_USERNAME/rodney-hqmom.git
-cd rodney-hqmom
+git clone https://github.com/comp-physics/HyQMOM-35.git
+cd HyQMOM-35
 ```
 
 If you don't have Git:
@@ -130,7 +130,8 @@ This directory contains all the Julia code.
 
 ### Step 1: Install Package Dependencies
 
-This is a **one-time setup**. In the terminal, from the `HyQMOM.jl` directory, run:
+This is a **one-time setup**.
+In the terminal, from the `HyQMOM.jl` directory, run:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
@@ -179,14 +180,14 @@ Let's run a small, fast simulation to make sure everything works.
 **Command:**
 
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 20 --tmax 0.01
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --tmax 0.01
 ```
 
 **What this command means:**
 
 - `julia --project=.`: Run Julia with this project's settings
 - `examples/run_3d_jets_timeseries.jl`: The simulation script to run
-- `--Np 20`: Use a 20×20 grid (small for speed)
+- `--Nx 20 --Ny 20`: Use a 20×20 grid in x-y plane (small for speed)
 - `--tmax 0.01`: Run until time t=0.01 (very short)
 
 **What you'll see:**
@@ -212,8 +213,8 @@ Time evolution complete: 2 steps, t = 0.01
 
 This simulation models **two jets of gas crossing in 3D space**:
 - The jets collide and interact
-- The code tracks 35 moments of the velocity distribution
-- It solves the Boltzmann equation with BGK collision operator
+- The code tracks 35 moments of the 3D velocity distribution
+- It solves the flow equations with BGK collision operator and closure via HyQMOM
 
 ---
 
@@ -262,13 +263,14 @@ You can customize the simulation with command-line options. Here are the most im
 #### Grid Resolution
 
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --Nz 40
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40 --Nz 40
 ```
 
-- `--Np 40`: Grid size in x and y directions (default: 40)
+- `--Nx 40`: Grid size in x direction (default: 40)
+- `--Ny 40`: Grid size in y direction (default: 40)
 - `--Nz 40`: Grid size in z direction (default: 20)
 - **Larger = more accurate but slower**
-- Memory use: ~4 GB for Np=60, ~16 GB for Np=100
+- Memory use: ~4 GB for 60×60×40, ~16 GB for 100×100×60
 
 #### Simulation Time
 
@@ -303,22 +305,22 @@ julia --project=. examples/run_3d_jets_timeseries.jl --CFL 0.5
 
 **Quick test (2-3 minutes):**
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 20 --tmax 0.01 --snapshot-interval 1
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --tmax 0.01 --snapshot-interval 1
 ```
 
 **Standard run (15-30 minutes):**
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --tmax 0.1
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40 --tmax 0.1
 ```
 
 **High quality (1-2 hours):**
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 60 --tmax 0.2 --CFL 0.6
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60 --tmax 0.2 --CFL 0.6
 ```
 
 **Production (several hours):**
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 100 --tmax 0.5 --CFL 0.5
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 100 --Ny 100 --tmax 0.5 --CFL 0.5
 ```
 
 ### Getting Help
@@ -362,7 +364,7 @@ julia --project=. -e 'using Pkg; Pkg.build("MPI")'
 Use `mpiexec` to run with multiple processes:
 
 ```bash
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 60
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60
 ```
 
 **What this means:**
@@ -385,12 +387,12 @@ mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 60
 
 **Medium simulation, 4 cores (10-15 minutes):**
 ```bash
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 60 --tmax 0.1
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60 --tmax 0.1
 ```
 
 **Large simulation, 8 cores (30-60 minutes):**
 ```bash
-mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 80 --tmax 0.2
+mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 80 --Ny 80 --tmax 0.2
 ```
 
 ---
@@ -417,7 +419,7 @@ mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 80 --tmax
 For faster runs or headless systems (no display):
 
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --snapshot-interval 0
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40 --snapshot-interval 0
 ```
 
 - `--snapshot-interval 0`: Disables snapshot collection (no visualization)
@@ -426,7 +428,7 @@ julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --snapshot-interval
 Or set environment variable:
 ```bash
 export HYQMOM_SKIP_PLOTTING=true
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40
 ```
 
 ### Saving Snapshots
@@ -434,7 +436,7 @@ julia --project=. examples/run_3d_jets_timeseries.jl --Np 40
 To save simulation data for later analysis:
 
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --snapshot-interval 5
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40 --snapshot-interval 5
 ```
 
 - `--snapshot-interval 5`: Save every 5 time steps
@@ -446,7 +448,7 @@ julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --snapshot-interval
 For publication-quality 2D plots:
 
 ```bash
-julia --project=. examples/run_3d_crossing_jets.jl --Np 40
+julia --project=. examples/run_3d_crossing_jets.jl --Nx 40 --Ny 40
 ```
 
 This creates static PNG/PDF plots instead of interactive visualization.
@@ -472,12 +474,12 @@ This happens when running on a system without a graphics display (like a server)
 **Solution:** Disable visualization:
 ```bash
 export HYQMOM_SKIP_PLOTTING=true
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40
 ```
 
 Or use snapshot mode:
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --snapshot-interval 0
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40 --snapshot-interval 0
 ```
 
 ### Problem: Simulation crashes with NaN values
@@ -492,7 +494,7 @@ This means numerical instability.
 
 2. **Increase grid resolution:**
    ```bash
-   julia --project=. examples/run_3d_jets_timeseries.jl --Np 60
+   julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60
    ```
 
 3. **Reduce Mach number:**
@@ -507,7 +509,7 @@ The simulation needs too much RAM.
 **Solutions:**
 1. **Reduce grid size:**
    ```bash
-   julia --project=. examples/run_3d_jets_timeseries.jl --Np 30
+   julia --project=. examples/run_3d_jets_timeseries.jl --Nx 30 --Ny 30
    ```
 
 2. **Disable snapshots:**
@@ -517,7 +519,7 @@ The simulation needs too much RAM.
 
 3. **Use MPI to distribute memory:**
    ```bash
-   mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 40
+   mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40
    ```
 
 ### Problem: MPI doesn't work
@@ -537,7 +539,7 @@ julia --project=. -e 'using Pkg; Pkg.build("MPI")'
 ### Problem: Simulation is too slow
 
 **Speed it up:**
-1. **Use smaller grid:** `--Np 30` instead of `--Np 60`
+1. **Use smaller grid:** `--Nx 30 --Ny 30` instead of `--Nx 60 --Ny 60`
 2. **Shorter time:** `--tmax 0.05` instead of `--tmax 0.2`
 3. **Use MPI:** `mpiexec -n 4 julia ...`
 4. **Disable snapshots:** `--snapshot-interval 0`
@@ -576,6 +578,7 @@ julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
 
 Available configurations:
 - `crossing`: Two perpendicular jets (default)
+- `crossing`: Two perpendicular jets (default)
 - `triple-jet`: Three jets at 120° angles
 - `quad-jet`: Four jets converging to center
 - `vertical-jet`: Single vertical jet
@@ -610,7 +613,8 @@ using HyQMOM
 
 # Set parameters
 params = (
-    Np = 40,
+    Nx = 40,
+    Ny = 40,
     Nz = 40,
     tmax = 0.1,
     Ma = 1.0,
@@ -670,29 +674,29 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ```bash
 # Navigate to HyQMOM.jl directory
-cd path/to/rodney-hqmom/HyQMOM.jl
+cd path/to/HyQMOM.jl
 
 # Run simulation
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40
 ```
 
 ### Common Commands
 
 ```bash
 # Quick test (2 min)
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 20 --tmax 0.01
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --tmax 0.01
 
 # Standard run (15 min)
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --tmax 0.1
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40 --tmax 0.1
 
 # High quality (1 hour)
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 60 --tmax 0.2
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60 --tmax 0.2
 
 # Parallel (4 cores)
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 60
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60
 
 # Without visualization
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40 --snapshot-interval 0
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40 --snapshot-interval 0
 ```
 
 ### Getting Help
@@ -713,25 +717,17 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 ## Further Resources
 
 - **Julia Documentation**: [https://docs.julialang.org](https://docs.julialang.org)
-- **Main README**: See `HyQMOM.jl/README.md` for technical details
+- **Main README**: See `README.md` for technical details
 - **Example Documentation**: See `HyQMOM.jl/examples/README.md` for more examples
-- **Issues**: Report bugs or ask questions on GitHub Issues
 
 ---
 
 ## Tips for Success
 
-1. **Start small**: Use `--Np 20 --tmax 0.01` for your first runs
+1. **Start small**: Use `--Nx 20 --Ny 20 --tmax 0.01` for your first runs
 2. **Check memory**: Monitor RAM usage with `htop` (Linux/Mac) or Task Manager (Windows)
 3. **Save your work**: Use descriptive output names and save parameter combinations
 4. **Be patient**: First run is slower due to compilation (subsequent runs are faster)
 5. **Use MPI**: Parallel runs are much faster for large problems
 6. **Read errors**: Error messages usually tell you exactly what's wrong
 7. **Keep backups**: Save `results.jld2` files from important runs
-
----
-
-**Questions or problems?** Open an issue on GitHub or check the troubleshooting section above.
-
-**Happy simulating!**
-
