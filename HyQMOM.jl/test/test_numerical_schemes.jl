@@ -21,21 +21,20 @@ const TOL = 1e-10
     
     @testset "pas_HLL basic" begin
         Nx = 10
-        Ny = 10
         Nmom = 5
         
-        M = ones(Np, Nmom)
-        F = zeros(Np, Nmom)
+        M = ones(Nx, Nmom)
+        F = zeros(Nx, Nmom)
         
         # Simple flux
-        for i in 1:Np
+        for i in 1:Nx
             F[i, :] = 0.1 * M[i, :]
         end
         
         dt = 0.01
         dx = 0.1
-        vpmin = -ones(Np)
-        vpmax = ones(Np)
+        vpmin = -ones(Nx)
+        vpmax = ones(Nx)
         
         Mp = pas_HLL(M, F, dt, dx, vpmin, vpmax)
         
@@ -45,16 +44,15 @@ const TOL = 1e-10
     
     @testset "pas_HLL with boundary conditions" begin
         Nx = 10
-        Ny = 10
         Nmom = 5
         
-        M = ones(Np, Nmom)
-        F = zeros(Np, Nmom)
+        M = ones(Nx, Nmom)
+        F = zeros(Nx, Nmom)
         
         dt = 0.01
         dx = 0.1
-        vpmin = -ones(Np)
-        vpmax = ones(Np)
+        vpmin = -ones(Nx)
+        vpmax = ones(Nx)
         
         # Test with different BC combinations
         Mp1 = pas_HLL(M, F, dt, dx, vpmin, vpmax; apply_bc_left=true, apply_bc_right=true)

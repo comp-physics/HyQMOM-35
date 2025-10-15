@@ -144,7 +144,8 @@ function run_simulation(config_name)
     end
     
     config = TEST_CONFIGS[config_name]
-    Np = config.Np
+    Nx = config.Nx
+    Ny = config.Ny
     tmax = config.tmax
     
     # Load HyQMOM
@@ -158,12 +159,13 @@ function run_simulation(config_name)
     
     if rank == 0
         println("\n[RUN] Running $(nprocs)-rank simulation: $(config_name)")
-        println("  Np=$(Np), tmax=$(tmax)")
+        println("  Nx=$(Nx), Ny=$(Ny), tmax=$(tmax)")
     end
     
     # Run simulation
     results = run_simulation(
-        Np = Np,
+        Nx = Nx,
+        Ny = Ny,
         tmax = tmax,
         num_workers = nprocs,
         verbose = false,
@@ -182,7 +184,7 @@ function run_simulation(config_name)
         println("    Final time: $(final_time)")
         println("    Time steps: $(time_steps)")
         
-        return (M=M, final_time=final_time, time_steps=time_steps, Np=Np)
+        return (M=M, final_time=final_time, time_steps=time_steps, Nx=Nx, Ny=Ny)
     else
         return nothing
     end
