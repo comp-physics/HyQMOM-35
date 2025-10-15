@@ -42,7 +42,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("="^70)
     
     # Extract grid
-    Np = params.Np
+    Nx = params.Nx
+    Ny = params.Ny
     Nz = params.Nz
     xm = collect(grid.xm)
     ym = collect(grid.ym)
@@ -361,10 +362,11 @@ function interactive_3d_timeseries(snapshots, grid, params;
         quants = compute_quantities(snapshots[idx].M)
         
         # Subsample for streamlines
-        step = max(1, div(Np, n_streamlines))
+        step_x = max(1, div(Nx, n_streamlines))
+        step_y = max(1, div(Ny, n_streamlines))
         seed_points = []
-        for i in 1:step:Np
-            for j in 1:step:Np
+        for i in 1:step_x:Nx
+            for j in 1:step_y:Ny
                 for k in 1:max(1, div(Nz,2)):Nz
                     push!(seed_points, GLMakie.Point3f(xm[i], ym[j], zm[k]))
                 end
