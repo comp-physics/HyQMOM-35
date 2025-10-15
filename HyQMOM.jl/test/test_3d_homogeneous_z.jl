@@ -82,8 +82,8 @@ end
                 @test results[:time_steps] >= 1
                 
                 M_3d = results[:M]
-                @test size(M_3d, 1) == Np
-                @test size(M_3d, 2) == Np
+                @test size(M_3d, 1) == Nx
+                @test size(M_3d, 2) == Ny
                 @test size(M_3d, 3) == Nz
                 @test size(M_3d, 4) == 35
                 
