@@ -6,7 +6,7 @@ This directory contains an **archived Julia implementation** of the 2D HyQMOM so
 
 ## Status: Archived
 
-⚠️ **This code is archived and not actively maintained.**
+**This code is archived and not actively maintained.**
 
 For active Julia development, see: **`../HyQMOM.jl/`**
 
@@ -100,7 +100,7 @@ The 3D version extended these rather than replacing them.
 
 ## Using This Archive
 
-### ⚠️ Not Recommended for Active Use
+### Not Recommended for Active Use
 
 Use `../HyQMOM.jl/` instead. But if you need to reference this:
 
@@ -235,23 +235,23 @@ julia --project=. test/test_mpi.jl
 
 As archived code:
 
-- ❌ May not work with latest Julia versions
-- ❌ Dependencies may be outdated
-- ❌ No active bug fixes
-- ❌ Limited documentation
-- ❌ Visualization may break on newer systems
+- May not work with latest Julia versions
+- Dependencies may be outdated
+- No active bug fixes
+- Limited documentation
+- Visualization may break on newer systems
 
 ## When to Use This vs. HyQMOM.jl
 
 | Use Case | Use This Archive | Use HyQMOM.jl |
 |----------|------------------|---------------|
-| New development | ❌ | ✅ |
-| Production runs | ❌ | ✅ |
-| 2D-only problems | Maybe | ✅ (3D works for 2D) |
-| Learning Julia port | ✅ | ✅ |
-| Algorithm verification | ✅ | ✅ |
-| Historical reference | ✅ | ❌ |
-| Paper citations | Check date | ✅ (current) |
+| New development | No | Yes |
+| Production runs | No | Yes |
+| 2D-only problems | Maybe | Yes (3D works for 2D) |
+| Learning Julia port | Yes | Yes |
+| Algorithm verification | Yes | Yes |
+| Historical reference | Yes | No |
+| Paper citations | Check date | Yes (current) |
 
 ## Citation
 

@@ -22,7 +22,7 @@ mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120 --Nz 
 ```
 
 **Features:**
-- ✅ Automatic serial/MPI support (no separate MPI example needed!)
+- Automatic serial/MPI support (no separate MPI example needed!)
 - Interactive GLMakie 3D viewer
 - Time-series animation with play/pause
 - Multiple quantities (density, U/V/W velocities)
@@ -42,7 +42,7 @@ mpiexec -n 4 julia --project=. examples/run_3d_crossing_jets.jl --Np 100
 ```
 
 **Features:**
-- ✅ Automatic serial/MPI support
+- Automatic serial/MPI support
 - Static 2D/3D plots (PyPlot/matplotlib)
 - Multiple slice visualizations
 - Centerline profiles

@@ -17,12 +17,12 @@ The 2D implementation serves multiple purposes:
 
 This directory (`2D_MATLAB/`) is the **organized, production version** with:
 
-- ✅ Proper directory structure (`src/`, `tests/`)
-- ✅ Consistent function naming and interfaces
-- ✅ Comprehensive test suite
-- ✅ MPI parallelization support
-- ✅ Golden file generation for validation
-- ✅ Documentation and comments
+- Proper directory structure (`src/`, `tests/`)
+- Consistent function naming and interfaces
+- Comprehensive test suite
+- MPI parallelization support
+- Golden file generation for validation
+- Documentation and comments
 
 For the original, unorganized code, see `../2D_MATLAB_ORIGINAL/`.
 

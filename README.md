@@ -6,7 +6,7 @@
 
 This repository contains multiple implementations and versions of the HyQMOM solver:
 
-### 📦 **[HyQMOM.jl/](HyQMOM.jl/)** - Main Julia Implementation (Current/Active)
+### **[HyQMOM.jl/](HyQMOM.jl/)** - Main Julia Implementation (Current/Active)
 The production-ready 3D Julia implementation with:
 - Interactive 3D visualization with GLMakie
 - MPI parallelization with 2D domain decomposition
@@ -17,7 +17,7 @@ The production-ready 3D Julia implementation with:
 
 See [HyQMOM.jl/README.md](HyQMOM.jl/README.md) for detailed documentation.
 
-### 🔬 **[3D_MATLAB/](3D_MATLAB/)** - 3D MATLAB Implementation
+### **[3D_MATLAB/](3D_MATLAB/)** - 3D MATLAB Implementation
 Reference 3D MATLAB implementation used for cross-validation:
 - MPI parallelization support
 - Golden file generation for Julia validation
@@ -26,7 +26,7 @@ Reference 3D MATLAB implementation used for cross-validation:
 
 See [3D_MATLAB/README.md](3D_MATLAB/README.md) for usage instructions.
 
-### 📐 **[2D_MATLAB/](2D_MATLAB/)** - 2D MATLAB Implementation (Organized)
+### **[2D_MATLAB/](2D_MATLAB/)** - 2D MATLAB Implementation (Organized)
 Production 2D MATLAB code with proper structure:
 - Faster testing platform (2D vs 3D)
 - Algorithm development and validation
@@ -35,7 +35,7 @@ Production 2D MATLAB code with proper structure:
 
 See [2D_MATLAB/README.md](2D_MATLAB/README.md) for details.
 
-### 📚 **[2D_MATLAB_ORIGINAL/](2D_MATLAB_ORIGINAL/)** - Original 2D Code (Archive)
+### **[2D_MATLAB_ORIGINAL/](2D_MATLAB_ORIGINAL/)** - Original 2D Code (Archive)
 Original unorganized 2D MATLAB research code:
 - Historical reference and algorithm verification
 - Preserved for mathematical correctness checking
@@ -43,7 +43,7 @@ Original unorganized 2D MATLAB research code:
 
 See [2D_MATLAB_ORIGINAL/README.md](2D_MATLAB_ORIGINAL/README.md) for context.
 
-### 🗄️ **[HyQMOM_2D_archive/](HyQMOM_2D_archive/)** - Archived 2D Julia Port
+### **[HyQMOM_2D_archive/](HyQMOM_2D_archive/)** - Archived 2D Julia Port
 Archived 2D Julia implementation:
 - Superseded by current 3D HyQMOM.jl
 - Kept for historical reference and algorithm verification

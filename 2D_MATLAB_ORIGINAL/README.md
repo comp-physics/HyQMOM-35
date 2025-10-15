@@ -13,7 +13,7 @@ This directory serves as:
 3. **Verification baseline** - Cross-checking organized implementations
 4. **Documentation** - Comments and notes from original development
 
-## ⚠️ Important Notes
+## Important Notes
 
 - **DO NOT use this for new development** - Use `../2D_MATLAB/` instead
 - **Code is unorganized** - All files in flat directory structure
@@ -86,12 +86,12 @@ This directory contains a flat collection of `.m` files including:
 
 **For active development, use the organized version in `../2D_MATLAB/`**, which contains:
 
-- ✅ Proper `src/` directory structure
-- ✅ Comprehensive `tests/` suite
-- ✅ Consistent function interfaces
-- ✅ MPI support with proper halo exchange
-- ✅ Golden file generation
-- ✅ Documentation and README
+- Proper `src/` directory structure
+- Comprehensive `tests/` suite
+- Consistent function interfaces
+- MPI support with proper halo exchange
+- Golden file generation
+- Documentation and README
 
 ## Using This Code
 
@@ -160,18 +160,18 @@ The organized code in `../2D_MATLAB/` was created by:
 
 Reference this original code when:
 
-- ✅ Verifying mathematical correctness of algorithms
-- ✅ Understanding original research intent
-- ✅ Debugging subtle numerical differences
-- ✅ Exploring algorithm variations tried during research
-- ✅ Writing papers that cite original implementation
+- Verifying mathematical correctness of algorithms
+- Understanding original research intent
+- Debugging subtle numerical differences
+- Exploring algorithm variations tried during research
+- Writing papers that cite original implementation
 
 Do NOT use this for:
 
-- ❌ New feature development
-- ❌ Production simulations
-- ❌ Teaching examples
-- ❌ Collaborative projects
+- New feature development
+- Production simulations
+- Teaching examples
+- Collaborative projects
 
 ## Historical Context
 
