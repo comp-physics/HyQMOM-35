@@ -11,8 +11,8 @@ function setupOnce(testCase)
     addpath('../src');
     addpath('../src/autogen');
     
-    % Store paths in test case data
-    testCase.TestData.goldenfiles_dir = '../goldenfiles';
+    % Store paths in test case data (root goldenfiles/ shared with Julia)
+    testCase.TestData.goldenfiles_dir = '../../goldenfiles';
     testCase.TestData.tolerance = 1e-6;  % Tolerance for MPI (floating-point differences)
     
     % Check if Parallel Computing Toolbox is available
