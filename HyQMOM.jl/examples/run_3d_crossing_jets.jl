@@ -9,10 +9,10 @@ For interactive 3D visualization, use: run_3d_jets_timeseries.jl
 Usage:
   # Serial
   julia --project=. examples/run_3d_crossing_jets.jl
-  julia --project=. examples/run_3d_crossing_jets.jl --Np 60 --tmax 0.1
+  julia --project=. examples/run_3d_crossing_jets.jl --Nx 60 --Ny 60 --tmax 0.1
   
   # MPI parallel
-  mpiexec -n 4 julia --project=. examples/run_3d_crossing_jets.jl --Np 100
+  mpiexec -n 4 julia --project=. examples/run_3d_crossing_jets.jl --Nx 100 --Ny 100
 
 Requirements:
   - PyPlot: julia> using Pkg; Pkg.add("PyPlot")
@@ -30,7 +30,8 @@ rank = MPI.Comm_rank(comm)
 
 # Parse parameters
 params = parse_simulation_params(
-    Np = 40,
+    Nx = 40,
+    Ny = 40,
     Nz = 20,
     tmax = 0.02,
     Ma = 0.0,

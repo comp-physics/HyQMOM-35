@@ -13,11 +13,14 @@ Usage:
   julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
   julia --project=. examples/run_3d_custom_jets.jl --config quad-jet
   
-  # Standard crossing jets (same as run_3d_jets_timeseries.jl)
+  # Standard 3D crossing jets (default - fully 3D diagonal motion)
   julia --project=. examples/run_3d_custom_jets.jl --config crossing
   
+  # 2D-like crossing jets (motion in x-y plane only)
+  julia --project=. examples/run_3d_custom_jets.jl --config crossing2D
+  
   # With MPI
-  mpiexec -n 4 julia --project=. examples/run_3d_custom_jets.jl --config triple-jet --Np 100
+  mpiexec -n 4 julia --project=. examples/run_3d_custom_jets.jl --config triple-jet --Nx 100 --Ny 100
   
   # Override physics parameters
   julia --project=. examples/run_3d_custom_jets.jl --config quad-jet --Ma 1.5 --tmax 0.3
@@ -62,11 +65,12 @@ function get_jet_configuration(config_name::String, params)
     Lx = xmax - xmin
     Ly = ymax - ymin
     Lz = zmax - zmin
-    
-    # Common parameters
+
+    # Common parameters - use values from params (command line or defaults)
     Ma = params.Ma
-    rhol = 1.0  # Jet density
-    rhor = 0.01  # Background density
+    Kn = params.Kn
+    rhol = params.rhol      # Jet density
+    rhor = params.rhor      # Background density
     T = params.T
     
     # Jet size (10% of domain)
@@ -82,7 +86,29 @@ function get_jet_configuration(config_name::String, params)
     )
     
     if config_name == "crossing"
-        # Classic crossing jets (moving diagonally in x-y plane)
+        # Classic 3D crossing jets (moving diagonally through 3D space)
+        Uc = Ma / sqrt(3.0)  # Velocity component in each direction for diagonal motion
+        offset = jet_width * 0.6
+        
+        jets = [
+            CubicRegion(
+                center = (x_center - offset, y_center - offset, z_center - offset),
+                width = (jet_width, jet_width, jet_width),
+                density = rhol,
+                velocity = (Uc, Uc, Uc),  # Moving diagonally through 3D space
+                temperature = T
+            ),
+            CubicRegion(
+                center = (x_center + offset, y_center + offset, z_center + offset),
+                width = (jet_width, jet_width, jet_width),
+                density = rhol,
+                velocity = (-Uc, -Uc, -Uc),  # Moving opposite diagonal
+                temperature = T
+            )
+        ]
+
+    elseif config_name == "crossing2D"
+        # 2D-like crossing jets (moving diagonally in x-y plane at fixed z)
         Uc = Ma / sqrt(2.0)
         offset = jet_width * 0.6
         
@@ -91,36 +117,14 @@ function get_jet_configuration(config_name::String, params)
                 center = (x_center - offset, y_center - offset, z_center),
                 width = (jet_width, jet_width, jet_width),
                 density = rhol,
-                velocity = (Uc, Uc, 0.0),  # Moving ↗
+                velocity = (Uc, Uc, 0.0),  # Moving ↗ in x-y plane
                 temperature = T
             ),
             CubicRegion(
                 center = (x_center + offset, y_center + offset, z_center),
                 width = (jet_width, jet_width, jet_width),
                 density = rhol,
-                velocity = (-Uc, -Uc, 0.0),  # Moving ↙
-                temperature = T
-            )
-        ]
-
-    elseif config_name == "crossing3D"
-        # Classic crossing jets (moving diagonally in x-y plane)
-        Uc = Ma / sqrt(2.0)
-        offset = jet_width * 0.6
-        
-        jets = [
-            CubicRegion(
-                center = (x_center - offset, y_center - offset, z_center - offset),
-                width = (jet_width, jet_width, jet_width),
-                density = rhol,
-                velocity = (Uc, Uc, Uc),  # Moving ↗
-                temperature = T
-            ),
-            CubicRegion(
-                center = (x_center + offset, y_center + offset, z_center+offset),
-                width = (jet_width, jet_width, jet_width),
-                density = rhol,
-                velocity = (-Uc, -Uc, -Uc),  # Moving ↙
+                velocity = (-Uc, -Uc, 0.0),  # Moving ↙ in x-y plane
                 temperature = T
             )
         ]
@@ -240,7 +244,7 @@ function get_jet_configuration(config_name::String, params)
         ]
         
     else
-        error("Unknown configuration: $config_name. Options: crossing, triple-jet, quad-jet, vertical-jet, spiral")
+        error("Unknown configuration: $config_name. Options: crossing, crossing2D, triple-jet, quad-jet, vertical-jet, spiral")
     end
     
     return background, jets
@@ -254,7 +258,8 @@ rank = MPI.Comm_rank(comm)
 # Parse parameters with custom config option
 params = parse_simulation_params(
     # Code defaults (can be overridden with command-line args)
-    Np = 20,
+    Nx = 20,
+    Ny = 20,
     Nz = 20,
     tmax = 0.1,
     Ma = 0.0,

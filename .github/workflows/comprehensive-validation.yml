@@ -38,7 +38,7 @@ jobs:
         uses: matlab-actions/run-command@v2
         with:
           command: |
-            cd tests
+            cd 3D_MATLAB/tests
             exit_code = run_all_tests();
             if exit_code ~= 0
               error('MATLAB tests failed');

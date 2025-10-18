@@ -14,7 +14,8 @@ Usage:
     
     # Option 2: Override some defaults in code
     params = parse_simulation_params(
-        Np = 60,
+        Nx = 60,
+        Ny = 60,
         Nz = 30,
         tmax = 0.1
     )
@@ -31,7 +32,8 @@ Returns a NamedTuple with all default simulation parameters.
 function get_default_params()
     return (
         # Grid resolution
-        Np = 40,
+        Nx = 40,
+        Ny = 40,
         Nz = 20,
         
         # Domain extents (default: [-0.5, 0.5]³)
@@ -165,8 +167,9 @@ function print_help()
     Usage: julia example.jl [OPTIONS]
     
     Common Options:
-      --Np N                Grid resolution in x and y (default: 40)
-      --Nz N                Grid resolution in z (default: 20)
+      --Nx N                Grid resolution in x direction (default: 40)
+      --Ny N                Grid resolution in y direction (default: 40)
+      --Nz N                Grid resolution in z direction (default: 20)
       
       --xmin X              Domain extent x minimum (default: -0.5)
       --xmax X              Domain extent x maximum (default: 0.5)
@@ -199,11 +202,11 @@ function print_help()
     
     Examples:
       julia example.jl
-      julia example.jl --Np 60 --Nz 30
+      julia example.jl --Nx 60 --Ny 60 --Nz 30
       julia example.jl --tmax 0.1 --Ma 1.5
       julia example.jl --xmin 0 --xmax 1 --ymin 0 --ymax 1 --zmin 0 --zmax 1
       julia example.jl --snapshot-interval 5
-      mpiexec -n 4 julia example.jl --Np 80 --snapshot-interval 10
+      mpiexec -n 4 julia example.jl --Nx 80 --Ny 80 --snapshot-interval 10
     """)
 end
 
@@ -266,8 +269,8 @@ function print_params_summary(params; rank=0, comm=nothing)
                 println("  Z-direction: No decomposition (all ranks have full z)")
                 
                 # Estimate local grid size (assumes uniform distribution)
-                local_nx = div(params.Np, nprocs) + (params.Np % nprocs > 0 ? 1 : 0)
-                println("  Estimated local grid per rank: ~$(local_nx)×$(params.Np)×$(params.Nz) (uniform distribution estimate)")
+                local_nx = div(params.Nx, nprocs) + (params.Nx % nprocs > 0 ? 1 : 0)
+                println("  Estimated local grid per rank: ~$(local_nx)×$(params.Ny)×$(params.Nz) (uniform distribution estimate)")
             else
                 println("\nExecution: Single rank (serial)")
             end
@@ -279,11 +282,11 @@ function print_params_summary(params; rank=0, comm=nothing)
     end
     
     println("\nGrid & Domain:")
-    println("  Resolution: $(params.Np)×$(params.Np)×$(params.Nz)")
+    println("  Resolution: $(params.Nx)×$(params.Ny)×$(params.Nz)")
     println("  Domain: [$(params.xmin), $(params.xmax)] × [$(params.ymin), $(params.ymax)] × [$(params.zmin), $(params.zmax)]")
     
-    dx = (params.xmax - params.xmin) / params.Np
-    dy = (params.ymax - params.ymin) / params.Np
+    dx = (params.xmax - params.xmin) / params.Nx
+    dy = (params.ymax - params.ymin) / params.Ny
     dz = (params.zmax - params.zmin) / params.Nz
     println("  Grid spacing: dx=$(round(dx, digits=4)), dy=$(round(dy, digits=4)), dz=$(round(dz, digits=4))")
     

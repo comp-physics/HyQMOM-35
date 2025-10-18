@@ -104,14 +104,18 @@ function run_julia_simulation(Np, tmax)
     """
     
     println("\n[RUN] Running Julia simulation with EXACT MATLAB parameters:")
-    println("  Np = $Np")
+    println("  Np = $Np (using Nx=Ny=$Np for square grid)")
     println("  tmax = $tmax")
     println("  Kn = 1.0, Ma = 0.0, CFL = 0.5 (MATLAB defaults)")
     println("  rhol = 1.0, rhor = 0.01 (MATLAB IC)")
     
+    # MATLAB uses square grids, so enforce Nx = Ny = Np
+    Nx = Np
+    Ny = Np
+    
     # Setup parameters EXACTLY as MATLAB does
-    dx = 1.0 / Np
-    dy = 1.0 / Np
+    dx = 1.0 / Nx
+    dy = 1.0 / Ny
     Nmom = 35
     nnmax = 20000000
     Kn = 1.0
@@ -133,9 +137,10 @@ function run_julia_simulation(Np, tmax)
     # Diagnostic parameters
     symmetry_check_interval = 10
     
-    # Package parameters
+    # Package parameters (MATLAB uses square grids, so Nx=Ny=Np)
     params = (
-        Np=Np, 
+        Nx=Nx,
+        Ny=Ny,
         tmax=tmax, 
         Kn=Kn, 
         Ma=Ma, 
@@ -479,10 +484,14 @@ if !STANDALONE
                 Nz = Int(params_matlab["Nz"])
                 tmax = params_matlab["tmax"]
                 
+                # MATLAB uses square grids, so enforce Nx = Ny = Np
+                Nx = Np
+                Ny = Np
+                
                 # Setup parameters
                 params = (
-                    Np=Np, Nz=Nz, tmax=tmax, Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5,
-                    dx=1.0/Np, dy=1.0/Np, dz=1.0/Nz, Nmom=35, nnmax=20000000, dtmax=1.0,
+                    Nx=Nx, Ny=Ny, Nz=Nz, tmax=tmax, Kn=1.0, Ma=0.0, flag2D=0, CFL=0.5,
+                    dx=1.0/Nx, dy=1.0/Ny, dz=1.0/Nz, Nmom=35, nnmax=20000000, dtmax=1.0,
                     rhol=1.0, rhor=0.01, T=1.0, r110=0.0, r101=0.0, r011=0.0,
                     symmetry_check_interval=10,
                     homogeneous_z=true,  # MATLAB golden file uses homogeneous z

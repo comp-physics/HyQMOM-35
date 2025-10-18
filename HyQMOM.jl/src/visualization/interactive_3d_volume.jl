@@ -37,7 +37,8 @@ function interactive_3d_volume(M_final, grid, params;
     println("="^70)
     
     # Extract grid
-    Np = params.Np
+    Nx = params.Nx
+    Ny = params.Ny
     Nz = params.Nz
     xm = collect(grid.xm)
     ym = collect(grid.ym)
@@ -379,7 +380,7 @@ function interactive_3d_volume(M_final, grid, params;
         Flow |U|ₘₐₓ: %.3f
         """, name, minimum(data), maximum(data), sum(data)/length(data),
              $(slider_iso1.value), $(slider_iso2.value), $(slider_iso3.value),
-             Np, Np, Nz, maximum(abs.(U)))
+             Nx, Ny, Nz, maximum(abs.(U)))
     end)
     
     GLMakie.Label(fig[4, 1:4], stats_text, fontsize=11, halign=:left, 
@@ -428,7 +429,8 @@ function compute_vectors(xm, ym, zm, U, V, W, step)
 end
 
 function compute_stream(xm, ym, zm, U, V, W, n_seeds, max_length)
-    Np = length(xm)
+    Nx = length(xm)
+    Ny = length(ym)
     Nz = length(zm)
     
     seed_range = range(0.35, 0.45, length=n_seeds)
@@ -454,8 +456,8 @@ function compute_stream(xm, ym, zm, U, V, W, n_seeds, max_length)
         pos = [seed[1], seed[2], seed[3]]
         
         for step in 1:max_length
-            ix = clamp(searchsortedfirst(xm, pos[1]), 1, Np)
-            iy = clamp(searchsortedfirst(ym, pos[2]), 1, Np)
+            ix = clamp(searchsortedfirst(xm, pos[1]), 1, Nx)
+            iy = clamp(searchsortedfirst(ym, pos[2]), 1, Ny)
             iz = clamp(searchsortedfirst(zm, pos[3]), 1, Nz)
             
             vel = [U[ix, iy, iz], V[ix, iy, iz], W[ix, iy, iz]]

@@ -1,17 +1,19 @@
 """
-    setup_mpi_cartesian_3d(Np::Int, Nz::Int, halo::Int, comm::MPI.Comm)
+    setup_mpi_cartesian_3d(Nx::Int, Ny::Int, Nz::Int, halo::Int, comm::MPI.Comm)
 
 Create a 2D Cartesian domain decomposition over MPI ranks (no z decomposition).
 
 # Arguments
-- `Np`: Global grid size along x and y (Np x Np)
+- `Nx`: Global grid size along x direction
+- `Ny`: Global grid size along y direction
 - `Nz`: Global grid size along z (no decomposition, all ranks have full z)
 - `halo`: Halo width in cells (typically 2)
 - `comm`: MPI communicator
 
 # Returns
 A named tuple with fields:
-- `np_global`: Global grid size in x and y
+- `nx_global`: Global grid size in x
+- `ny_global`: Global grid size in y
 - `nz_global`: Global grid size in z
 - `halo`: Halo width
 - `dims`: (Px, Py, 1) process grid dimensions (Pz=1, no z decomposition)
@@ -30,12 +32,12 @@ A named tuple with fields:
 
 # Example
 ```julia
-decomp = setup_mpi_cartesian_3d(40, 4, 2, MPI.COMM_WORLD)
+decomp = setup_mpi_cartesian_3d(40, 40, 4, 2, MPI.COMM_WORLD)
 # For 4 ranks: creates 2×2×1 process grid
 # Each rank gets 20×20×4 interior cells
 ```
 """
-function setup_mpi_cartesian_3d(Np::Int, Nz::Int, halo::Int, comm::MPI.Comm)
+function setup_mpi_cartesian_3d(Nx::Int, Ny::Int, Nz::Int, halo::Int, comm::MPI.Comm)
     # Discover parallel environment
     rank = MPI.Comm_rank(comm)
     nprocs = MPI.Comm_size(comm)
@@ -50,8 +52,8 @@ function setup_mpi_cartesian_3d(Np::Int, Nz::Int, halo::Int, comm::MPI.Comm)
     rz = 0  # Always 0 since Pz=1
     
     # Compute local interior sizes using block decomposition with remainders
-    nx_local, i0, i1 = block_partition_1d(Np, Px, rx)
-    ny_local, j0, j1 = block_partition_1d(Np, Py, ry)
+    nx_local, i0, i1 = block_partition_1d(Nx, Px, rx)
+    ny_local, j0, j1 = block_partition_1d(Ny, Py, ry)
     
     # Z dimension: all ranks have the full z extent
     nz_local = Nz
@@ -68,7 +70,8 @@ function setup_mpi_cartesian_3d(Np::Int, Nz::Int, halo::Int, comm::MPI.Comm)
     neighbors = (left=left, right=right, down=down, up=up)
     
     return (
-        np_global = Np,
+        nx_global = Nx,
+        ny_global = Ny,
         nz_global = Nz,
         halo = halo,
         dims = (Px, Py, Pz),

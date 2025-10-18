@@ -12,17 +12,17 @@ All examples support **full parameter control** via both code defaults and comma
 julia --project=. examples/run_3d_jets_timeseries.jl
 
 # Serial with custom parameters
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 60 --tmax 0.1 --snapshot-interval 5
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60 --tmax 0.1 --snapshot-interval 5
 
 # MPI parallel (4 ranks)
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 100 --Ny 100
 
 # MPI parallel with custom parameters
-mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120 --Nz 60 --snapshot-interval 5
+mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 120 --Ny 120 --Nz 60 --snapshot-interval 5
 ```
 
 **Features:**
-- ✅ Automatic serial/MPI support (no separate MPI example needed!)
+- Automatic serial/MPI support (no separate MPI example needed!)
 - Interactive GLMakie 3D viewer
 - Time-series animation with play/pause
 - Multiple quantities (density, U/V/W velocities)
@@ -35,14 +35,14 @@ mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120 --Nz 
 ```bash
 # Serial
 julia --project=. examples/run_3d_crossing_jets.jl
-julia --project=. examples/run_3d_crossing_jets.jl --Np 60 --tmax 0.05
+julia --project=. examples/run_3d_crossing_jets.jl --Nx 60 --Ny 60 --tmax 0.05
 
 # MPI parallel
-mpiexec -n 4 julia --project=. examples/run_3d_crossing_jets.jl --Np 100
+mpiexec -n 4 julia --project=. examples/run_3d_crossing_jets.jl --Nx 100 --Ny 100
 ```
 
 **Features:**
-- ✅ Automatic serial/MPI support
+- Automatic serial/MPI support
 - Static 2D/3D plots (PyPlot/matplotlib)
 - Multiple slice visualizations
 - Centerline profiles
@@ -70,7 +70,7 @@ julia --project=. examples/run_3d_jets_timeseries.jl --help
 
 ### Command-Line Override System
 **Priority (highest to lowest):**
-1. Command-line arguments (`--Np 60`)
+1. Command-line arguments (`--Nx 60 --Ny 60`)
 2. Code defaults in the example file
 3. Global defaults from `parse_params.jl`
 
@@ -78,8 +78,9 @@ julia --project=. examples/run_3d_jets_timeseries.jl --help
 
 #### Grid & Domain
 ```bash
---Np N          # Grid resolution in x,y (default: 40)
---Nz N          # Grid resolution in z (default: 20)
+--Nx N          # Grid resolution in x direction (default: 40)
+--Ny N          # Grid resolution in y direction (default: 40)
+--Nz N          # Grid resolution in z direction (default: 20)
 --xmin X        # Domain x minimum (default: -0.5)
 --xmax X        # Domain x maximum (default: 0.5)
 # Similar for --ymin, --ymax, --zmin, --zmax
@@ -105,18 +106,18 @@ julia --project=. examples/run_3d_jets_timeseries.jl --help
 
 #### Quick Low-Resolution Test
 ```bash
-julia run_3d_jets_timeseries.jl --Np 20 --Nz 10 --tmax 0.01 --snapshot-interval 5
+julia run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --Nz 10 --tmax 0.01 --snapshot-interval 5
 ```
 
 #### High-Resolution Run
 ```bash
-mpiexec -n 4 julia run_3d_jets_mpi.jl --Np 80 --Nz 40 --tmax 0.2
+mpiexec -n 4 julia run_3d_jets_mpi.jl --Nx 80 --Ny 80 --Nz 40 --tmax 0.2
 ```
 
 #### Custom Domain
 ```bash
 julia run_3d_jets_timeseries.jl \
-  --xmin 0 --xmax 2 --ymin 0 --ymax 2 --zmin 0 --zmax 2 --Np 80
+  --xmin 0 --xmax 2 --ymin 0 --ymax 2 --zmin 0 --zmax 2 --Nx 80 --Ny 80
 ```
 
 #### Parameter Sweep
@@ -128,7 +129,7 @@ done
 
 #### Production Run (No Visualization)
 ```bash
-julia run_3d_jets_timeseries.jl --Np 100 --tmax 1.0 --snapshot-interval 0
+julia run_3d_jets_timeseries.jl --Nx 100 --Ny 100 --tmax 1.0 --snapshot-interval 0
 ```
 
 ## Implementation Details
@@ -141,7 +142,8 @@ include("parse_params.jl")
 
 # Parse with code defaults + command-line overrides
 params = parse_simulation_params(
-    Np = 40,    # Code default, override with --Np N
+    Nx = 40,    # Code default, override with --Nx N
+    Ny = 40,    # Code default, override with --Ny N
     Nz = 20,    # Code default, override with --Nz N
     tmax = 0.05 # Code default, override with --tmax T
 )
@@ -158,13 +160,13 @@ print_params_summary(params, rank=rank)
 ## Tips & Best Practices
 
 ### For Quick Tests
-- Use low resolution: `--Np 20 --Nz 10`
+- Use low resolution: `--Nx 20 --Ny 20 --Nz 10`
 - Short time: `--tmax 0.01`
 - Fewer snapshots: `--snapshot-interval 10`
 
 ### For Production
 - Use MPI: `mpiexec -n 8 julia run_3d_jets_mpi.jl`
-- Higher resolution: `--Np 100 --Nz 50`
+- Higher resolution: `--Nx 100 --Ny 100 --Nz 50`
 - Disable snapshots if not needed: `--snapshot-interval 0`
 
 ### For Visualization
@@ -183,7 +185,7 @@ print_params_summary(params, rank=rank)
 ### Out of Memory
 ```bash
 # Reduce resolution
-julia ... --Np 30 --Nz 15
+julia ... --Nx 30 --Ny 30 --Nz 15
 
 # Increase snapshot interval
 julia ... --snapshot-interval 10
@@ -201,7 +203,7 @@ julia ... --Ma 0.7
 julia ... --CFL 0.5
 
 # Increase resolution
-julia ... --Np 60 --Nz 30
+julia ... --Nx 60 --Ny 60 --Nz 30
 ```
 
 ### GLMakie Viewer Doesn't Open
@@ -210,19 +212,9 @@ julia ... --Np 60 --Nz 30
 - Run on rank 0 only (already handled in MPI examples)
 
 ### Performance Issues
-- Use MPI for large grids: `mpiexec -n 4 julia run_3d_jets_timeseries.jl --Np 100`
+- Use MPI for large grids: `mpiexec -n 4 julia run_3d_jets_timeseries.jl --Nx 100 --Ny 100`
 - Reduce snapshot frequency: `--snapshot-interval 10`
 - Disable diagnostics: `--debug-output false`
-
-## File Structure
-
-```
-examples/
-├── README.md                    # This file
-├── parse_params.jl              # Parameter parsing utilities (MPI-aware)
-├── run_3d_jets_timeseries.jl   # Main: interactive time-series (serial/MPI)
-└── run_3d_crossing_jets.jl     # Static PyPlot visualization (serial/MPI)
-```
 
 ## Advanced Usage
 
@@ -238,7 +230,8 @@ MPI.Init()
 
 # Parse parameters with your defaults
 params = parse_simulation_params(
-    Np = 40,
+    Nx = 40,
+    Ny = 40,
     # ... your custom defaults
 )
 

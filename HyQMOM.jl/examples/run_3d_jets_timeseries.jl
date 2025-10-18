@@ -48,7 +48,8 @@ rank = MPI.Comm_rank(comm)
 # Parse parameters: code defaults + command-line overrides
 params = parse_simulation_params(
     # Code defaults (can be overridden with command-line args)
-    Np = 40,
+    Nx = 40,
+    Ny = 40,
     Nz = 40,
     tmax = 0.2,
     Ma = 0.0,

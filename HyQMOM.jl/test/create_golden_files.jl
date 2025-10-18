@@ -38,8 +38,8 @@ println()
 
 # Test configurations
 const TEST_CONFIGS = Dict(
-    "small" => (Np=20, tmax=0.1),
-    "medium" => (Np=40, tmax=0.05),
+    "small" => (Nx=20, Ny=20, tmax=0.1),
+    "medium" => (Nx=40, Ny=40, tmax=0.05),
 )
 
 # Determine which configs to generate
@@ -59,16 +59,18 @@ for config_name in configs_to_generate
     end
     
     config = TEST_CONFIGS[config_name]
-    Np = config.Np
+    Nx = config.Nx
+    Ny = config.Ny
     tmax = config.tmax
     
-    println("Configuration: $(config_name) (Np=$(Np), tmax=$(tmax))")
+    println("Configuration: $(config_name) (Nx=$(Nx), Ny=$(Ny), tmax=$(tmax))")
     println("-"^70)
     
     # Run with 1 rank (reference)
     println("  Running 1-rank simulation...")
     results = run_simulation(
-        Np = Np,
+        Nx = Nx,
+        Ny = Ny,
         tmax = tmax,
         num_workers = 1,
         verbose = false,

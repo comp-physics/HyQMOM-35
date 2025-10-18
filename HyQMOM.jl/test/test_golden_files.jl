@@ -13,7 +13,7 @@ push!(LOAD_PATH, joinpath(@__DIR__, ".."))
 using HyQMOM
 
 const GOLDEN_TOL = 1e-10  # Tolerance for golden file comparisons
-const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "tests", "goldenfiles")
+const GOLDEN_DIR = joinpath(@__DIR__, "..", "..", "3D_MATLAB", "tests", "goldenfiles")
 
 @testset "Golden File Validation" begin
     
