@@ -66,16 +66,12 @@ function get_jet_configuration(config_name::String, params)
     Ly = ymax - ymin
     Lz = zmax - zmin
 
-    Nx, Ny, Nz = 40, 40, 40
-    
-    # Common parameters
-    Ma = 0.0        #This is the default
-    Kn = 1.0        # This is the default
-    rhol = 1.0      # Jet density
-    rhor = 0.01     # Background density
+    # Common parameters - use values from params (command line or defaults)
+    Ma = params.Ma
+    Kn = params.Kn
+    rhol = params.rhol      # Jet density
+    rhor = params.rhor      # Background density
     T = params.T
-
-    CFL = 0.5 # Adjust this value to control the stability of the simulation
     
     # Jet size (10% of domain)
     jet_width = 0.1 * Lx
