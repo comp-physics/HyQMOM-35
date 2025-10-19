@@ -79,6 +79,9 @@ function simulation_runner(params)
     r101 = params.r101
     r011 = params.r011
     
+    # Algorithm selection: use 3D unsplit (rotationally invariant) or dimensional splitting
+    use_3d_unsplit = get(params, :use_3d_unsplit, false)
+    
     # Diagnostic parameters
     symmetry_check_interval = params.symmetry_check_interval
     homogeneous_z = params.homogeneous_z
@@ -284,6 +287,95 @@ function simulation_runner(params)
         nn += 1
         step_start_time = time()
         
+        # ================================================================
+        # FLUX COMPUTATION: Choose between dimensional splitting vs 3D unsplit
+        # ================================================================
+        
+        if use_3d_unsplit
+            # ============================================================
+            # TRUE 3D UNSPLIT METHOD - Rotationally Invariant!
+            # ============================================================
+            # This method computes fluxes by rotating moment vectors to align
+            # with face normals, solving 1D flux problems, then rotating back.
+            # This eliminates directional bias from dimensional splitting.
+            
+            # Define face normals (normalized)
+            normal_x = [1.0, 0.0, 0.0]
+            normal_y = [0.0, 1.0, 0.0]
+            normal_z = [0.0, 0.0, 1.0]
+            
+            # Compute fluxes at all interior faces using rotation
+            for k in 1:nz
+                for i in 1:nx
+                    for j in 1:ny
+                        ih = i + halo
+                        jh = j + halo
+                        
+                        # X-faces (i+1/2, j, k)
+                        if i < nx
+                            M_L = M[ih, jh, k, :]
+                            M_R = M[ih+1, jh, k, :]
+                            Fx[ih, jh, k, :] = compute_3d_flux(M_L, M_R, normal_x, flag2D, Ma)
+                        end
+                        
+                        # Y-faces (i, j+1/2, k)
+                        if j < ny
+                            M_L = M[ih, jh, k, :]
+                            M_R = M[ih, jh+1, k, :]
+                            Fy[ih, jh, k, :] = compute_3d_flux(M_L, M_R, normal_y, flag2D, Ma)
+                        end
+                        
+                        # Z-faces (i, j, k+1/2)
+                        if k < nz
+                            M_L = M[ih, jh, k, :]
+                            M_R = M[ih, jh, k+1, :]
+                            Fz[ih, jh, k, :] = compute_3d_flux(M_L, M_R, normal_z, flag2D, Ma)
+                        else
+                            # At Z-boundary, use copy condition
+                            Fz[ih, jh, k, :] = compute_3d_flux(M[ih, jh, k, :], M[ih, jh, k, :], normal_z, flag2D, Ma)
+                        end
+                    end
+                end
+            end
+            
+            # Exchange flux halos
+            halo_exchange_3d!(Fx, decomp, bc)
+            halo_exchange_3d!(Fy, decomp, bc)
+            halo_exchange_3d!(Fz, decomp, bc)
+            
+            # For 3D unsplit, we still need wave speeds for CFL condition
+            # Compute them from the realizable states
+            for k in 1:nz
+                for i in 1:nx
+                    for j in 1:ny
+                        ih = i + halo
+                        jh = j + halo
+                        MOM = M[ih, jh, k, :]
+                        
+                        _, _, _, Mr = Flux_closure35_and_realizable_3D(MOM, flag2D, Ma)
+                        v6xmin[i,j,k], v6xmax[i,j,k], Mr = eigenvalues6_hyperbolic_3D(Mr, 1, flag2D, Ma)
+                        v6ymin[i,j,k], v6ymax[i,j,k], Mr = eigenvalues6_hyperbolic_3D(Mr, 2, flag2D, Ma)
+                        v6zmin[i,j,k], v6zmax[i,j,k], Mr = eigenvalues6z_hyperbolic_3D(Mr, flag2D, Ma)
+                        
+                        _, v5xmin[i,j,k], v5xmax[i,j,k] = closure_and_eigenvalues(Mr[[1,2,3,4,5]])
+                        _, v5ymin[i,j,k], v5ymax[i,j,k] = closure_and_eigenvalues(Mr[[1,6,10,13,15]])
+                        _, v5zmin[i,j,k], v5zmax[i,j,k] = closure_and_eigenvalues(Mr[[1,16,20,23,25]])
+                        
+                        vpxmin[i,j,k] = min(v5xmin[i,j,k], v6xmin[i,j,k])
+                        vpxmax[i,j,k] = max(v5xmax[i,j,k], v6xmax[i,j,k])
+                        vpymin[i,j,k] = min(v5ymin[i,j,k], v6ymin[i,j,k])
+                        vpymax[i,j,k] = max(v5ymax[i,j,k], v6ymax[i,j,k])
+                        vpzmin[i,j,k] = min(v5zmin[i,j,k], v6zmin[i,j,k])
+                        vpzmax[i,j,k] = max(v5zmax[i,j,k], v6zmax[i,j,k])
+                    end
+                end
+            end
+            
+        else
+            # ============================================================
+            # ORIGINAL DIMENSIONAL SPLITTING METHOD
+            # ============================================================
+            # This is the MATLAB-verified method that uses Strang splitting
         
         # Compute fluxes and wave speeds for interior cells
         for k in 1:nz
@@ -335,6 +427,8 @@ function simulation_runner(params)
                                                M, vpxmin, vpxmax, vpymin, vpymax, vpzmin, vpzmax,
                                                nx, ny, nz, halo, flag2D, Ma)
         
+        end  # End of if use_3d_unsplit/else block
+        
         # Global reduction for time step
         vmax_local = maximum([abs.(vpxmax); abs.(vpxmin); abs.(vpymax); abs.(vpymin); abs.(vpzmax); abs.(vpzmin)])
         vmax = MPI.Allreduce(vmax_local, max, comm)
@@ -368,6 +462,46 @@ function simulation_runner(params)
         
         t += dt
         
+        # ================================================================
+        # TIME UPDATE: Choose between dimensional splitting vs 3D unsplit
+        # ================================================================
+        
+        if use_3d_unsplit
+            # ============================================================
+            # TRUE 3D UNSPLIT UPDATE - Single divergence update
+            # ============================================================
+            # Compute ∂M/∂t = -∇·F directly from the unsplit fluxes
+            
+            for k in 1:nz
+                for i in 1:nx
+                    for j in 1:ny
+                        ih = i + halo
+                        jh = j + halo
+                        
+                        # X-flux divergence
+                        dFx = (Fx[ih+1, jh, k, :] .- Fx[ih, jh, k, :]) ./ dx
+                        
+                        # Y-flux divergence
+                        dFy = (Fy[ih, jh+1, k, :] .- Fy[ih, jh, k, :]) ./ dy
+                        
+                        # Z-flux divergence (handle boundary)
+                        if k < nz
+                            dFz = (Fz[ih, jh, k+1, :] .- Fz[ih, jh, k, :]) ./ dz
+                        else
+                            dFz = zeros(Nmom)  # No flux at Z-boundary
+                        end
+                        
+                        # Update: M^{n+1} = M^n - dt*(dFx + dFy + dFz)
+                        M[ih, jh, k, :] .-= dt .* (dFx .+ dFy .+ dFz)
+                    end
+                end
+            end
+            
+        else
+            # ============================================================
+            # ORIGINAL STRANG SPLITTING UPDATE
+            # ============================================================
+        
         # X-direction flux update
         Mnpx = similar(M)
         apply_flux_update_3d!(Mnpx, M, Fx, vpxmin, vpxmax, vpxmin_ext, vpxmax_ext,
@@ -391,6 +525,8 @@ function simulation_runner(params)
             Mnpy[halo+1:halo+nx, halo+1:halo+ny, :, :] +
             Mnpz[halo+1:halo+nx, halo+1:halo+ny, :, :] -
             2.0 .* M[halo+1:halo+nx, halo+1:halo+ny, :, :]
+        
+        end  # End of if use_3d_unsplit/else block
         
         # Exchange halos before realizability enforcement
         halo_exchange_3d!(M, decomp, bc)
