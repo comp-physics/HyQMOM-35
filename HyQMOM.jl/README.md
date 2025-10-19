@@ -25,6 +25,9 @@ mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 60
 
 - **3D moment-based kinetic solver** for Boltzmann-BGK equation
 - **MPI parallelization** with domain decomposition
+- **Two flux algorithms**:
+  - **Dimensional Splitting** (default): MATLAB-verified, 2× faster
+  - **3D Unsplit** (optional): Rotationally invariant, eliminates grid bias
 - **Interactive 3D visualization** with GLMakie (time-series animation)
 - **Flexible parameter control** via command-line arguments
 - **Serial or parallel** execution (automatic detection)
@@ -62,6 +65,23 @@ julia --project=. examples/run_3d_jets_timeseries.jl \
 See `examples/README.md` for complete parameter documentation.
 
 ## Examples
+
+### Algorithmic Comparisons (New!)
+
+**Compare dimensional splitting vs 3D unsplit methods:**
+
+```bash
+# Test dimensional splitting (default, MATLAB-verified, fast)
+mpiexec -n 1 julia --project=. examples/test_dimensional_splitting.jl
+
+# Test 3D unsplit (rotationally invariant, ~2x slower)
+mpiexec -n 1 julia --project=. examples/test_3d_unsplit.jl
+
+# Side-by-side comparison
+mpiexec -n 1 julia --project=. examples/compare_methods.jl
+```
+
+See [`FEATURE_3D_UNSPLIT.md`](FEATURE_3D_UNSPLIT.md) for details on the rotationally invariant algorithm.
 
 ### Interactive Visualization (Recommended)
 
