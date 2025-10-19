@@ -472,6 +472,9 @@ function simulation_runner(params)
             # ============================================================
             # Compute ∂M/∂t = -∇·F directly from the unsplit fluxes
             
+            # Use temporary array to avoid modifying M during the loop
+            M_updated = copy(M)
+            
             for k in 1:nz
                 for i in 1:nx
                     for j in 1:ny
@@ -492,10 +495,13 @@ function simulation_runner(params)
                         end
                         
                         # Update: M^{n+1} = M^n - dt*(dFx + dFy + dFz)
-                        M[ih, jh, k, :] .-= dt .* (dFx .+ dFy .+ dFz)
+                        M_updated[ih, jh, k, :] .= M[ih, jh, k, :] .- dt .* (dFx .+ dFy .+ dFz)
                     end
                 end
             end
+            
+            # Copy back only interior cells
+            M[halo+1:halo+nx, halo+1:halo+ny, :, :] .= M_updated[halo+1:halo+nx, halo+1:halo+ny, :, :]
             
         else
             # ============================================================

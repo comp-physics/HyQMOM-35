@@ -277,16 +277,35 @@ function compute_3d_flux(M_L::AbstractVector, M_R::AbstractVector,
     M_L_rot = rotate_moments_to_normal(M_L, normal)
     M_R_rot = rotate_moments_to_normal(M_R, normal)
     
-    # Step 2: Apply realizability correction in rotated frame
-    M_L_real = HyQMOM.Flux_closure35_and_realizable_3D(M_L_rot, flag2D, Ma)
-    M_R_real = HyQMOM.Flux_closure35_and_realizable_3D(M_R_rot, flag2D, Ma)
+    # Step 2: Apply realizability and get fluxes for both states
+    Fx_L, _, _, Mr_L = HyQMOM.Flux_closure35_and_realizable_3D(M_L_rot, flag2D, Ma)
+    Fx_R, _, _, Mr_R = HyQMOM.Flux_closure35_and_realizable_3D(M_R_rot, flag2D, Ma)
     
-    # Step 3: Compute 1D flux in X-direction (aligned with normal)
-    # The flux in the rotated frame is the standard X-direction flux
-    F_rot = HyQMOM.flux_HLL(M_L_real, M_R_real, Ma, flag2D)
+    # Step 3: Compute wave speeds for HLL
+    v6xmin_L, v6xmax_L, _ = HyQMOM.eigenvalues6_hyperbolic_3D(Mr_L, 1, flag2D, Ma)
+    v6xmin_R, v6xmax_R, _ = HyQMOM.eigenvalues6_hyperbolic_3D(Mr_R, 1, flag2D, Ma)
     
-    # Step 4: Rotate flux back to original frame
-    F = rotate_flux_from_normal(F_rot, normal)
+    _, v5xmin_L, v5xmax_L = HyQMOM.closure_and_eigenvalues(Mr_L[[1,2,3,4,5]])
+    _, v5xmin_R, v5xmax_R = HyQMOM.closure_and_eigenvalues(Mr_R[[1,2,3,4,5]])
+    
+    lleft = min(min(v5xmin_L, v6xmin_L), min(v5xmin_R, v6xmin_R))
+    lright = max(max(v5xmax_L, v6xmax_L), max(v5xmax_R, v6xmax_R))
+    
+    # Step 4: Compute Wstar (intermediate state) as in pas_HLL
+    Wstar = similar(Mr_L)
+    if abs(lleft - lright) > 1e-10
+        Wstar .= (lleft .* Mr_L .- lright .* Mr_R) ./ (lleft - lright) .-
+                 (Fx_L .- Fx_R) ./ (lleft - lright)
+    else
+        Wstar .= 0.0
+    end
+    
+    # Step 5: Compute HLL flux
+    Fx_rot = 0.5 .* (Fx_L .+ Fx_R) .- 
+             0.5 .* (abs(lleft) .* (Wstar .- Mr_L) .- abs(lright) .* (Wstar .- Mr_R))
+    
+    # Step 6: Rotate flux back to original frame
+    F = rotate_flux_from_normal(Fx_rot, normal)
     
     return F
 end
