@@ -481,17 +481,19 @@ function simulation_runner(params)
                         ih = i + halo
                         jh = j + halo
                         
-                        # X-flux divergence
-                        dFx = (Fx[ih+1, jh, k, :] .- Fx[ih, jh, k, :]) ./ dx
+                        # X-flux divergence: (F_{i+1/2} - F_{i-1/2}) / dx
+                        # Fx[ih-1, jh, k] is flux between cells ih-1 and ih (left face of cell ih)
+                        # Fx[ih, jh, k] is flux between cells ih and ih+1 (right face of cell ih)
+                        dFx = (Fx[ih, jh, k, :] .- Fx[ih-1, jh, k, :]) ./ dx
                         
-                        # Y-flux divergence
-                        dFy = (Fy[ih, jh+1, k, :] .- Fy[ih, jh, k, :]) ./ dy
+                        # Y-flux divergence: (F_{j+1/2} - F_{j-1/2}) / dy
+                        dFy = (Fy[ih, jh, k, :] .- Fy[ih, jh-1, k, :]) ./ dy
                         
-                        # Z-flux divergence (handle boundary)
-                        if k < nz
-                            dFz = (Fz[ih, jh, k+1, :] .- Fz[ih, jh, k, :]) ./ dz
+                        # Z-flux divergence: (F_{k+1/2} - F_{k-1/2}) / dz
+                        if k > 1
+                            dFz = (Fz[ih, jh, k, :] .- Fz[ih, jh, k-1, :]) ./ dz
                         else
-                            dFz = zeros(Nmom)  # No flux at Z-boundary
+                            dFz = zeros(Nmom)  # No flux at Z-boundary (k=1)
                         end
                         
                         # Update: M^{n+1} = M^n - dt*(dFx + dFy + dFz)
