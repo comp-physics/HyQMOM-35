@@ -391,49 +391,22 @@ if params.snapshot_interval > 0
         println("  julia> @load \"$filename\" snapshots grid")
         println("  julia> interactive_standardized_scatter(snapshots[5], grid)")
         
-        # Launch standardized moment scatterplot viewer if available
+        # Note about standardized moments (now shown in main viewer)
         if haskey(snapshots[1], :S)
             println("\n" * "="^70)
-            println("STANDARDIZED MOMENTS DETECTED")
+            println("✓ STANDARDIZED MOMENTS INCLUDED")
             println("="^70)
-            println("Launching 3D Scatterplot Viewer for Standardized Moments...")
-            println("\nThis viewer shows:")
-            println("  • S110: u-v velocity correlation (xy-plane shear)")
-            println("  • S101: u-w velocity correlation (xz-plane shear)")
-            println("  • S011: v-w velocity correlation (yz-plane shear)")
-            println("  • S022: v-w temperature anisotropy")
-            println("  • S300, S030, S003: Directional skewness")
-            println("  • And many more...")
-            println("\nViewer Controls:")
-            println("  • TIME SLIDER: Step through snapshots over time")
-            println("  • Click moment buttons to switch quantities")
-            println("  • Adjust threshold slider to filter weak correlations")
-            println("  • Adjust point size and subsampling")
-            println("  • Toggle positive/negative values")
-            println("  • Mouse: Rotate (drag), Zoom (scroll)")
+            println("Moment space (S110, S101, S011) is displayed alongside")
+            println("physical space in the main viewer.")
+            println("  • Adjust moment threshold slider in controls panel")
+            println("  • Watch moment-space evolution with time slider")
             println("="^70)
-            
-            try
-                # Pass all snapshots to enable time slider
-                interactive_standardized_scatter(snapshots, grid;
-                                                threshold=0.15,
-                                                subsample=1,
-                                                markersize=4.0,
-                                                colormap=:RdBu)
-            catch e
-                @warn "Standardized moment viewer failed" exception=(e, catch_backtrace())
-                println("\nYou can still view it later by loading the saved file:")
-                println("  julia> @load \"$filename\" snapshots grid")
-                println("  julia> interactive_standardized_scatter(snapshots, grid)")
-            end
         else
             println("\n" * "="^70)
             println("NOTE: Standardized moments not saved")
             println("="^70)
-            println("To enable standardized moment visualization, rerun with:")
+            println("To visualize standardized moments, run with:")
             println("  --save-standardized-moments true")
-            println("\nThis will allow you to visualize correlations (S110, S101, S011)")
-            println("and anisotropies (S022) as interactive 3D scatterplots.")
             println("="^70)
         end
     end

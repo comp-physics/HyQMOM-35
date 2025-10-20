@@ -21,6 +21,7 @@ export run_simulation_with_snapshots, simulation_runner_snapshots
 export plot_final_results, plot_multiple_z_slices, plot_3d_isosurface
 export plot_centerline_profiles, plot_3d_diagnostics
 export interactive_3d_volume, interactive_3d_timeseries, interactive_standardized_scatter
+export interactive_correlation_field
 
 # Export initial condition utilities
 export CubicRegion, initialize_moment_field, initialize_moment_field_mpi, crossing_jets_ic
@@ -146,6 +147,7 @@ if GLMAKIE_AVAILABLE
             include($(joinpath(@__DIR__, "visualization", "interactive_3d_volume.jl")))
             include($(joinpath(@__DIR__, "visualization", "interactive_3d_timeseries.jl")))
             include($(joinpath(@__DIR__, "visualization", "interactive_standardized_scatter.jl")))
+            include($(joinpath(@__DIR__, "visualization", "interactive_correlation_field.jl")))
         end
     catch e
         if !SKIP_PLOTTING
