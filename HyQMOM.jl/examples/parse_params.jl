@@ -74,7 +74,7 @@ function get_default_params()
         
         # Snapshot control
         snapshot_interval = 0,  # 0 = disabled
-        save_standardized_moments = false,  # Save S4 field with snapshots
+        save_standardized_moments = true,  # Save S4 field with snapshots (default: ON)
         save_central_moments = false,  # Save C4 field with snapshots
         
         # Initial condition configuration
@@ -193,7 +193,7 @@ function print_help()
       --rhor R              Background density (default: 0.01)
       
       --snapshot-interval N           Save snapshot every N steps (default: 0=disabled)
-      --save-standardized-moments BOOL Save S4 field with snapshots (default: false)
+      --save-standardized-moments BOOL Save S4 field with snapshots (default: true)
       --save-central-moments BOOL      Save C4 field with snapshots (default: false)
       
       --config NAME         Initial condition configuration (default: crossing)

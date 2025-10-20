@@ -8,22 +8,29 @@ Demonstrates how to create custom initial conditions with:
 - Custom velocities in each cube
 - Fully controllable via command-line or code
 
+STANDARDIZED MOMENTS ARE ENABLED BY DEFAULT
+- Moment space (S110, S101, S011) is automatically shown in the viewer
+- To disable: add --save-standardized-moments false
+
 Usage:
-  # Use predefined configurations
-  julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
-  julia --project=. examples/run_3d_custom_jets.jl --config quad-jet
+  # Use predefined configurations (with standardized moments by default)
+  julia --project=. examples/run_3d_custom_jets.jl --config triple-jet --snapshot-interval 5
+  julia --project=. examples/run_3d_custom_jets.jl --config quad-jet --snapshot-interval 5
   
   # Standard 3D crossing jets (default - fully 3D diagonal motion)
-  julia --project=. examples/run_3d_custom_jets.jl --config crossing
+  julia --project=. examples/run_3d_custom_jets.jl --config crossing --snapshot-interval 5
   
   # 2D-like crossing jets (motion in x-y plane only)
-  julia --project=. examples/run_3d_custom_jets.jl --config crossing2D
+  julia --project=. examples/run_3d_custom_jets.jl --config crossing2D --snapshot-interval 5
   
-  # With MPI
-  mpiexec -n 4 julia --project=. examples/run_3d_custom_jets.jl --config triple-jet --Nx 100 --Ny 100
+  # With MPI (recommended for larger grids)
+  mpiexec -n 10 julia --project=. examples/run_3d_custom_jets.jl --config crossing --Nx 30 --Ny 30 --Nz 30 --snapshot-interval 1
   
   # Override physics parameters
-  julia --project=. examples/run_3d_custom_jets.jl --config quad-jet --Ma 1.5 --tmax 0.3
+  julia --project=. examples/run_3d_custom_jets.jl --config quad-jet --Ma 1.5 --tmax 0.3 --snapshot-interval 10
+  
+  # Disable standardized moments if needed
+  julia --project=. examples/run_3d_custom_jets.jl --config crossing --snapshot-interval 5 --save-standardized-moments false
 
 To create your own configuration, edit the `get_jet_configuration` function below.
 """
