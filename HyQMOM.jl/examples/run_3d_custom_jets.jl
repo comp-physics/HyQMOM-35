@@ -29,18 +29,27 @@ To create your own configuration, edit the `get_jet_configuration` function belo
 """
 
 # Load GLMakie first to enable visualization support in HyQMOM
-try
+const GLMAKIE_LOADED = try
     import GLMakie
+    true
 catch e
     @warn """
     GLMakie is not installed. Visualization will not be available.
     To install: julia --project=. -e 'using Pkg; Pkg.add("GLMakie")'
     """
+    false
 end
 
 using HyQMOM
 using MPI
 using Printf
+using JLD2  # For saving snapshots
+
+# Ensure visualization functions are loaded if GLMakie is available
+if GLMAKIE_LOADED && !isdefined(Main, :interactive_standardized_scatter)
+    # Load the interactive scatter plot function directly if not exported
+    include(joinpath(pkgdir(HyQMOM), "src", "visualization", "interactive_standardized_scatter.jl"))
+end
 
 # Load parameter parsing utilities
 include("parse_params.jl")
@@ -363,6 +372,69 @@ if params.snapshot_interval > 0
             catch e2
                 @warn "Fallback viewer also failed"
             end
+        end
+        
+        # Save snapshots to disk for later analysis
+        println("\n" * "="^70)
+        println("SAVING RESULTS")
+        println("="^70)
+        
+        filename = "snapshots_$(params.config)_Ma$(round(params.Ma, digits=2))_t$(params.tmax)_N$(params.Nx).jld2"
+        
+        # Save snapshots, grid, and parameters
+        @save filename snapshots grid params params_with_ic
+        
+        println("✓ Saved $(length(snapshots)) snapshots to: $filename")
+        println("  File size: ~$(round(filesize(filename)/1e6, digits=1)) MB")
+        println("\nTo reload later:")
+        println("  julia> using HyQMOM, JLD2, GLMakie")
+        println("  julia> @load \"$filename\" snapshots grid")
+        println("  julia> interactive_standardized_scatter(snapshots[5], grid)")
+        
+        # Launch standardized moment scatterplot viewer if available
+        if haskey(snapshots[1], :S)
+            println("\n" * "="^70)
+            println("STANDARDIZED MOMENTS DETECTED")
+            println("="^70)
+            println("Launching 3D Scatterplot Viewer for Standardized Moments...")
+            println("\nThis viewer shows:")
+            println("  • S110: u-v velocity correlation (xy-plane shear)")
+            println("  • S101: u-w velocity correlation (xz-plane shear)")
+            println("  • S011: v-w velocity correlation (yz-plane shear)")
+            println("  • S022: v-w temperature anisotropy")
+            println("  • S300, S030, S003: Directional skewness")
+            println("  • And many more...")
+            println("\nViewer Controls:")
+            println("  • TIME SLIDER: Step through snapshots over time")
+            println("  • Click moment buttons to switch quantities")
+            println("  • Adjust threshold slider to filter weak correlations")
+            println("  • Adjust point size and subsampling")
+            println("  • Toggle positive/negative values")
+            println("  • Mouse: Rotate (drag), Zoom (scroll)")
+            println("="^70)
+            
+            try
+                # Pass all snapshots to enable time slider
+                interactive_standardized_scatter(snapshots, grid;
+                                                threshold=0.15,
+                                                subsample=1,
+                                                markersize=4.0,
+                                                colormap=:RdBu)
+            catch e
+                @warn "Standardized moment viewer failed" exception=(e, catch_backtrace())
+                println("\nYou can still view it later by loading the saved file:")
+                println("  julia> @load \"$filename\" snapshots grid")
+                println("  julia> interactive_standardized_scatter(snapshots, grid)")
+            end
+        else
+            println("\n" * "="^70)
+            println("NOTE: Standardized moments not saved")
+            println("="^70)
+            println("To enable standardized moment visualization, rerun with:")
+            println("  --save-standardized-moments true")
+            println("\nThis will allow you to visualize correlations (S110, S101, S011)")
+            println("and anisotropies (S022) as interactive 3D scatterplots.")
+            println("="^70)
         end
     end
 else

@@ -33,11 +33,20 @@ This is the core time-stepping loop that orchestrates all components:
   - `homogeneous_z`: Whether jets exist at all z levels (validation mode)
   - `enable_memory_tracking`: Enable memory tracking (not implemented)
   - `snapshot_interval`: (optional) Save snapshots every N steps. If not provided or 0, no snapshots saved.
+  - `save_standardized_moments`: (optional) If true, compute and save standardized moments (S4) with each snapshot
+  - `save_central_moments`: (optional) If true, compute and save central moments (C4) with each snapshot
 
 # Returns
 If `snapshot_interval` is provided and > 0:
-- On rank 0: `snapshots` (vector of named tuples), `grid_out`
+- On rank 0: `snapshots` (vector of named tuples with fields M, t, step, and optionally S and C), `grid_out`
 - On other ranks: `nothing`, `nothing`
+  
+Each snapshot is a NamedTuple containing:
+- `M`: Raw moment field (4D array: Nx × Ny × Nz × 35)
+- `t`: Simulation time
+- `step`: Time step number
+- `S`: (optional) Standardized moment field if `save_standardized_moments=true`
+- `C`: (optional) Central moment field if `save_central_moments=true`
 
 Otherwise (standard mode):
 - `M_final`: Final moment array (global, gathered to rank 0), or `nothing` on other ranks
@@ -87,7 +96,9 @@ function simulation_runner(params)
     # Snapshot saving parameters
     snapshot_interval = get(params, :snapshot_interval, 0)
     save_snapshots = (snapshot_interval > 0)
-    snapshots = []  # Will store (M, t, step) tuples on rank 0
+    save_standardized = get(params, :save_standardized_moments, false)  # Save S4 with snapshots
+    save_central = get(params, :save_central_moments, false)  # Save C4 with snapshots
+    snapshots = []  # Will store (M, t, step) or (M, S, C, t, step) tuples on rank 0
     
     # Setup domain decomposition (2D in x-y, no decomposition in z)
     decomp = setup_mpi_cartesian_3d(Nx, Ny, Nz, halo, comm)
@@ -257,7 +268,17 @@ function simulation_runner(params)
         M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
         if rank == 0
             M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
-            push!(snapshots, (M=copy(M_gathered), t=0.0, step=0))
+            
+            # Compute standardized and/or central moments if requested
+            snapshot_data = Dict(:M => copy(M_gathered), :t => 0.0, :step => 0)
+            if save_standardized
+                snapshot_data[:S] = compute_standardized_field(M_gathered)
+            end
+            if save_central
+                snapshot_data[:C] = compute_central_field(M_gathered)
+            end
+            push!(snapshots, (; snapshot_data...))  # Convert Dict to NamedTuple
+            
             if debug_output
                 println("Saved snapshot 1: t=0.0, step=0")
             end
@@ -531,7 +552,17 @@ function simulation_runner(params)
             M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
             if rank == 0
                 M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
-                push!(snapshots, (M=copy(M_gathered), t=t, step=nn))
+                
+                # Compute standardized and/or central moments if requested
+                snapshot_data = Dict(:M => copy(M_gathered), :t => t, :step => nn)
+                if save_standardized
+                    snapshot_data[:S] = compute_standardized_field(M_gathered)
+                end
+                if save_central
+                    snapshot_data[:C] = compute_central_field(M_gathered)
+                end
+                push!(snapshots, (; snapshot_data...))  # Convert Dict to NamedTuple
+                
                 println("Saved snapshot $(length(snapshots)): t=$(round(t, digits=4)), step=$nn")
             else
                 gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)

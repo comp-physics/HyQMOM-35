@@ -74,6 +74,8 @@ function get_default_params()
         
         # Snapshot control
         snapshot_interval = 0,  # 0 = disabled
+        save_standardized_moments = false,  # Save S4 field with snapshots
+        save_central_moments = false,  # Save C4 field with snapshots
         
         # Initial condition configuration
         config = "crossing",  # Configuration name for custom ICs
@@ -190,7 +192,9 @@ function print_help()
       --rhol R              Jet density (default: 1.0)
       --rhor R              Background density (default: 0.01)
       
-      --snapshot-interval N Save snapshot every N steps (default: 0=disabled)
+      --snapshot-interval N           Save snapshot every N steps (default: 0=disabled)
+      --save-standardized-moments BOOL Save S4 field with snapshots (default: false)
+      --save-central-moments BOOL      Save C4 field with snapshots (default: false)
       
       --config NAME         Initial condition configuration (default: crossing)
                            Options: crossing, triple-jet, quad-jet, vertical-jet, spiral
@@ -310,6 +314,15 @@ function print_params_summary(params; rank=0, comm=nothing)
     if params.snapshot_interval > 0
         println("\nSnapshots:")
         println("  Interval: every $(params.snapshot_interval) step(s)")
+        if params.save_standardized_moments
+            println("  Saving: Raw moments (M) + Standardized moments (S)")
+        end
+        if params.save_central_moments
+            println("  Saving: Raw moments (M) + Central moments (C)")
+        end
+        if !params.save_standardized_moments && !params.save_central_moments
+            println("  Saving: Raw moments (M) only")
+        end
     else
         println("\nSnapshots: DISABLED")
     end
