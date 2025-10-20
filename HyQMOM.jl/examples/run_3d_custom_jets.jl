@@ -92,17 +92,17 @@ function get_jet_configuration(config_name::String, params)
         
         jets = [
             CubicRegion(
-                center = (x_center - offset, y_center - offset, z_center - offset),
+                center = (x_center - offset, y_center - offset, z_center + offset),
                 width = (jet_width, jet_width, jet_width),
                 density = rhol,
-                velocity = (Uc, Uc, Uc),  # Moving diagonally through 3D space
+                velocity = (Uc, Uc, -Uc),  # Moving diagonally through 3D space
                 temperature = T
             ),
             CubicRegion(
-                center = (x_center + offset, y_center + offset, z_center + offset),
+                center = (x_center + offset, y_center + offset, z_center - offset),
                 width = (jet_width, jet_width, jet_width),
                 density = rhol,
-                velocity = (-Uc, -Uc, -Uc),  # Moving opposite diagonal
+                velocity = (-Uc, -Uc, Uc),  # Moving opposite diagonal
                 temperature = T
             )
         ]

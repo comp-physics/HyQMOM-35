@@ -58,7 +58,7 @@ function eigenvalues6z_hyperbolic_3D(M::Vector{Float64}, flag2D::Int, Ma::Float6
     v6max = lam6ar[6]
     
     # WV moments (z-y plane)
-    J6 = jacobian6(m000, m010, m020, m030, m040, m001, m011, m012, m013, m002, m012, m022, m003, m013, m004)
+    J6 = jacobian6(m000, m010, m020, m030, m040, m001, m011, m012, m013, m002, m021, m022, m003, m013, m004)
     lam6b = eigvals(J6)
     lam6br = sort(real.(lam6b))
     v6min = min(v6min, lam6br[1])
@@ -250,7 +250,7 @@ function eigenvalues6z_hyperbolic_3D(M::Vector{Float64}, flag2D::Int, Ma::Float6
         v6max = lam6ar[6]
         
         # WV moments
-        J6 = jacobian6(m000, m010, m020, m030, m040, m001, m011, m012, m013, m002, m012, m022, m003, m013, m004)
+        J6 = jacobian6(m000, m010, m020, m030, m040, m001, m011, m012, m013, m002, m021, m022, m003, m013, m004)
         lam6b = eigvals(J6)
         lam6br = sort(real.(lam6b))
         v6min = min(v6min, lam6br[1])
