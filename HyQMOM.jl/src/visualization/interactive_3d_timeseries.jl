@@ -6,6 +6,7 @@ This viewer allows stepping through simulation snapshots over time.
 
 import GLMakie
 using Printf
+using LaTeXStrings
 
 # Import moment computation functions
 import ..get_standardized_moment
@@ -61,19 +62,22 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("Has standardized moments (S field)? ", has_std_moments)
     
     # Create figure - default 1800x1000 for both layouts, minimal spacing
+    # Use LaTeX rendering for all text (tick labels, axis labels, titles)
     if has_std_moments
         println("Creating 3-column figure (1800×1000):")
         println("  Column 1: Physical space (x,y,z)")
         println("  Column 2: Moment space (S110, S101, S011)")
         println("  Column 3: Controls")
         # Same width as standard, just split among 3 columns, minimal gaps
-        fig = GLMakie.Figure(size=(1600, 700))
+        fig = GLMakie.Figure(size=(1600, 700), fontsize=12,
+                            fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
         # Reduce column gaps to maximize plot space
         GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
     else
         println("Creating 2-column figure (1800×1000)")
         # Default size: 1800x1000
-        fig = GLMakie.Figure(size=(1600, 700))
+        fig = GLMakie.Figure(size=(1600, 700), fontsize=12,
+                            fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
         GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
     end
     
@@ -82,24 +86,28 @@ function interactive_3d_timeseries(snapshots, grid, params;
     
     # Left: Physical space (isosurfaces)
     ax_physical = GLMakie.Axis3(fig[1, 1], 
-                                xlabel="x", ylabel="y", zlabel="z",
+                                xlabel=L"x", ylabel=L"y", zlabel=L"z",
                                 title="Physical Space - Crossing Jets",
                                 aspect=:data,
                                 azimuth=0.3π,
-                                elevation=π/8)
+                                elevation=π/8,
+                                xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                                xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
     # Middle: Moment space (if available)
     ax_moment = nothing
     if has_std_moments
         println("Creating moment space axis at position [1, 2]...")
         ax_moment = GLMakie.Axis3(fig[1, 2], 
-                                 xlabel="S110", ylabel="S101", zlabel="S011",
-                                 title=GLMakie.@lift(@sprintf("Moment Space - t=%.4f", 
-                                                             snapshots[$current_snapshot_idx].t)),
+                                 xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
+                                 title=GLMakie.@lift(latexstring("Moment Space - ", 
+                                                                @sprintf("t=%.4f", snapshots[$current_snapshot_idx].t))),
                                  aspect=:data,
                                  azimuth=0.3π,
                                  elevation=π/8,
-                                 limits=(-1, 1, -1, 1, -1, 1))
+                                 limits=(-1, 1, -1, 1, -1, 1),
+                                 xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                                 xlabelsize=13, ylabelsize=13, zlabelsize=13)
         
         println("✓ Moment space axis created successfully!")
         println("  This will show S110, S101, S011 as a 3D scatter plot")
@@ -114,11 +122,11 @@ function interactive_3d_timeseries(snapshots, grid, params;
     current_quantity = GLMakie.Observable("Density")
     
     # Quantity buttons (minimal - single row)
-    btn_density = GLMakie.Button(fig, label="ρ", fontsize=8)
-    btn_u = GLMakie.Button(fig, label="U", fontsize=8)
-    btn_v = GLMakie.Button(fig, label="V", fontsize=8)
-    btn_w = GLMakie.Button(fig, label="W", fontsize=8)
-    btn_pressure = GLMakie.Button(fig, label="P", fontsize=8)
+    btn_density = GLMakie.Button(fig, label=L"\rho", fontsize=8)
+    btn_u = GLMakie.Button(fig, label=L"u", fontsize=8)
+    btn_v = GLMakie.Button(fig, label=L"v", fontsize=8)
+    btn_w = GLMakie.Button(fig, label=L"w", fontsize=8)
+    btn_pressure = GLMakie.Button(fig, label=L"P", fontsize=8)
     
     controls[1, 1] = GLMakie.hgrid!(btn_density, btn_u, btn_v, btn_w, btn_pressure; tellwidth=false)
     
@@ -378,6 +386,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
     # Function to update moment space
     moment_plots = []
     slider_moment_threshold = nothing
+    slider_boundary_alpha = nothing
     
     function update_moment_space!()
         if !has_std_moments || ax_moment === nothing
@@ -447,68 +456,55 @@ function interactive_3d_timeseries(snapshots, grid, params;
         # This is the boundary of the realizable region in moment space
         
         try
-            # Create a grid for the surface
-            n_points = 50
-            s1_range = range(-1, 1, length=n_points)
-            s2_range = range(-1, 1, length=n_points)
+            # Use moderate resolution to balance sharpness with uniform transparency
+            # Lower resolution = fewer triangles = more uniform opacity
+            n_grid = 50  # Balanced resolution for uniform transparency
+            s_range = range(-1.0, 1.0, length=n_grid)
             
-            # We'll create the surface by solving for S011 given S110, S101
-            # Rearranging: S011² - 2*S110*S101*S011 + (S110² + S101² - 1) = 0
-            # Using quadratic formula: S011 = S110*S101 ± sqrt((S110*S101)² - (S110² + S101² - 1))
+            # Create 3D grid of Δ₁ values
+            Delta1_volume = zeros(Float64, n_grid, n_grid, n_grid)
             
-            S110_grid = zeros(n_points, n_points)
-            S101_grid = zeros(n_points, n_points)
-            S011_grid_pos = zeros(n_points, n_points)
-            S011_grid_neg = zeros(n_points, n_points)
-            
-            for (i, s110) in enumerate(s1_range)
-                for (j, s101) in enumerate(s2_range)
-                    S110_grid[i, j] = s110
-                    S101_grid[i, j] = s101
-                    
-                    # Quadratic formula coefficients
-                    # S011² - 2*a*b*S011 + (a² + b² - 1) = 0
-                    discriminant = (s110 * s101)^2 - (s110^2 + s101^2 - 1)
-                    
-                    if discriminant >= 0
-                        sqrt_disc = sqrt(discriminant)
-                        S011_grid_pos[i, j] = s110 * s101 + sqrt_disc
-                        S011_grid_neg[i, j] = s110 * s101 - sqrt_disc
-                    else
-                        # No real solution - mark as NaN (won't plot)
-                        S011_grid_pos[i, j] = NaN
-                        S011_grid_neg[i, j] = NaN
+            # Compute Δ₁ at all grid points
+            @inbounds for (i, s110) in enumerate(s_range)
+                @inbounds for (j, s101) in enumerate(s_range)
+                    @inbounds for (k, s011) in enumerate(s_range)
+                        # Compute Δ₁ (determinant of correlation matrix)
+                        Delta1_volume[i, j, k] = 1.0 + 2.0*s110*s101*s011 - 
+                                                 s110^2 - s101^2 - s011^2
                     end
                 end
             end
             
-            # Clamp to [-1, 1] range
-            S011_grid_pos = clamp.(S011_grid_pos, -1, 1)
-            S011_grid_neg = clamp.(S011_grid_neg, -1, 1)
+            # Get current boundary alpha from mapped slider (default 0.3)
+            boundary_alpha = slider_boundary_alpha !== nothing ? slider_boundary_alpha[] : 0.3
             
-            # Draw both sheets of the boundary surface
-            p_boundary_pos = GLMakie.surface!(ax_moment, 
-                                            S110_grid, S101_grid, S011_grid_pos,
-                                            color=:gray,
-                                            alpha=0.15,  # Very transparent
-                                            transparency=true)
+            # Ensure alpha is in valid range and add some debugging
+            boundary_alpha = clamp(boundary_alpha, 0.0, 1.0)
+            println("  Boundary alpha: $(round(boundary_alpha, digits=3)) ($(round(boundary_alpha*100, digits=1))%)")
             
-            p_boundary_neg = GLMakie.surface!(ax_moment, 
-                                            S110_grid, S101_grid, S011_grid_neg,
-                                            color=:gray,
-                                            alpha=0.15,  # Very transparent
-                                            transparency=true)
+            # Use contour with moderate resolution for better transparency behavior
+            s_min, s_max = extrema(s_range)
             
-            push!(moment_plots, p_boundary_pos)
-            push!(moment_plots, p_boundary_neg)
+            p_boundary = GLMakie.contour!(ax_moment,
+                                         (s_min, s_max), (s_min, s_max), (s_min, s_max),
+                                         Delta1_volume,
+                                         levels=[0.0],  # Exact Δ₁ = 0 surface
+                                         color=:white,  # Try white instead
+                                         colormap=:grays,  # Use grayscale colormap
+                                         alpha=boundary_alpha,
+                                         transparency=true,
+                                         linewidth=0)
             
-            println("✓ Realizability boundary |Δ₁| = 0 displayed")
+            push!(moment_plots, p_boundary)
+            
+            println("✓ Realizability boundary |Δ₁| = 0 displayed (50³ grid, uniform transparency)")
         catch e
             @warn "Could not compute realizability boundary" exception=e
+            println("  Error: $e")
         end
         
         # Update moment space title
-        ax_moment.title[] = @sprintf("Moment Space - t=%.4f", snapshots[idx].t)
+        ax_moment.title[] = latexstring("Moment Space - ", @sprintf("t=%.4f", snapshots[idx].t))
     end
     
     # Add moment threshold slider if we have standardized moments with label - wider
@@ -519,6 +515,27 @@ function interactive_3d_timeseries(snapshots, grid, params;
             slider_moment_threshold;
             tellwidth=false
         )
+        
+        # Add realizability boundary opacity slider with fine control at low values
+        # Use quadratic mapping: slider^2 gives more precision at low end
+        slider_boundary_alpha_raw = GLMakie.Slider(fig, range=0.0:0.01:1.0, startvalue=0.55, width=200)
+        controls[7, 1] = GLMakie.vgrid!(
+            GLMakie.Label(fig, L"|Δ_1|~α", fontsize=9, halign=:left),
+            slider_boundary_alpha_raw;
+            tellwidth=false
+        )
+        
+        # Create mapped slider for fine low-end control
+        slider_boundary_alpha = GLMakie.Observable(0.3)  # This will be the actual alpha value
+        
+        # Map raw slider value to alpha with quadratic scaling for fine low-end control
+        GLMakie.on(slider_boundary_alpha_raw.value) do raw_val
+            # Quadratic mapping: alpha = raw_val^2
+            # This gives: 0.0->0.0, 0.1->0.01, 0.3->0.09, 0.5->0.25, 1.0->1.0
+            mapped_alpha = raw_val^2
+            slider_boundary_alpha[] = mapped_alpha
+            update_moment_space!()
+        end
         
         # Update moment space when threshold changes
         GLMakie.on(slider_moment_threshold.value) do val

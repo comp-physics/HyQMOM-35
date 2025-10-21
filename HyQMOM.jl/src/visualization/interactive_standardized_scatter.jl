@@ -7,6 +7,7 @@ useful for visualizing correlations and moment distributions.
 
 import GLMakie
 using Printf
+using LaTeXStrings
 
 """
     interactive_standardized_scatter(snapshot, grid; kwargs...)
@@ -74,17 +75,20 @@ function interactive_standardized_scatter(snapshot, grid;
     y_min, y_max = minimum(ym), maximum(ym)
     z_min, z_max = minimum(zm), maximum(zm)
     
-    # Create figure
-    fig = GLMakie.Figure(size=(1800, 1000))
+    # Create figure with LaTeX font rendering
+    fig = GLMakie.Figure(size=(1800, 1000), fontsize=12,
+                        fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
     
     # Main 3D axis with fixed limits for full domain
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
-                       xlabel="x", ylabel="y", zlabel="z",
-                       title=@sprintf("Standardized Moments - t=%.4f", snapshot.t),
+                       xlabel=L"x", ylabel=L"y", zlabel=L"z",
+                       title=latexstring("Standardized Moments - ", @sprintf("t=%.4f", snapshot.t)),
                        aspect=:data,
                        azimuth=0.3π,
                        elevation=π/8,
-                       limits=(x_min, x_max, y_min, y_max, z_min, z_max))
+                       limits=(x_min, x_max, y_min, y_max, z_min, z_max),
+                       xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                       xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
     # Control panel
     controls = fig[1:3, 3] = GLMakie.GridLayout()
@@ -100,44 +104,44 @@ function interactive_standardized_scatter(snapshot, grid;
     controls[2, 1] = GLMakie.Label(fig, "2nd Order (Correlations):", fontsize=12, 
                                    halign=:left, tellwidth=false)
     
-    btn_s110 = GLMakie.Button(fig, label="S110 (u-v)", fontsize=10, width=90)
-    btn_s101 = GLMakie.Button(fig, label="S101 (u-w)", fontsize=10, width=90)
-    btn_s011 = GLMakie.Button(fig, label="S011 (v-w)", fontsize=10, width=90)
+    btn_s110 = GLMakie.Button(fig, label=L"S_{110}", fontsize=10, width=90)
+    btn_s101 = GLMakie.Button(fig, label=L"S_{101}", fontsize=10, width=90)
+    btn_s011 = GLMakie.Button(fig, label=L"S_{011}", fontsize=10, width=90)
     controls[3, 1] = GLMakie.hgrid!(btn_s110, btn_s101, btn_s011; tellwidth=false)
     
     controls[4, 1] = GLMakie.Label(fig, "4th Order (Anisotropy):", fontsize=12, 
                                    halign=:left, tellwidth=false)
     
-    btn_s220 = GLMakie.Button(fig, label="S220 (uv)", fontsize=10, width=90)
-    btn_s202 = GLMakie.Button(fig, label="S202 (uw)", fontsize=10, width=90)
-    btn_s022 = GLMakie.Button(fig, label="S022 (vw)", fontsize=10, width=90)
+    btn_s220 = GLMakie.Button(fig, label=L"S_{220}", fontsize=10, width=90)
+    btn_s202 = GLMakie.Button(fig, label=L"S_{202}", fontsize=10, width=90)
+    btn_s022 = GLMakie.Button(fig, label=L"S_{022}", fontsize=10, width=90)
     controls[5, 1] = GLMakie.hgrid!(btn_s220, btn_s202, btn_s022; tellwidth=false)
     
     controls[6, 1] = GLMakie.Label(fig, "3rd Order (Skewness):", fontsize=12, 
                                    halign=:left, tellwidth=false)
     
-    btn_s300 = GLMakie.Button(fig, label="S300 (u)", fontsize=10, width=90)
-    btn_s030 = GLMakie.Button(fig, label="S030 (v)", fontsize=10, width=90)
-    btn_s003 = GLMakie.Button(fig, label="S003 (w)", fontsize=10, width=90)
+    btn_s300 = GLMakie.Button(fig, label=L"S_{300}", fontsize=10, width=90)
+    btn_s030 = GLMakie.Button(fig, label=L"S_{030}", fontsize=10, width=90)
+    btn_s003 = GLMakie.Button(fig, label=L"S_{003}", fontsize=10, width=90)
     controls[7, 1] = GLMakie.hgrid!(btn_s300, btn_s030, btn_s003; tellwidth=false)
     
-    btn_s210 = GLMakie.Button(fig, label="S210", fontsize=10, width=60)
-    btn_s201 = GLMakie.Button(fig, label="S201", fontsize=10, width=60)
-    btn_s120 = GLMakie.Button(fig, label="S120", fontsize=10, width=60)
-    btn_s102 = GLMakie.Button(fig, label="S102", fontsize=10, width=60)
+    btn_s210 = GLMakie.Button(fig, label=L"S_{210}", fontsize=10, width=60)
+    btn_s201 = GLMakie.Button(fig, label=L"S_{201}", fontsize=10, width=60)
+    btn_s120 = GLMakie.Button(fig, label=L"S_{120}", fontsize=10, width=60)
+    btn_s102 = GLMakie.Button(fig, label=L"S_{102}", fontsize=10, width=60)
     controls[8, 1] = GLMakie.hgrid!(btn_s210, btn_s201, btn_s120, btn_s102; tellwidth=false)
     
-    btn_s021 = GLMakie.Button(fig, label="S021", fontsize=10, width=60)
-    btn_s012 = GLMakie.Button(fig, label="S012", fontsize=10, width=60)
-    btn_s111 = GLMakie.Button(fig, label="S111", fontsize=10, width=60)
+    btn_s021 = GLMakie.Button(fig, label=L"S_{021}", fontsize=10, width=60)
+    btn_s012 = GLMakie.Button(fig, label=L"S_{012}", fontsize=10, width=60)
+    btn_s111 = GLMakie.Button(fig, label=L"S_{111}", fontsize=10, width=60)
     controls[9, 1] = GLMakie.hgrid!(btn_s021, btn_s012, btn_s111; tellwidth=false)
     
     controls[10, 1] = GLMakie.Label(fig, "4th Order (Kurtosis):", fontsize=12, 
                                     halign=:left, tellwidth=false)
     
-    btn_s400 = GLMakie.Button(fig, label="S400 (u)", fontsize=10, width=90)
-    btn_s040 = GLMakie.Button(fig, label="S040 (v)", fontsize=10, width=90)
-    btn_s004 = GLMakie.Button(fig, label="S004 (w)", fontsize=10, width=90)
+    btn_s400 = GLMakie.Button(fig, label=L"S_{400}", fontsize=10, width=90)
+    btn_s040 = GLMakie.Button(fig, label=L"S_{040}", fontsize=10, width=90)
+    btn_s004 = GLMakie.Button(fig, label=L"S_{004}", fontsize=10, width=90)
     controls[11, 1] = GLMakie.hgrid!(btn_s400, btn_s040, btn_s004; tellwidth=false)
     
     # Connect buttons to observable
@@ -432,23 +436,27 @@ function interactive_standardized_scatter(snapshots::Vector, grid;
     y_min, y_max = minimum(ym), maximum(ym)
     z_min, z_max = minimum(zm), maximum(zm)
     
-    # Create figure
-    fig = GLMakie.Figure(size=(1800, 1000))
+    # Create figure with LaTeX font rendering
+    fig = GLMakie.Figure(size=(1800, 1000), fontsize=12,
+                        fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
     
     # Current snapshot index
     current_snapshot_idx = GLMakie.Observable(1)
     
     # Main 3D axis with fixed limits for full domain
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
-                       xlabel="x", ylabel="y", zlabel="z",
-                       title=GLMakie.@lift(@sprintf("Standardized Moments - t=%.4f (snapshot %d/%d)", 
-                                                   snapshots[$current_snapshot_idx].t,
-                                                   $current_snapshot_idx,
-                                                   length(snapshots))),
+                       xlabel=L"x", ylabel=L"y", zlabel=L"z",
+                       title=GLMakie.@lift(latexstring("Standardized Moments - ", 
+                                                      @sprintf("t=%.4f (snapshot %d/%d)", 
+                                                              snapshots[$current_snapshot_idx].t,
+                                                              $current_snapshot_idx,
+                                                              length(snapshots)))),
                        aspect=:data,
                        azimuth=0.3π,
                        elevation=π/8,
-                       limits=(x_min, x_max, y_min, y_max, z_min, z_max))
+                       limits=(x_min, x_max, y_min, y_max, z_min, z_max),
+                       xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                       xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
     # Control panel
     controls = fig[1:3, 3] = GLMakie.GridLayout()
@@ -486,33 +494,33 @@ function interactive_standardized_scatter(snapshots::Vector, grid;
     controls[4, 1] = GLMakie.Label(fig, "2nd Order (Correlations):", fontsize=12, 
                                    halign=:left, tellwidth=false)
     
-    btn_s110 = GLMakie.Button(fig, label="S110 (u-v)", fontsize=10, width=90)
-    btn_s101 = GLMakie.Button(fig, label="S101 (u-w)", fontsize=10, width=90)
-    btn_s011 = GLMakie.Button(fig, label="S011 (v-w)", fontsize=10, width=90)
+    btn_s110 = GLMakie.Button(fig, label=L"S_{110}", fontsize=10, width=90)
+    btn_s101 = GLMakie.Button(fig, label=L"S_{101}", fontsize=10, width=90)
+    btn_s011 = GLMakie.Button(fig, label=L"S_{011}", fontsize=10, width=90)
     controls[5, 1] = GLMakie.hgrid!(btn_s110, btn_s101, btn_s011; tellwidth=false)
     
     controls[6, 1] = GLMakie.Label(fig, "4th Order (Anisotropy):", fontsize=12, 
                                    halign=:left, tellwidth=false)
     
-    btn_s220 = GLMakie.Button(fig, label="S220 (uv)", fontsize=10, width=90)
-    btn_s202 = GLMakie.Button(fig, label="S202 (uw)", fontsize=10, width=90)
-    btn_s022 = GLMakie.Button(fig, label="S022 (vw)", fontsize=10, width=90)
+    btn_s220 = GLMakie.Button(fig, label=L"S_{220}", fontsize=10, width=90)
+    btn_s202 = GLMakie.Button(fig, label=L"S_{202}", fontsize=10, width=90)
+    btn_s022 = GLMakie.Button(fig, label=L"S_{022}", fontsize=10, width=90)
     controls[7, 1] = GLMakie.hgrid!(btn_s220, btn_s202, btn_s022; tellwidth=false)
     
     controls[8, 1] = GLMakie.Label(fig, "3rd Order (Skewness):", fontsize=12, 
                                    halign=:left, tellwidth=false)
     
-    btn_s300 = GLMakie.Button(fig, label="S300 (x)", fontsize=10, width=90)
-    btn_s030 = GLMakie.Button(fig, label="S030 (y)", fontsize=10, width=90)
-    btn_s003 = GLMakie.Button(fig, label="S003 (z)", fontsize=10, width=90)
+    btn_s300 = GLMakie.Button(fig, label=L"S_{300}", fontsize=10, width=90)
+    btn_s030 = GLMakie.Button(fig, label=L"S_{030}", fontsize=10, width=90)
+    btn_s003 = GLMakie.Button(fig, label=L"S_{003}", fontsize=10, width=90)
     controls[9, 1] = GLMakie.hgrid!(btn_s300, btn_s030, btn_s003; tellwidth=false)
     
     controls[10, 1] = GLMakie.Label(fig, "4th Order (Kurtosis):", fontsize=12, 
                                     halign=:left, tellwidth=false)
     
-    btn_s400 = GLMakie.Button(fig, label="S400 (x)", fontsize=10, width=90)
-    btn_s040 = GLMakie.Button(fig, label="S040 (y)", fontsize=10, width=90)
-    btn_s004 = GLMakie.Button(fig, label="S004 (z)", fontsize=10, width=90)
+    btn_s400 = GLMakie.Button(fig, label=L"S_{400}", fontsize=10, width=90)
+    btn_s040 = GLMakie.Button(fig, label=L"S_{040}", fontsize=10, width=90)
+    btn_s004 = GLMakie.Button(fig, label=L"S_{004}", fontsize=10, width=90)
     controls[11, 1] = GLMakie.hgrid!(btn_s400, btn_s040, btn_s004; tellwidth=false)
     
     # Connect buttons to moment selection

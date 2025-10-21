@@ -9,6 +9,16 @@ using PyPlot
 using PyCall
 using ColorSchemes
 using Printf
+using LaTeXStrings
+
+# Configure PyPlot to use LaTeX for all text rendering
+PyPlot.rc("text", usetex=true)  # Enable LaTeX rendering
+PyPlot.rc("font", family="serif", size=11)  # Use serif fonts (Computer Modern)
+PyPlot.rc("axes", labelsize=12)  # Axis label size
+PyPlot.rc("xtick", labelsize=10)  # X tick label size
+PyPlot.rc("ytick", labelsize=10)  # Y tick label size
+PyPlot.rc("legend", fontsize=10)  # Legend font size
+PyPlot.rc("figure", titlesize=13)  # Title font size
 
 # Import required functions from HyQMOM modules
 using LinearAlgebra: det
@@ -263,7 +273,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = M[:, :, 1]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("Density")
+    title(L"\rho")
     format_colorbar()
     
     # Panel 2: U velocity
@@ -271,7 +281,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = M[:, :, 2] ./ M[:, :, 1]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("U velocity")
+    title(L"u")
     format_colorbar()
     
     # Panel 3: V velocity
@@ -279,7 +289,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = M[:, :, 6] ./ M[:, :, 1]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("V velocity")
+    title(L"v")
     format_colorbar()
     
     # Panel 4: S_110
@@ -287,7 +297,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = S[:, :, 7]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("S_{110}")
+    title(L"S_{110}")
     format_colorbar()
     
     # Panel 5: C_200
@@ -295,7 +305,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = C[:, :, 3]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("C_{200}")
+    title(L"C_{200}")
     format_colorbar()
     
     # Panel 6: C_020
@@ -303,7 +313,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = C[:, :, 10]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("C_{020}")
+    title(L"C_{020}")
     format_colorbar()
     
     # Panel 7: C_002
@@ -311,7 +321,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = C[:, :, 20]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("C_{002}")
+    title(L"C_{002}")
     format_colorbar()
     
     # Panel 8: |Delta_1|
@@ -320,7 +330,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
         S[:, :, 7].^2 .- S[:, :, 17].^2 .- S[:, :, 26].^2
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("|Δ_1|")
+    title(L"|\Delta_1|")
     format_colorbar()
     
     # Panel 9: H_200
@@ -328,7 +338,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = max.(0, S[:, :, 5] .- S[:, :, 4].^2 .- 1)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("H_{200}")
+    title(L"H_{200}")
     format_colorbar()
     
     # Panel 10: H_020
@@ -336,7 +346,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = max.(0, S[:, :, 15] .- S[:, :, 13].^2 .- 1)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("H_{020}")
+    title(L"H_{020}")
     format_colorbar()
     
     # Panel 11: H_002
@@ -344,7 +354,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = max.(0, S[:, :, 25] .- S[:, :, 23].^2 .- 1)
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("H_{002}")
+    title(L"H_{002}")
     format_colorbar()
     
     # Panel 12: |Delta_2*|
@@ -378,7 +388,7 @@ function contour_plots_3D(xm, ym, M, C, S, Np)
     Z = dDel2
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("|Δ_2*|")
+    title(L"|\Delta_2^*|")
     format_colorbar()
 end
 
@@ -541,7 +551,7 @@ function plot_3Dsym_moments(xm, M, nmin, nmax, cc, Np)
         Y = [M[i, i, moment_idx] for i = 1:Np]
         
         plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-        xlabel("x")
+        xlabel(L"x")
         ylabel(label)
         grid(true)
         ax = gca()
@@ -564,8 +574,8 @@ function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
     subplot(nl, nc, 1)
     Y = [M[i, i, 1] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("M_{000}")
+    xlabel(L"x")
+    ylabel(L"M_{000}")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -575,8 +585,8 @@ function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
     umean = M[:, :, 2] ./ M[:, :, 1]
     Y = [umean[i, i] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("u_1")
+    xlabel(L"x")
+    ylabel(L"u_1")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -591,7 +601,7 @@ function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
         subplot(nl, nc, panel_idx + 2)
         Y = [C[i, i, c_idx] for i = 1:Np]
         plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-        xlabel("x")
+        xlabel(L"x")
         ylabel(label)
         grid(true)
         ax = gca()
@@ -605,7 +615,7 @@ function plot_3Dsym_central(xm, M, C, C5, nmin, nmax, cc, Np)
         subplot(nl, nc, panel_idx + 9)
         Y = [C5[i, i, c5_idx] for i = 1:Np]
         plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-        xlabel("x")
+        xlabel(L"x")
         ylabel(label)
         grid(true)
         ax = gca()
@@ -628,8 +638,8 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     subplot(nl, nc, 1)
     Y = [S[i, i, 4] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("S_{300}")
+    xlabel(L"x")
+    ylabel(L"S_{300}")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -638,8 +648,8 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     subplot(nl, nc, 2)
     Y = [S[i, i, 5] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("S_{400}")
+    xlabel(L"x")
+    ylabel(L"S_{400}")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -649,8 +659,8 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     H40 = S[:, :, 5] .- S[:, :, 4].^2 .- 1
     Y = [H40[i, i] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("H_{400}")
+    xlabel(L"x")
+    ylabel(L"H_{400}")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -659,8 +669,8 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     subplot(nl, nc, 4)
     Y = [S5[i, i, 1] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("S_{500}")
+    xlabel(L"x")
+    ylabel(L"S_{500}")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -674,7 +684,7 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
         subplot(nl, nc, panel_idx + 4)
         Y = [S[i, i, s_idx] for i = 1:Np]
         plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-        xlabel("x")
+        xlabel(L"x")
         ylabel(label)
         grid(true)
         ax = gca()
@@ -685,8 +695,8 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     subplot(nl, nc, 9)
     Y = [S5[i, i, 2] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("S_{410}")
+    xlabel(L"x")
+    ylabel(L"S_{410}")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -695,8 +705,8 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     subplot(nl, nc, 10)
     Y = [S5[i, i, 3] for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("S_{320}")
+    xlabel(L"x")
+    ylabel(L"S_{320}")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -706,8 +716,8 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
     Y = [1 + 2*S[i, i, 7]*S[i, i, 17]*S[i, i, 26] - 
          S[i, i, 7]^2 - S[i, i, 17]^2 - S[i, i, 26]^2 for i = 1:Np]
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("|Δ_1|")
+    xlabel(L"x")
+    ylabel(L"|\Delta_1|")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -734,8 +744,8 @@ function plot_3Dsym_standardized(xm, S, S5, nmin, nmax, cc, Np)
         Y[i] = det(D2)
     end
     plot(xm[nmin:nmax], Y[nmin:nmax], color=cc, linewidth=2)
-    xlabel("x")
-    ylabel("|Δ_2*|")
+    xlabel(L"x")
+    ylabel(L"|\Delta_2^*|")
     grid(true)
     ax = gca()
     ax.tick_params(labelsize=18)
@@ -949,8 +959,8 @@ function plot_multiple_z_slices(M, xm, ym, zm, quantity_name; nslices=6, fignum=
         axis("square")
         title("$(title_str) (z=$(round(zm[k], digits=3)))")
         format_colorbar(shrink=0.9, aspect=15)
-        xlabel("x")
-        ylabel("y")
+        xlabel(L"x")
+        ylabel(L"y")
     end
     
     tight_layout()
@@ -1041,9 +1051,9 @@ function plot_3d_isosurface(M, xm, ym, zm, quantity_name, isovalue; fignum=nothi
         @warn "No points found near isovalue=$isovalue for $quantity_name"
     end
     
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
+    ax.set_xlabel(L"x")
+    ax.set_ylabel(L"y")
+    ax.set_zlabel(L"z")
     ax.set_title("$(title_str) = $(isovalue)")
     
     return fig
@@ -1241,7 +1251,7 @@ function plot_3d_diagnostics(M, xm, ym, zm, Np, Nz, Nmom; save_figures=false, ou
                  S[:, :, 7].^2 .- S[:, :, 17].^2 .- S[:, :, 26].^2
         contourf(X, Y, Delta1', 50, cmap="sky")
         axis("square")
-        title("Δ₁ (z=$(round(zm[k], digits=3)))")
+        title(latexstring("\\Delta_1~(z=", @sprintf("%.3f", zm[k]), ")"))
         format_colorbar(shrink=0.9, aspect=15)
         
         # Bottom row: H200
@@ -1249,7 +1259,7 @@ function plot_3d_diagnostics(M, xm, ym, zm, Np, Nz, Nmom; save_figures=false, ou
         H200 = max.(0, S[:, :, 5] .- S[:, :, 4].^2 .- 1)
         contourf(X, Y, H200', 50, cmap="sky")
         axis("square")
-        title("H₂₀₀ (z=$(round(zm[k], digits=3)))")
+        title(latexstring("H_{200}~(z=", @sprintf("%.3f", zm[k]), ")"))
         format_colorbar(shrink=0.9, aspect=15)
     end
     
