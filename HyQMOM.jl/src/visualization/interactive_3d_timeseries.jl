@@ -185,8 +185,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
     end
     
     # PNG export callbacks - separate high-resolution files for each plot
-    # Note: GLMakie doesn't support vector PDF export. Use high-res PNG instead.
-    # We create a new standalone figure for each export to avoid UI elements
+    # Note: We use screen capture to avoid creating new windows that might interfere
     GLMakie.on(btn_export_physical.clicks) do _
         try
             snap_idx = time_slider.value[]
@@ -199,26 +198,11 @@ function interactive_3d_timeseries(snapshots, grid, params;
             println("Filename: $filename")
             println("Snapshot: $snap_idx / $(length(snapshots))")
             println("Time: $current_time")
-            println("Resolution: 1200x1200 (high quality for publication)")
+            println("Capturing current view from screen...")
             
-            # Create a new standalone figure with just the physical space plot
-            # Use visible=false to prevent it from being displayed
-            export_fig = GLMakie.Figure(size=(1200, 1200), fontsize=14, fonts=(; regular="CMU Serif"))
-            export_ax = GLMakie.Axis3(export_fig[1, 1],
-                xlabel=L"x", ylabel=L"y", zlabel=L"z",
-                title=latexstring("Physical Space - ", @sprintf("t=%.4f", current_time)),
-                aspect=:data,
-                xticklabelsize=13, yticklabelsize=13, zticklabelsize=13,
-                xlabelsize=15, ylabelsize=15, zlabelsize=15)
-            
-            # Copy all the plot elements from the current physical space axis
-            for plot in ax_physical.scene.plots
-                # Re-add the plot to the new axis
-                GLMakie.plot!(export_ax, plot)
-            end
-            
-            # Save the standalone figure without displaying it
-            GLMakie.save(filename, export_fig, update=false)
+            # Directly save the axis scene to file (captures current view)
+            # This avoids creating a new window/figure
+            GLMakie.save(filename, ax_physical.blockscene, px_per_unit=2)
             
             println("✓ Physical space plot exported successfully!")
             println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
@@ -248,27 +232,11 @@ function interactive_3d_timeseries(snapshots, grid, params;
                 return
             end
             
-            println("Resolution: 1200x1200 (high quality for publication)")
+            println("Capturing current view from screen...")
             
-            # Create a new standalone figure with just the moment space plot
-            # Use visible=false to prevent it from being displayed
-            export_fig = GLMakie.Figure(size=(1200, 1200), fontsize=14, fonts=(; regular="CMU Serif"))
-            export_ax = GLMakie.Axis3(export_fig[1, 1],
-                xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
-                title=latexstring("Moment Space - ", @sprintf("t=%.4f", current_time)),
-                aspect=:data,
-                limits=(-1, 1, -1, 1, -1, 1),
-                xticklabelsize=13, yticklabelsize=13, zticklabelsize=13,
-                xlabelsize=15, ylabelsize=15, zlabelsize=15)
-            
-            # Copy all the plot elements from the current moment space axis
-            for plot in ax_moment.scene.plots
-                # Re-add the plot to the new axis
-                GLMakie.plot!(export_ax, plot)
-            end
-            
-            # Save the standalone figure without displaying it
-            GLMakie.save(filename, export_fig, update=false)
+            # Directly save the axis scene to file (captures current view)
+            # This avoids creating a new window/figure
+            GLMakie.save(filename, ax_moment.blockscene, px_per_unit=2)
             
             println("✓ Moment space plot exported successfully!")
             println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
