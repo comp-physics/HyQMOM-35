@@ -222,19 +222,6 @@ Edit `batch.sh` to adjust:
 - Simulation time (`--tmax`)
 - Project account
 
-## Citation
-
-If you use this code in research, please cite:
-
-```bibtex
-@software{hyqmom,
-  title = {HyQMOM: Hyperbolic Quadrature Method of Moments},
-  author = {Spencer H. Bryngelson and contributors},
-  year = {2024},
-  url = {https://github.com/comp-physics/rodney-hqmom}
-}
-```
-
 ## License
 
 See [license.md](license.md) for licensing information.
