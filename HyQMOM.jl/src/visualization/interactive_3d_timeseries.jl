@@ -186,6 +186,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
     
     # PNG export callbacks - separate high-resolution files for each plot
     # Note: GLMakie doesn't support vector PDF export. Use high-res PNG instead.
+    # We create a new standalone figure for each export to avoid UI elements
     GLMakie.on(btn_export_physical.clicks) do _
         try
             snap_idx = time_slider.value[]
@@ -198,10 +199,25 @@ function interactive_3d_timeseries(snapshots, grid, params;
             println("Filename: $filename")
             println("Snapshot: $snap_idx / $(length(snapshots))")
             println("Time: $current_time")
-            println("Resolution: 2400x2400 (high quality for publication)")
+            println("Resolution: 1200x1200 (high quality for publication)")
             
-            # Save just the physical space axis as high-res PNG
-            GLMakie.save(filename, ax_physical.scene, px_per_unit=4, resolution=(2400, 2400))
+            # Create a new standalone figure with just the physical space plot
+            export_fig = GLMakie.Figure(size=(1200, 1200), fontsize=14, fonts=(; regular="CMU Serif"))
+            export_ax = GLMakie.Axis3(export_fig[1, 1],
+                xlabel=L"x", ylabel=L"y", zlabel=L"z",
+                title=latexstring("Physical Space - ", @sprintf("t=%.4f", current_time)),
+                aspect=:data,
+                xticklabelsize=13, yticklabelsize=13, zticklabelsize=13,
+                xlabelsize=15, ylabelsize=15, zlabelsize=15)
+            
+            # Copy all the plot elements from the current physical space axis
+            for plot in ax_physical.scene.plots
+                # Re-add the plot to the new axis
+                GLMakie.plot!(export_ax, plot)
+            end
+            
+            # Save the standalone figure
+            GLMakie.save(filename, export_fig)
             
             println("✓ Physical space plot exported successfully!")
             println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
@@ -224,16 +240,36 @@ function interactive_3d_timeseries(snapshots, grid, params;
             println("Filename: $filename")
             println("Snapshot: $snap_idx / $(length(snapshots))")
             println("Time: $current_time")
-            println("Resolution: 2400x2400 (high quality for publication)")
             
-            # Save just the moment space axis as high-res PNG
-            if has_std_moments
-                GLMakie.save(filename, ax_moment.scene, px_per_unit=4, resolution=(2400, 2400))
-                println("✓ Moment space plot exported successfully!")
-                println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
-            else
+            if !has_std_moments
                 println("⚠ No moment space data available - skipping export")
+                println("="^70)
+                return
             end
+            
+            println("Resolution: 1200x1200 (high quality for publication)")
+            
+            # Create a new standalone figure with just the moment space plot
+            export_fig = GLMakie.Figure(size=(1200, 1200), fontsize=14, fonts=(; regular="CMU Serif"))
+            export_ax = GLMakie.Axis3(export_fig[1, 1],
+                xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
+                title=latexstring("Moment Space - ", @sprintf("t=%.4f", current_time)),
+                aspect=:data,
+                limits=(-1, 1, -1, 1, -1, 1),
+                xticklabelsize=13, yticklabelsize=13, zticklabelsize=13,
+                xlabelsize=15, ylabelsize=15, zlabelsize=15)
+            
+            # Copy all the plot elements from the current moment space axis
+            for plot in ax_moment.scene.plots
+                # Re-add the plot to the new axis
+                GLMakie.plot!(export_ax, plot)
+            end
+            
+            # Save the standalone figure
+            GLMakie.save(filename, export_fig)
+            
+            println("✓ Moment space plot exported successfully!")
+            println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
             println("="^70)
         catch e
             @warn "Moment space PNG export failed" exception=(e, catch_backtrace())
