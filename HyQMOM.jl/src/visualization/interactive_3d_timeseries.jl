@@ -442,6 +442,71 @@ function interactive_3d_timeseries(snapshots, grid, params;
         push!(moment_plots, p2)
         push!(moment_plots, p3)
         
+        # Draw |Δ₁| = 0 realizability boundary surface (transparent)
+        # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
+        # This is the boundary of the realizable region in moment space
+        
+        try
+            # Create a grid for the surface
+            n_points = 50
+            s1_range = range(-1, 1, length=n_points)
+            s2_range = range(-1, 1, length=n_points)
+            
+            # We'll create the surface by solving for S011 given S110, S101
+            # Rearranging: S011² - 2*S110*S101*S011 + (S110² + S101² - 1) = 0
+            # Using quadratic formula: S011 = S110*S101 ± sqrt((S110*S101)² - (S110² + S101² - 1))
+            
+            S110_grid = zeros(n_points, n_points)
+            S101_grid = zeros(n_points, n_points)
+            S011_grid_pos = zeros(n_points, n_points)
+            S011_grid_neg = zeros(n_points, n_points)
+            
+            for (i, s110) in enumerate(s1_range)
+                for (j, s101) in enumerate(s2_range)
+                    S110_grid[i, j] = s110
+                    S101_grid[i, j] = s101
+                    
+                    # Quadratic formula coefficients
+                    # S011² - 2*a*b*S011 + (a² + b² - 1) = 0
+                    discriminant = (s110 * s101)^2 - (s110^2 + s101^2 - 1)
+                    
+                    if discriminant >= 0
+                        sqrt_disc = sqrt(discriminant)
+                        S011_grid_pos[i, j] = s110 * s101 + sqrt_disc
+                        S011_grid_neg[i, j] = s110 * s101 - sqrt_disc
+                    else
+                        # No real solution - mark as NaN (won't plot)
+                        S011_grid_pos[i, j] = NaN
+                        S011_grid_neg[i, j] = NaN
+                    end
+                end
+            end
+            
+            # Clamp to [-1, 1] range
+            S011_grid_pos = clamp.(S011_grid_pos, -1, 1)
+            S011_grid_neg = clamp.(S011_grid_neg, -1, 1)
+            
+            # Draw both sheets of the boundary surface
+            p_boundary_pos = GLMakie.surface!(ax_moment, 
+                                            S110_grid, S101_grid, S011_grid_pos,
+                                            color=:gray,
+                                            alpha=0.15,  # Very transparent
+                                            transparency=true)
+            
+            p_boundary_neg = GLMakie.surface!(ax_moment, 
+                                            S110_grid, S101_grid, S011_grid_neg,
+                                            color=:gray,
+                                            alpha=0.15,  # Very transparent
+                                            transparency=true)
+            
+            push!(moment_plots, p_boundary_pos)
+            push!(moment_plots, p_boundary_neg)
+            
+            println("✓ Realizability boundary |Δ₁| = 0 displayed")
+        catch e
+            @warn "Could not compute realizability boundary" exception=e
+        end
+        
         # Update moment space title
         ax_moment.title[] = @sprintf("Moment Space - t=%.4f", snapshots[idx].t)
     end
