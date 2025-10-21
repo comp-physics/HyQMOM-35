@@ -8,39 +8,55 @@ Demonstrates how to create custom initial conditions with:
 - Custom velocities in each cube
 - Fully controllable via command-line or code
 
+STANDARDIZED MOMENTS ARE ENABLED BY DEFAULT
+- Moment space (S110, S101, S011) is automatically shown in the viewer
+- To disable: add --save-standardized-moments false
+
 Usage:
-  # Use predefined configurations
-  julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
-  julia --project=. examples/run_3d_custom_jets.jl --config quad-jet
+  # Use predefined configurations (with standardized moments by default)
+  julia --project=. examples/run_3d_custom_jets.jl --config triple-jet --snapshot-interval 5
+  julia --project=. examples/run_3d_custom_jets.jl --config quad-jet --snapshot-interval 5
   
   # Standard 3D crossing jets (default - fully 3D diagonal motion)
-  julia --project=. examples/run_3d_custom_jets.jl --config crossing
+  julia --project=. examples/run_3d_custom_jets.jl --config crossing --snapshot-interval 5
   
   # 2D-like crossing jets (motion in x-y plane only)
-  julia --project=. examples/run_3d_custom_jets.jl --config crossing2D
+  julia --project=. examples/run_3d_custom_jets.jl --config crossing2D --snapshot-interval 5
   
-  # With MPI
-  mpiexec -n 4 julia --project=. examples/run_3d_custom_jets.jl --config triple-jet --Nx 100 --Ny 100
+  # With MPI (recommended for larger grids)
+  mpiexec -n 10 julia --project=. examples/run_3d_custom_jets.jl --config crossing --Nx 30 --Ny 30 --Nz 30 --snapshot-interval 1
   
   # Override physics parameters
-  julia --project=. examples/run_3d_custom_jets.jl --config quad-jet --Ma 1.5 --tmax 0.3
+  julia --project=. examples/run_3d_custom_jets.jl --config quad-jet --Ma 1.5 --tmax 0.3 --snapshot-interval 10
+  
+  # Disable standardized moments if needed
+  julia --project=. examples/run_3d_custom_jets.jl --config crossing --snapshot-interval 5 --save-standardized-moments false
 
 To create your own configuration, edit the `get_jet_configuration` function below.
 """
 
 # Load GLMakie first to enable visualization support in HyQMOM
-try
+const GLMAKIE_LOADED = try
     import GLMakie
+    true
 catch e
     @warn """
     GLMakie is not installed. Visualization will not be available.
     To install: julia --project=. -e 'using Pkg; Pkg.add("GLMakie")'
     """
+    false
 end
 
 using HyQMOM
 using MPI
 using Printf
+using JLD2  # For saving snapshots
+
+# Ensure visualization functions are loaded if GLMakie is available
+if GLMAKIE_LOADED && !isdefined(Main, :interactive_standardized_scatter)
+    # Load the interactive scatter plot function directly if not exported
+    include(joinpath(pkgdir(HyQMOM), "src", "visualization", "interactive_standardized_scatter.jl"))
+end
 
 # Load parameter parsing utilities
 include("parse_params.jl")
@@ -363,6 +379,42 @@ if params.snapshot_interval > 0
             catch e2
                 @warn "Fallback viewer also failed"
             end
+        end
+        
+        # Save snapshots to disk for later analysis
+        println("\n" * "="^70)
+        println("SAVING RESULTS")
+        println("="^70)
+        
+        filename = "snapshots_$(params.config)_Ma$(round(params.Ma, digits=2))_t$(params.tmax)_N$(params.Nx).jld2"
+        
+        # Save snapshots, grid, and parameters
+        @save filename snapshots grid params params_with_ic
+        
+        println("✓ Saved $(length(snapshots)) snapshots to: $filename")
+        println("  File size: ~$(round(filesize(filename)/1e6, digits=1)) MB")
+        println("\nTo reload later:")
+        println("  julia> using HyQMOM, JLD2, GLMakie")
+        println("  julia> @load \"$filename\" snapshots grid")
+        println("  julia> interactive_standardized_scatter(snapshots[5], grid)")
+        
+        # Note about standardized moments (now shown in main viewer)
+        if haskey(snapshots[1], :S)
+            println("\n" * "="^70)
+            println("✓ STANDARDIZED MOMENTS INCLUDED")
+            println("="^70)
+            println("Moment space (S110, S101, S011) is displayed alongside")
+            println("physical space in the main viewer.")
+            println("  • Adjust moment threshold slider in controls panel")
+            println("  • Watch moment-space evolution with time slider")
+            println("="^70)
+        else
+            println("\n" * "="^70)
+            println("NOTE: Standardized moments not saved")
+            println("="^70)
+            println("To visualize standardized moments, run with:")
+            println("  --save-standardized-moments true")
+            println("="^70)
         end
     end
 else
