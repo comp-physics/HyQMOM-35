@@ -171,8 +171,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
     controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false, tellheight=false)
     
     # Add PDF export buttons - separate exports for each plot
-    btn_export_physical = GLMakie.Button(fig, label="💾 Phys", fontsize=8, width=95)
-    btn_export_moment = GLMakie.Button(fig, label="💾 Mom", fontsize=8, width=95)
+    btn_export_physical = GLMakie.Button(fig, label="Phys PDF", fontsize=8, width=95)
+    btn_export_moment = GLMakie.Button(fig, label="Mom PDF", fontsize=8, width=95)
     controls[4, 1] = GLMakie.hgrid!(btn_export_physical, btn_export_moment; tellwidth=false, tellheight=false)
     
     is_playing = GLMakie.Observable(false)
