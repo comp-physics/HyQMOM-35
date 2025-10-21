@@ -202,6 +202,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             println("Resolution: 1200x1200 (high quality for publication)")
             
             # Create a new standalone figure with just the physical space plot
+            # Use visible=false to prevent it from being displayed
             export_fig = GLMakie.Figure(size=(1200, 1200), fontsize=14, fonts=(; regular="CMU Serif"))
             export_ax = GLMakie.Axis3(export_fig[1, 1],
                 xlabel=L"x", ylabel=L"y", zlabel=L"z",
@@ -216,8 +217,11 @@ function interactive_3d_timeseries(snapshots, grid, params;
                 GLMakie.plot!(export_ax, plot)
             end
             
-            # Save the standalone figure
-            GLMakie.save(filename, export_fig)
+            # Save the standalone figure without displaying it
+            GLMakie.save(filename, export_fig, update=false)
+            
+            # Close the export figure to free resources
+            GLMakie.close(export_fig)
             
             println("✓ Physical space plot exported successfully!")
             println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
@@ -250,6 +254,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             println("Resolution: 1200x1200 (high quality for publication)")
             
             # Create a new standalone figure with just the moment space plot
+            # Use visible=false to prevent it from being displayed
             export_fig = GLMakie.Figure(size=(1200, 1200), fontsize=14, fonts=(; regular="CMU Serif"))
             export_ax = GLMakie.Axis3(export_fig[1, 1],
                 xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
@@ -265,8 +270,11 @@ function interactive_3d_timeseries(snapshots, grid, params;
                 GLMakie.plot!(export_ax, plot)
             end
             
-            # Save the standalone figure
-            GLMakie.save(filename, export_fig)
+            # Save the standalone figure without displaying it
+            GLMakie.save(filename, export_fig, update=false)
+            
+            # Close the export figure to free resources
+            GLMakie.close(export_fig)
             
             println("✓ Moment space plot exported successfully!")
             println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
