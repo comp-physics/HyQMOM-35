@@ -60,18 +60,21 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("="^70)
     println("Has standardized moments (S field)? ", has_std_moments)
     
-    # Create figure - 30% bigger plots from original (1800x900 base)
+    # Create figure - default 1800x1000 for both layouts, minimal spacing
     if has_std_moments
-        println("Creating WIDE figure with 3 columns:")
+        println("Creating 3-column figure (1800×1000):")
         println("  Column 1: Physical space (x,y,z)")
         println("  Column 2: Moment space (S110, S101, S011)")
         println("  Column 3: Controls")
-        # 30% larger: 2600 * 1.3 = 3380 width, 900 * 1.3 = 1170 height
-        fig = GLMakie.Figure(size=(3380, 1170))
+        # Same width as standard, just split among 3 columns, minimal gaps
+        fig = GLMakie.Figure(size=(1600, 700))
+        # Reduce column gaps to maximize plot space
+        GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
     else
-        println("Creating standard figure with 2 columns")
-        # 30% larger: 1800 * 1.3 = 2340 width
-        fig = GLMakie.Figure(size=(2340, 1170))
+        println("Creating 2-column figure (1800×1000)")
+        # Default size: 1800x1000
+        fig = GLMakie.Figure(size=(1600, 700))
+        GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
     end
     
     # Current snapshot index (observable) - needed for moment space title
