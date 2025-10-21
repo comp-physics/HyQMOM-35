@@ -170,9 +170,9 @@ function interactive_3d_timeseries(snapshots, grid, params;
     )
     controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false, tellheight=false)
     
-    # Add PDF export buttons - separate exports for each plot
-    btn_export_physical = GLMakie.Button(fig, label="Phys PDF", fontsize=8, width=95)
-    btn_export_moment = GLMakie.Button(fig, label="Mom PDF", fontsize=8, width=95)
+    # Add PNG export buttons - separate exports for each plot
+    btn_export_physical = GLMakie.Button(fig, label="Phys PNG", fontsize=8, width=95)
+    btn_export_moment = GLMakie.Button(fig, label="Mom PNG", fontsize=8, width=95)
     controls[4, 1] = GLMakie.hgrid!(btn_export_physical, btn_export_moment; tellwidth=false, tellheight=false)
     
     is_playing = GLMakie.Observable(false)
@@ -184,28 +184,30 @@ function interactive_3d_timeseries(snapshots, grid, params;
         is_playing[] = false
     end
     
-    # PDF export callbacks - separate files for each plot
+    # PNG export callbacks - separate high-resolution files for each plot
+    # Note: GLMakie doesn't support vector PDF export. Use high-res PNG instead.
     GLMakie.on(btn_export_physical.clicks) do _
         try
             snap_idx = time_slider.value[]
             current_time = snapshots[snap_idx].t
-            filename = @sprintf("physical_space_t%.4f_snap%03d.pdf", current_time, snap_idx)
+            filename = @sprintf("physical_space_t%.4f_snap%03d.png", current_time, snap_idx)
             
             println("\n" * "="^70)
-            println("EXPORTING PHYSICAL SPACE PLOT TO PDF")
+            println("EXPORTING PHYSICAL SPACE PLOT TO PNG")
             println("="^70)
             println("Filename: $filename")
             println("Snapshot: $snap_idx / $(length(snapshots))")
             println("Time: $current_time")
+            println("Resolution: 2400x2400 (high quality for publication)")
             
-            # Save just the physical space axis as PDF
-            GLMakie.save(filename, ax_physical.scene)
+            # Save just the physical space axis as high-res PNG
+            GLMakie.save(filename, ax_physical.scene, px_per_unit=4, resolution=(2400, 2400))
             
             println("✓ Physical space plot exported successfully!")
             println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
             println("="^70)
         catch e
-            @warn "Physical space PDF export failed" exception=(e, catch_backtrace())
+            @warn "Physical space PNG export failed" exception=(e, catch_backtrace())
             println("Error: $e")
         end
     end
@@ -214,18 +216,19 @@ function interactive_3d_timeseries(snapshots, grid, params;
         try
             snap_idx = time_slider.value[]
             current_time = snapshots[snap_idx].t
-            filename = @sprintf("moment_space_t%.4f_snap%03d.pdf", current_time, snap_idx)
+            filename = @sprintf("moment_space_t%.4f_snap%03d.png", current_time, snap_idx)
             
             println("\n" * "="^70)
-            println("EXPORTING MOMENT SPACE PLOT TO PDF")
+            println("EXPORTING MOMENT SPACE PLOT TO PNG")
             println("="^70)
             println("Filename: $filename")
             println("Snapshot: $snap_idx / $(length(snapshots))")
             println("Time: $current_time")
+            println("Resolution: 2400x2400 (high quality for publication)")
             
-            # Save just the moment space axis as PDF
+            # Save just the moment space axis as high-res PNG
             if has_std_moments
-                GLMakie.save(filename, ax_moment.scene)
+                GLMakie.save(filename, ax_moment.scene, px_per_unit=4, resolution=(2400, 2400))
                 println("✓ Moment space plot exported successfully!")
                 println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
             else
@@ -233,7 +236,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             end
             println("="^70)
         catch e
-            @warn "Moment space PDF export failed" exception=(e, catch_backtrace())
+            @warn "Moment space PNG export failed" exception=(e, catch_backtrace())
             println("Error: $e")
         end
     end
