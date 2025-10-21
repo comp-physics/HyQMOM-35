@@ -220,9 +220,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
             # Save the standalone figure without displaying it
             GLMakie.save(filename, export_fig, update=false)
             
-            # Close the export figure to free resources
-            GLMakie.close(export_fig)
-            
             println("✓ Physical space plot exported successfully!")
             println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
             println("="^70)
@@ -272,9 +269,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
             
             # Save the standalone figure without displaying it
             GLMakie.save(filename, export_fig, update=false)
-            
-            # Close the export figure to free resources
-            GLMakie.close(export_fig)
             
             println("✓ Moment space plot exported successfully!")
             println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
