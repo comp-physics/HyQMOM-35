@@ -158,17 +158,22 @@ function interactive_3d_timeseries(snapshots, grid, params;
     
     # Time slider with snapshot number label
     time_slider = GLMakie.Slider(fig, range=1:length(snapshots), startvalue=1, width=200)
-    btn_play = GLMakie.Button(fig, label=">", fontsize=8)
-    btn_pause = GLMakie.Button(fig, label="||", fontsize=8)
+    btn_play = GLMakie.Button(fig, label=">", fontsize=8, width=95)
+    btn_pause = GLMakie.Button(fig, label="||", fontsize=8, width=95)
     
     time_label = GLMakie.@lift(@sprintf("Snap %d/%d", $(time_slider.value), length(snapshots)))
     
     controls[2, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, time_label, fontsize=9, halign=:left),
         time_slider;
-        tellwidth=false
+        tellwidth=false, tellheight=false
     )
-    controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false)
+    controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false, tellheight=false)
+    
+    # Add PDF export buttons - separate exports for each plot
+    btn_export_physical = GLMakie.Button(fig, label="💾 Phys", fontsize=8, width=95)
+    btn_export_moment = GLMakie.Button(fig, label="💾 Mom", fontsize=8, width=95)
+    controls[4, 1] = GLMakie.hgrid!(btn_export_physical, btn_export_moment; tellwidth=false, tellheight=false)
     
     is_playing = GLMakie.Observable(false)
     
@@ -179,6 +184,60 @@ function interactive_3d_timeseries(snapshots, grid, params;
         is_playing[] = false
     end
     
+    # PDF export callbacks - separate files for each plot
+    GLMakie.on(btn_export_physical.clicks) do _
+        try
+            snap_idx = time_slider.value[]
+            current_time = snapshots[snap_idx].t
+            filename = @sprintf("physical_space_t%.4f_snap%03d.pdf", current_time, snap_idx)
+            
+            println("\n" * "="^70)
+            println("EXPORTING PHYSICAL SPACE PLOT TO PDF")
+            println("="^70)
+            println("Filename: $filename")
+            println("Snapshot: $snap_idx / $(length(snapshots))")
+            println("Time: $current_time")
+            
+            # Save just the physical space axis as PDF
+            GLMakie.save(filename, ax_physical.scene)
+            
+            println("✓ Physical space plot exported successfully!")
+            println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
+            println("="^70)
+        catch e
+            @warn "Physical space PDF export failed" exception=(e, catch_backtrace())
+            println("Error: $e")
+        end
+    end
+    
+    GLMakie.on(btn_export_moment.clicks) do _
+        try
+            snap_idx = time_slider.value[]
+            current_time = snapshots[snap_idx].t
+            filename = @sprintf("moment_space_t%.4f_snap%03d.pdf", current_time, snap_idx)
+            
+            println("\n" * "="^70)
+            println("EXPORTING MOMENT SPACE PLOT TO PDF")
+            println("="^70)
+            println("Filename: $filename")
+            println("Snapshot: $snap_idx / $(length(snapshots))")
+            println("Time: $current_time")
+            
+            # Save just the moment space axis as PDF
+            if has_std_moments
+                GLMakie.save(filename, ax_moment.scene)
+                println("✓ Moment space plot exported successfully!")
+                println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
+            else
+                println("⚠ No moment space data available - skipping export")
+            end
+            println("="^70)
+        catch e
+            @warn "Moment space PDF export failed" exception=(e, catch_backtrace())
+            println("Error: $e")
+        end
+    end
+    
     # Isosurface controls with labels - wider sliders
     slider_iso1 = GLMakie.Slider(fig, range=0.1:0.05:0.9, startvalue=iso_levels[1], width=200)
     slider_iso2 = slider_iso1  # Use same level
@@ -187,15 +246,15 @@ function interactive_3d_timeseries(snapshots, grid, params;
     toggle_isosurface = GLMakie.Toggle(fig, active=true)
     toggle_streamlines = GLMakie.Toggle(fig, active=false)
     
-    controls[4, 1] = GLMakie.vgrid!(
+    controls[5, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, "Iso Level", fontsize=9, halign=:left),
         slider_iso1;
-        tellwidth=false
+        tellwidth=false, tellheight=false
     )
-    controls[5, 1] = GLMakie.vgrid!(
+    controls[6, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, "Alpha", fontsize=9, halign=:left),
         slider_alpha;
-        tellwidth=false
+        tellwidth=false, tellheight=false
     )
     
     # Compute all quantities for all snapshots (observables will select which to show)
@@ -510,19 +569,19 @@ function interactive_3d_timeseries(snapshots, grid, params;
     # Add moment threshold slider if we have standardized moments with label - wider
     if has_std_moments
         slider_moment_threshold = GLMakie.Slider(fig, range=0.001:0.001:0.5, startvalue=0.01, width=200)
-        controls[6, 1] = GLMakie.vgrid!(
+        controls[7, 1] = GLMakie.vgrid!(
             GLMakie.Label(fig, "Min |S|", fontsize=9, halign=:left),
             slider_moment_threshold;
-            tellwidth=false
+            tellwidth=false, tellheight=false
         )
         
         # Add realizability boundary opacity slider with fine control at low values
         # Use quadratic mapping: slider^2 gives more precision at low end
         slider_boundary_alpha_raw = GLMakie.Slider(fig, range=0.0:0.01:1.0, startvalue=0.55, width=200)
-        controls[7, 1] = GLMakie.vgrid!(
+        controls[8, 1] = GLMakie.vgrid!(
             GLMakie.Label(fig, L"|Δ_1|~α", fontsize=9, halign=:left),
             slider_boundary_alpha_raw;
-            tellwidth=false
+            tellwidth=false, tellheight=false
         )
         
         # Create mapped slider for fine low-end control
