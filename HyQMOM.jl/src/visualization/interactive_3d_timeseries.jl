@@ -539,9 +539,9 @@ function interactive_3d_timeseries(snapshots, grid, params;
             end
         end
         
-        # Draw the isosurface where Δ₁ = 0
+        # Draw the isosurface where Δ₁ = 0 (use tuples to avoid deprecation warnings)
         p_boundary = GLMakie.contour!(ax_moment,
-                                     s110_range, s101_range, s011_range,
+                                     (-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0),
                                      Delta1_volume,
                                      levels=[0.0],
                                      alpha=0.15,
