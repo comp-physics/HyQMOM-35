@@ -537,10 +537,12 @@ function interactive_3d_timeseries(snapshots, grid, params;
             gray_color = GLMakie.RGBAf(0.5, 0.5, 0.5, boundary_alpha)
             
             # Draw boundary curves on the 6 cube faces
+            # Use tuple notation to avoid deprecation warnings
+            
             # Face 1: S110 = -1 (back face)
             Delta_face = [1.0 + 2.0*(-1.0)*s101*s011 - (-1.0)^2 - s101^2 - s011^2 
                          for s101 in face_range, s011 in face_range]
-            p1 = GLMakie.contour!(ax_moment, [-1.0, -1.0], face_range, face_range, 
+            p1 = GLMakie.contour!(ax_moment, (-1.0, -1.0), (-1.0, 1.0), (-1.0, 1.0), 
                                  zeros(2, n_face, n_face) .+ reshape(Delta_face, 1, n_face, n_face),
                                  levels=[0.0], color=gray_color, linewidth=2)
             push!(moment_plots, p1)
@@ -548,7 +550,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             # Face 2: S110 = +1 (front face)
             Delta_face = [1.0 + 2.0*(1.0)*s101*s011 - (1.0)^2 - s101^2 - s011^2 
                          for s101 in face_range, s011 in face_range]
-            p2 = GLMakie.contour!(ax_moment, [1.0, 1.0], face_range, face_range,
+            p2 = GLMakie.contour!(ax_moment, (1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0),
                                  zeros(2, n_face, n_face) .+ reshape(Delta_face, 1, n_face, n_face),
                                  levels=[0.0], color=gray_color, linewidth=2)
             push!(moment_plots, p2)
@@ -556,7 +558,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             # Face 3: S101 = -1 (left face)
             Delta_face = [1.0 + 2.0*s110*(-1.0)*s011 - s110^2 - (-1.0)^2 - s011^2 
                          for s110 in face_range, s011 in face_range]
-            p3 = GLMakie.contour!(ax_moment, face_range, [-1.0, -1.0], face_range,
+            p3 = GLMakie.contour!(ax_moment, (-1.0, 1.0), (-1.0, -1.0), (-1.0, 1.0),
                                  reshape(Delta_face, n_face, 1, n_face),
                                  levels=[0.0], color=gray_color, linewidth=2)
             push!(moment_plots, p3)
@@ -564,7 +566,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             # Face 4: S101 = +1 (right face)
             Delta_face = [1.0 + 2.0*s110*(1.0)*s011 - s110^2 - (1.0)^2 - s011^2 
                          for s110 in face_range, s011 in face_range]
-            p4 = GLMakie.contour!(ax_moment, face_range, [1.0, 1.0], face_range,
+            p4 = GLMakie.contour!(ax_moment, (-1.0, 1.0), (1.0, 1.0), (-1.0, 1.0),
                                  reshape(Delta_face, n_face, 1, n_face),
                                  levels=[0.0], color=gray_color, linewidth=2)
             push!(moment_plots, p4)
@@ -572,7 +574,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             # Face 5: S011 = -1 (bottom face)
             Delta_face = [1.0 + 2.0*s110*s101*(-1.0) - s110^2 - s101^2 - (-1.0)^2 
                          for s110 in face_range, s101 in face_range]
-            p5 = GLMakie.contour!(ax_moment, face_range, face_range, [-1.0, -1.0],
+            p5 = GLMakie.contour!(ax_moment, (-1.0, 1.0), (-1.0, 1.0), (-1.0, -1.0),
                                  reshape(Delta_face, n_face, n_face, 1),
                                  levels=[0.0], color=gray_color, linewidth=2)
             push!(moment_plots, p5)
@@ -580,7 +582,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             # Face 6: S011 = +1 (top face)
             Delta_face = [1.0 + 2.0*s110*s101*(1.0) - s110^2 - s101^2 - (1.0)^2 
                          for s110 in face_range, s101 in face_range]
-            p6 = GLMakie.contour!(ax_moment, face_range, face_range, [1.0, 1.0],
+            p6 = GLMakie.contour!(ax_moment, (-1.0, 1.0), (-1.0, 1.0), (1.0, 1.0),
                                  reshape(Delta_face, n_face, n_face, 1),
                                  levels=[0.0], color=gray_color, linewidth=2)
             push!(moment_plots, p6)
