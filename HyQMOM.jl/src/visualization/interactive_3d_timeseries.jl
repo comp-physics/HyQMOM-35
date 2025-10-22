@@ -6,6 +6,7 @@ This viewer allows stepping through simulation snapshots over time.
 
 import GLMakie
 using Printf
+using LaTeXStrings
 
 # Import moment computation functions
 import ..get_standardized_moment
@@ -67,13 +68,17 @@ function interactive_3d_timeseries(snapshots, grid, params;
         println("  Column 2: Moment space (S110, S101, S011)")
         println("  Column 3: Controls")
         # Same width as standard, just split among 3 columns, minimal gaps
-        fig = GLMakie.Figure(size=(1600, 700))
+        # Use LaTeX fonts for all plot text
+        fig = GLMakie.Figure(size=(1600, 700), fontsize=12,
+                            fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
         # Reduce column gaps to maximize plot space
         GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
     else
         println("Creating 2-column figure (1800×1000)")
         # Default size: 1800x1000
-        fig = GLMakie.Figure(size=(1600, 700))
+        # Use LaTeX fonts for all plot text
+        fig = GLMakie.Figure(size=(1600, 700), fontsize=12,
+                            fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
         GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
     end
     
@@ -82,24 +87,28 @@ function interactive_3d_timeseries(snapshots, grid, params;
     
     # Left: Physical space (isosurfaces)
     ax_physical = GLMakie.Axis3(fig[1, 1], 
-                                xlabel="x", ylabel="y", zlabel="z",
+                                xlabel=L"x", ylabel=L"y", zlabel=L"z",
                                 title="Physical Space - Crossing Jets",
                                 aspect=:data,
                                 azimuth=0.3π,
-                                elevation=π/8)
+                                elevation=π/8,
+                                xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                                xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
     # Middle: Moment space (if available)
     ax_moment = nothing
     if has_std_moments
         println("Creating moment space axis at position [1, 2]...")
         ax_moment = GLMakie.Axis3(fig[1, 2], 
-                                 xlabel="S110", ylabel="S101", zlabel="S011",
-                                 title=GLMakie.@lift(@sprintf("Moment Space - t=%.4f", 
-                                                             snapshots[$current_snapshot_idx].t)),
+                                 xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
+                                 title=GLMakie.@lift(latexstring("Moment Space - ", 
+                                                                @sprintf("t=%.4f", snapshots[$current_snapshot_idx].t))),
                                  aspect=:data,
                                  azimuth=0.3π,
                                  elevation=π/8,
-                                 limits=(-1, 1, -1, 1, -1, 1))
+                                 limits=(-1, 1, -1, 1, -1, 1),
+                                 xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                                 xlabelsize=13, ylabelsize=13, zlabelsize=13)
         
         println("✓ Moment space axis created successfully!")
         println("  This will show S110, S101, S011 as a 3D scatter plot")
@@ -508,7 +517,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
         end
         
         # Update moment space title
-        ax_moment.title[] = @sprintf("Moment Space - t=%.4f", snapshots[idx].t)
+        ax_moment.title[] = latexstring("Moment Space - ", @sprintf("t=%.4f", snapshots[idx].t))
     end
     
     # Add moment threshold slider if we have standardized moments with label - wider
