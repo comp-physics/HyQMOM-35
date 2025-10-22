@@ -518,37 +518,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
         push!(moment_plots, p2)
         push!(moment_plots, p3)
         
-        # Draw |Δ₁| = 0 realizability boundary surface
-        # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
-        # This marks the boundary of the realizable moment space region
-        
-        # Create 3D grid and compute realizability boundary
-        n_grid = 80
-        s110_range = range(-1.0, 1.0, length=n_grid)
-        s101_range = range(-1.0, 1.0, length=n_grid)
-        s011_range = range(-1.0, 1.0, length=n_grid)
-        
-        # Compute Δ₁ at all grid points
-        Delta1_volume = zeros(Float32, n_grid, n_grid, n_grid)
-        for (i, s110) in enumerate(s110_range)
-            for (j, s101) in enumerate(s101_range)
-                for (k, s011) in enumerate(s011_range)
-                    Delta1_volume[i, j, k] = 1.0 + 2.0*s110*s101*s011 - 
-                                             s110^2 - s101^2 - s011^2
-                end
-            end
-        end
-        
-        # Draw the isosurface where Δ₁ = 0 (use tuples to avoid deprecation warnings)
-        p_boundary = GLMakie.contour!(ax_moment,
-                                     (-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0),
-                                     Delta1_volume,
-                                     levels=[0.0],
-                                     alpha=0.15,
-                                     color=:gray)
-        
-        push!(moment_plots, p_boundary)
-        println("✓ Realizability boundary |Δ₁| = 0 displayed")
         
         # Update moment space title
         ax_moment.title[] = latexstring("Moment Space - ", @sprintf("t=%.4f", snapshots[idx].t))
