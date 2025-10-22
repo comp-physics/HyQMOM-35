@@ -454,7 +454,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
     # Function to update moment space
     moment_plots = []
     slider_moment_threshold = nothing
-    slider_boundary_alpha = nothing
     
     function update_moment_space!()
         if !has_std_moments || ax_moment === nothing
@@ -519,49 +518,37 @@ function interactive_3d_timeseries(snapshots, grid, params;
         push!(moment_plots, p2)
         push!(moment_plots, p3)
         
-        # Draw |Δ₁| = 0 realizability boundary surface with proper transparency
+        # Draw |Δ₁| = 0 realizability boundary surface
         # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
-        # Use mesh/surface approach with observable for dynamic alpha control
+        # This marks the boundary of the realizable moment space region
         
-        try
-            # Get current boundary alpha from mapped slider (default 0.3)
-            boundary_alpha_val = slider_boundary_alpha !== nothing ? slider_boundary_alpha[] : 0.3
-            boundary_alpha_val = clamp(boundary_alpha_val, 0.0, 1.0)
-            println("  Boundary alpha: $(round(boundary_alpha_val, digits=3)) ($(round(boundary_alpha_val*100, digits=1))%)")
-            
-            # Create 3D grid for isosurface
-            n_grid = 60
-            s_range = range(-1.0, 1.0, length=n_grid)
-            
-            # Compute Δ₁ at all grid points
-            Delta1_volume = zeros(Float32, n_grid, n_grid, n_grid)
-            @inbounds for (i, s110) in enumerate(s_range)
-                @inbounds for (j, s101) in enumerate(s_range)
-                    @inbounds for (k, s011) in enumerate(s_range)
-                        Delta1_volume[i, j, k] = 1.0 + 2.0*s110*s101*s011 - s110^2 - s101^2 - s011^2
-                    end
+        # Create 3D grid and compute realizability boundary
+        n_grid = 80
+        s110_range = range(-1.0, 1.0, length=n_grid)
+        s101_range = range(-1.0, 1.0, length=n_grid)
+        s011_range = range(-1.0, 1.0, length=n_grid)
+        
+        # Compute Δ₁ at all grid points
+        Delta1_volume = zeros(Float32, n_grid, n_grid, n_grid)
+        for (i, s110) in enumerate(s110_range)
+            for (j, s101) in enumerate(s101_range)
+                for (k, s011) in enumerate(s011_range)
+                    Delta1_volume[i, j, k] = 1.0 + 2.0*s110*s101*s011 - 
+                                             s110^2 - s101^2 - s011^2
                 end
             end
-            
-            # Create observable for boundary color with alpha
-            boundary_color_obs = GLMakie.@lift(GLMakie.RGBAf(0.5, 0.5, 0.5, $slider_boundary_alpha))
-            
-            # Draw isosurface with observable color
-            p_boundary = GLMakie.contour!(ax_moment,
-                                         (-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0),
-                                         Delta1_volume,
-                                         levels=[0.0],
-                                         color=boundary_color_obs,
-                                         transparency=true,
-                                         linewidth=0)
-            
-            push!(moment_plots, p_boundary)
-            
-            println("✓ Realizability boundary |Δ₁| = 0 displayed with dynamic transparency")
-        catch e
-            @warn "Could not compute realizability boundary" exception=e
-            println("  Error: $e")
         end
+        
+        # Draw the isosurface where Δ₁ = 0
+        p_boundary = GLMakie.contour!(ax_moment,
+                                     s110_range, s101_range, s011_range,
+                                     Delta1_volume,
+                                     levels=[0.0],
+                                     alpha=0.15,
+                                     color=:gray)
+        
+        push!(moment_plots, p_boundary)
+        println("✓ Realizability boundary |Δ₁| = 0 displayed")
         
         # Update moment space title
         ax_moment.title[] = latexstring("Moment Space - ", @sprintf("t=%.4f", snapshots[idx].t))
@@ -576,26 +563,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
             tellwidth=false, tellheight=false
         )
         
-        # Add realizability boundary opacity slider with fine control at low values
-        # Use quadratic mapping: slider^2 gives more precision at low end
-        slider_boundary_alpha_raw = GLMakie.Slider(fig, range=0.0:0.01:1.0, startvalue=0.55, width=200)
-        controls[8, 1] = GLMakie.vgrid!(
-            GLMakie.Label(fig, L"|Δ_1|~α", fontsize=9, halign=:left),
-            slider_boundary_alpha_raw;
-            tellwidth=false, tellheight=false
-        )
-        
-        # Create mapped slider for fine low-end control
-        slider_boundary_alpha = GLMakie.Observable(0.3)  # This will be the actual alpha value
-        
-        # Map raw slider value to alpha with quadratic scaling for fine low-end control
-        GLMakie.on(slider_boundary_alpha_raw.value) do raw_val
-            # Quadratic mapping: alpha = raw_val^2
-            # This gives: 0.0->0.0, 0.1->0.01, 0.3->0.09, 0.5->0.25, 1.0->1.0
-            mapped_alpha = raw_val^2
-            slider_boundary_alpha[] = mapped_alpha
-            update_moment_space!()
-        end
         
         # Update moment space when threshold changes
         GLMakie.on(slider_moment_threshold.value) do val
