@@ -593,7 +593,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("  • Click ▶ Play to animate")
     println("  • Click buttons to switch quantities")
     println("  • Adjust iso level sliders for different contour levels")
-    println("  • Mouse: drag to rotate, scroll to zoom")
+    println("  • Mouse: drag to rotate, scroll to zoom camera")
+    println("  • Resize window to zoom entire plot (including axes/labels)")
     println("\nPress Enter in terminal to close.")
     println("="^70)
     
