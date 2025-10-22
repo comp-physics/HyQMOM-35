@@ -519,52 +519,73 @@ function interactive_3d_timeseries(snapshots, grid, params;
         push!(moment_plots, p2)
         push!(moment_plots, p3)
         
-        # Draw |Δ₁| = 0 realizability boundary surface (transparent)
+        # Draw |Δ₁| = 0 realizability boundary as contour lines on cube faces
         # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
-        # This is the boundary of the realizable region in moment space
+        # Instead of a 3D isosurface (which has rendering issues), draw the boundary
+        # curves on each face of the [-1,1]³ cube. This gives sharp, clean edges.
         
         try
-            # Use high resolution to capture sharp corners at cube edges
-            # The realizability boundary has sharp intersections with the cube faces
-            n_grid = 100  # High resolution for sharp corner definition
-            s_range = range(-1.0, 1.0, length=n_grid)
-            
-            # Create 3D grid of Δ₁ values
-            Delta1_volume = zeros(Float64, n_grid, n_grid, n_grid)
-            
-            # Compute Δ₁ at all grid points
-            @inbounds for (i, s110) in enumerate(s_range)
-                @inbounds for (j, s101) in enumerate(s_range)
-                    @inbounds for (k, s011) in enumerate(s_range)
-                        # Compute Δ₁ (determinant of correlation matrix)
-                        Delta1_volume[i, j, k] = 1.0 + 2.0*s110*s101*s011 - 
-                                                 s110^2 - s101^2 - s011^2
-                    end
-                end
-            end
-            
             # Get current boundary alpha from mapped slider (default 0.3)
             boundary_alpha = slider_boundary_alpha !== nothing ? slider_boundary_alpha[] : 0.3
-            
-            # Ensure alpha is in valid range and add some debugging
             boundary_alpha = clamp(boundary_alpha, 0.0, 1.0)
             println("  Boundary alpha: $(round(boundary_alpha, digits=3)) ($(round(boundary_alpha*100, digits=1))%)")
             
-            # Use contour with high resolution for sharp edges
-            s_min, s_max = extrema(s_range)
+            # Create a fine grid for computing boundary curves on each face
+            n_face = 200
+            face_range = range(-1.0, 1.0, length=n_face)
             
-            p_boundary = GLMakie.contour!(ax_moment,
-                                         (s_min, s_max), (s_min, s_max), (s_min, s_max),
-                                         Delta1_volume,
-                                         levels=[0.0],  # Exact Δ₁ = 0 surface
-                                         color=GLMakie.RGB(0.6, 0.6, 0.6),  # Gray color
-                                         alpha=boundary_alpha,
-                                         transparency=true,
-                                         linewidth=0)
+            gray_color = GLMakie.RGBAf(0.5, 0.5, 0.5, boundary_alpha)
             
-            push!(moment_plots, p_boundary)
+            # Draw boundary curves on the 6 cube faces
+            # Face 1: S110 = -1 (back face)
+            Delta_face = [1.0 + 2.0*(-1.0)*s101*s011 - (-1.0)^2 - s101^2 - s011^2 
+                         for s101 in face_range, s011 in face_range]
+            p1 = GLMakie.contour!(ax_moment, [-1.0, -1.0], face_range, face_range, 
+                                 zeros(2, n_face, n_face) .+ reshape(Delta_face, 1, n_face, n_face),
+                                 levels=[0.0], color=gray_color, linewidth=2)
+            push!(moment_plots, p1)
             
-            println("✓ Realizability boundary |Δ₁| = 0 displayed (100³ grid for sharp corners)")
+            # Face 2: S110 = +1 (front face)
+            Delta_face = [1.0 + 2.0*(1.0)*s101*s011 - (1.0)^2 - s101^2 - s011^2 
+                         for s101 in face_range, s011 in face_range]
+            p2 = GLMakie.contour!(ax_moment, [1.0, 1.0], face_range, face_range,
+                                 zeros(2, n_face, n_face) .+ reshape(Delta_face, 1, n_face, n_face),
+                                 levels=[0.0], color=gray_color, linewidth=2)
+            push!(moment_plots, p2)
+            
+            # Face 3: S101 = -1 (left face)
+            Delta_face = [1.0 + 2.0*s110*(-1.0)*s011 - s110^2 - (-1.0)^2 - s011^2 
+                         for s110 in face_range, s011 in face_range]
+            p3 = GLMakie.contour!(ax_moment, face_range, [-1.0, -1.0], face_range,
+                                 reshape(Delta_face, n_face, 1, n_face),
+                                 levels=[0.0], color=gray_color, linewidth=2)
+            push!(moment_plots, p3)
+            
+            # Face 4: S101 = +1 (right face)
+            Delta_face = [1.0 + 2.0*s110*(1.0)*s011 - s110^2 - (1.0)^2 - s011^2 
+                         for s110 in face_range, s011 in face_range]
+            p4 = GLMakie.contour!(ax_moment, face_range, [1.0, 1.0], face_range,
+                                 reshape(Delta_face, n_face, 1, n_face),
+                                 levels=[0.0], color=gray_color, linewidth=2)
+            push!(moment_plots, p4)
+            
+            # Face 5: S011 = -1 (bottom face)
+            Delta_face = [1.0 + 2.0*s110*s101*(-1.0) - s110^2 - s101^2 - (-1.0)^2 
+                         for s110 in face_range, s101 in face_range]
+            p5 = GLMakie.contour!(ax_moment, face_range, face_range, [-1.0, -1.0],
+                                 reshape(Delta_face, n_face, n_face, 1),
+                                 levels=[0.0], color=gray_color, linewidth=2)
+            push!(moment_plots, p5)
+            
+            # Face 6: S011 = +1 (top face)
+            Delta_face = [1.0 + 2.0*s110*s101*(1.0) - s110^2 - s101^2 - (1.0)^2 
+                         for s110 in face_range, s101 in face_range]
+            p6 = GLMakie.contour!(ax_moment, face_range, face_range, [1.0, 1.0],
+                                 reshape(Delta_face, n_face, n_face, 1),
+                                 levels=[0.0], color=gray_color, linewidth=2)
+            push!(moment_plots, p6)
+            
+            println("✓ Realizability boundary |Δ₁| = 0 displayed (curves on 6 cube faces)")
         catch e
             @warn "Could not compute realizability boundary" exception=e
             println("  Error: $e")
