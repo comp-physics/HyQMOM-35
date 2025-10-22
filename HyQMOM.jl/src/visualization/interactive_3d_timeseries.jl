@@ -6,7 +6,6 @@ This viewer allows stepping through simulation snapshots over time.
 
 import GLMakie
 using Printf
-using LaTeXStrings
 
 # Import moment computation functions
 import ..get_standardized_moment
@@ -62,22 +61,19 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("Has standardized moments (S field)? ", has_std_moments)
     
     # Create figure - default 1800x1000 for both layouts, minimal spacing
-    # Use LaTeX rendering for all text (tick labels, axis labels, titles)
     if has_std_moments
         println("Creating 3-column figure (1800×1000):")
         println("  Column 1: Physical space (x,y,z)")
         println("  Column 2: Moment space (S110, S101, S011)")
         println("  Column 3: Controls")
         # Same width as standard, just split among 3 columns, minimal gaps
-        fig = GLMakie.Figure(size=(1600, 700), fontsize=12,
-                            fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
+        fig = GLMakie.Figure(size=(1600, 700))
         # Reduce column gaps to maximize plot space
         GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
     else
         println("Creating 2-column figure (1800×1000)")
         # Default size: 1800x1000
-        fig = GLMakie.Figure(size=(1600, 700), fontsize=12,
-                            fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
+        fig = GLMakie.Figure(size=(1600, 700))
         GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
     end
     
@@ -86,28 +82,24 @@ function interactive_3d_timeseries(snapshots, grid, params;
     
     # Left: Physical space (isosurfaces)
     ax_physical = GLMakie.Axis3(fig[1, 1], 
-                                xlabel=L"x", ylabel=L"y", zlabel=L"z",
+                                xlabel="x", ylabel="y", zlabel="z",
                                 title="Physical Space - Crossing Jets",
                                 aspect=:data,
                                 azimuth=0.3π,
-                                elevation=π/8,
-                                xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
-                                xlabelsize=13, ylabelsize=13, zlabelsize=13)
+                                elevation=π/8)
     
     # Middle: Moment space (if available)
     ax_moment = nothing
     if has_std_moments
         println("Creating moment space axis at position [1, 2]...")
         ax_moment = GLMakie.Axis3(fig[1, 2], 
-                                 xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
-                                 title=GLMakie.@lift(latexstring("Moment Space - ", 
-                                                                @sprintf("t=%.4f", snapshots[$current_snapshot_idx].t))),
+                                 xlabel="S110", ylabel="S101", zlabel="S011",
+                                 title=GLMakie.@lift(@sprintf("Moment Space - t=%.4f", 
+                                                             snapshots[$current_snapshot_idx].t)),
                                  aspect=:data,
                                  azimuth=0.3π,
                                  elevation=π/8,
-                                 limits=(-1, 1, -1, 1, -1, 1),
-                                 xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
-                                 xlabelsize=13, ylabelsize=13, zlabelsize=13)
+                                 limits=(-1, 1, -1, 1, -1, 1))
         
         println("✓ Moment space axis created successfully!")
         println("  This will show S110, S101, S011 as a 3D scatter plot")
@@ -122,11 +114,11 @@ function interactive_3d_timeseries(snapshots, grid, params;
     current_quantity = GLMakie.Observable("Density")
     
     # Quantity buttons (minimal - single row)
-    btn_density = GLMakie.Button(fig, label=L"\rho", fontsize=8)
-    btn_u = GLMakie.Button(fig, label=L"u", fontsize=8)
-    btn_v = GLMakie.Button(fig, label=L"v", fontsize=8)
-    btn_w = GLMakie.Button(fig, label=L"w", fontsize=8)
-    btn_pressure = GLMakie.Button(fig, label=L"P", fontsize=8)
+    btn_density = GLMakie.Button(fig, label="ρ", fontsize=8)
+    btn_u = GLMakie.Button(fig, label="U", fontsize=8)
+    btn_v = GLMakie.Button(fig, label="V", fontsize=8)
+    btn_w = GLMakie.Button(fig, label="W", fontsize=8)
+    btn_pressure = GLMakie.Button(fig, label="P", fontsize=8)
     
     controls[1, 1] = GLMakie.hgrid!(btn_density, btn_u, btn_v, btn_w, btn_pressure; tellwidth=false)
     
@@ -158,22 +150,17 @@ function interactive_3d_timeseries(snapshots, grid, params;
     
     # Time slider with snapshot number label
     time_slider = GLMakie.Slider(fig, range=1:length(snapshots), startvalue=1, width=200)
-    btn_play = GLMakie.Button(fig, label=">", fontsize=8, width=95)
-    btn_pause = GLMakie.Button(fig, label="||", fontsize=8, width=95)
+    btn_play = GLMakie.Button(fig, label=">", fontsize=8)
+    btn_pause = GLMakie.Button(fig, label="||", fontsize=8)
     
     time_label = GLMakie.@lift(@sprintf("Snap %d/%d", $(time_slider.value), length(snapshots)))
     
     controls[2, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, time_label, fontsize=9, halign=:left),
         time_slider;
-        tellwidth=false, tellheight=false
+        tellwidth=false
     )
-    controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false, tellheight=false)
-    
-    # Add PNG export buttons - separate exports for each plot
-    btn_export_physical = GLMakie.Button(fig, label="Phys PNG", fontsize=8, width=95)
-    btn_export_moment = GLMakie.Button(fig, label="Mom PNG", fontsize=8, width=95)
-    controls[4, 1] = GLMakie.hgrid!(btn_export_physical, btn_export_moment; tellwidth=false, tellheight=false)
+    controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false)
     
     is_playing = GLMakie.Observable(false)
     
@@ -184,69 +171,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
         is_playing[] = false
     end
     
-    # PNG export callbacks - separate high-resolution files for each plot
-    # Note: We use screen capture to avoid creating new windows that might interfere
-    GLMakie.on(btn_export_physical.clicks) do _
-        try
-            snap_idx = time_slider.value[]
-            current_time = snapshots[snap_idx].t
-            filename = @sprintf("physical_space_t%.4f_snap%03d.png", current_time, snap_idx)
-            
-            println("\n" * "="^70)
-            println("EXPORTING PHYSICAL SPACE PLOT TO PNG")
-            println("="^70)
-            println("Filename: $filename")
-            println("Snapshot: $snap_idx / $(length(snapshots))")
-            println("Time: $current_time")
-            println("Capturing current view from screen...")
-            
-            # Directly save the axis scene to file (captures current view)
-            # This avoids creating a new window/figure
-            GLMakie.save(filename, ax_physical.blockscene, px_per_unit=2)
-            
-            println("✓ Physical space plot exported successfully!")
-            println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
-            println("="^70)
-        catch e
-            @warn "Physical space PNG export failed" exception=(e, catch_backtrace())
-            println("Error: $e")
-        end
-    end
-    
-    GLMakie.on(btn_export_moment.clicks) do _
-        try
-            snap_idx = time_slider.value[]
-            current_time = snapshots[snap_idx].t
-            filename = @sprintf("moment_space_t%.4f_snap%03d.png", current_time, snap_idx)
-            
-            println("\n" * "="^70)
-            println("EXPORTING MOMENT SPACE PLOT TO PNG")
-            println("="^70)
-            println("Filename: $filename")
-            println("Snapshot: $snap_idx / $(length(snapshots))")
-            println("Time: $current_time")
-            
-            if !has_std_moments
-                println("⚠ No moment space data available - skipping export")
-                println("="^70)
-                return
-            end
-            
-            println("Capturing current view from screen...")
-            
-            # Directly save the axis scene to file (captures current view)
-            # This avoids creating a new window/figure
-            GLMakie.save(filename, ax_moment.blockscene, px_per_unit=2)
-            
-            println("✓ Moment space plot exported successfully!")
-            println("  File size: $(round(filesize(filename)/1024, digits=1)) KB")
-            println("="^70)
-        catch e
-            @warn "Moment space PNG export failed" exception=(e, catch_backtrace())
-            println("Error: $e")
-        end
-    end
-    
     # Isosurface controls with labels - wider sliders
     slider_iso1 = GLMakie.Slider(fig, range=0.1:0.05:0.9, startvalue=iso_levels[1], width=200)
     slider_iso2 = slider_iso1  # Use same level
@@ -255,15 +179,15 @@ function interactive_3d_timeseries(snapshots, grid, params;
     toggle_isosurface = GLMakie.Toggle(fig, active=true)
     toggle_streamlines = GLMakie.Toggle(fig, active=false)
     
-    controls[5, 1] = GLMakie.vgrid!(
+    controls[4, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, "Iso Level", fontsize=9, halign=:left),
         slider_iso1;
-        tellwidth=false, tellheight=false
+        tellwidth=false
     )
-    controls[6, 1] = GLMakie.vgrid!(
+    controls[5, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, "Alpha", fontsize=9, halign=:left),
         slider_alpha;
-        tellwidth=false, tellheight=false
+        tellwidth=false
     )
     
     # Compute all quantities for all snapshots (observables will select which to show)
@@ -523,41 +447,60 @@ function interactive_3d_timeseries(snapshots, grid, params;
         # This is the boundary of the realizable region in moment space
         
         try
-            # Use moderate resolution for balanced sharpness
-            n_grid = 50
-            s_range = range(-1.0, 1.0, length=n_grid)
+            # Create a grid for the surface
+            n_points = 50
+            s1_range = range(-1, 1, length=n_points)
+            s2_range = range(-1, 1, length=n_points)
             
-            # Create 3D grid of Δ₁ values
-            Delta1_volume = zeros(Float64, n_grid, n_grid, n_grid)
+            # We'll create the surface by solving for S011 given S110, S101
+            # Rearranging: S011² - 2*S110*S101*S011 + (S110² + S101² - 1) = 0
+            # Using quadratic formula: S011 = S110*S101 ± sqrt((S110*S101)² - (S110² + S101² - 1))
             
-            # Compute Δ₁ at all grid points
-            @inbounds for (i, s110) in enumerate(s_range)
-                @inbounds for (j, s101) in enumerate(s_range)
-                    @inbounds for (k, s011) in enumerate(s_range)
-                        # Compute Δ₁ (determinant of correlation matrix)
-                        Delta1_volume[i, j, k] = 1.0 + 2.0*s110*s101*s011 - 
-                                                 s110^2 - s101^2 - s011^2
+            S110_grid = zeros(n_points, n_points)
+            S101_grid = zeros(n_points, n_points)
+            S011_grid_pos = zeros(n_points, n_points)
+            S011_grid_neg = zeros(n_points, n_points)
+            
+            for (i, s110) in enumerate(s1_range)
+                for (j, s101) in enumerate(s2_range)
+                    S110_grid[i, j] = s110
+                    S101_grid[i, j] = s101
+                    
+                    # Quadratic formula coefficients
+                    # S011² - 2*a*b*S011 + (a² + b² - 1) = 0
+                    discriminant = (s110 * s101)^2 - (s110^2 + s101^2 - 1)
+                    
+                    if discriminant >= 0
+                        sqrt_disc = sqrt(discriminant)
+                        S011_grid_pos[i, j] = s110 * s101 + sqrt_disc
+                        S011_grid_neg[i, j] = s110 * s101 - sqrt_disc
+                    else
+                        # No real solution - mark as NaN (won't plot)
+                        S011_grid_pos[i, j] = NaN
+                        S011_grid_neg[i, j] = NaN
                     end
                 end
             end
             
-            # Fixed alpha value
-            boundary_alpha = 0.3
+            # Clamp to [-1, 1] range
+            S011_grid_pos = clamp.(S011_grid_pos, -1, 1)
+            S011_grid_neg = clamp.(S011_grid_neg, -1, 1)
             
-            # Use contour with moderate resolution
-            s_min, s_max = extrema(s_range)
+            # Draw both sheets of the boundary surface
+            p_boundary_pos = GLMakie.surface!(ax_moment, 
+                                            S110_grid, S101_grid, S011_grid_pos,
+                                            color=:gray,
+                                            alpha=0.15,  # Very transparent
+                                            transparency=true)
             
-            p_boundary = GLMakie.contour!(ax_moment,
-                                         (s_min, s_max), (s_min, s_max), (s_min, s_max),
-                                         Delta1_volume,
-                                         levels=[0.0],  # Exact Δ₁ = 0 surface
-                                         color=:white,
-                                         colormap=:grays,
-                                         alpha=boundary_alpha,
-                                         transparency=true,
-                                         linewidth=0)
+            p_boundary_neg = GLMakie.surface!(ax_moment, 
+                                            S110_grid, S101_grid, S011_grid_neg,
+                                            color=:gray,
+                                            alpha=0.15,  # Very transparent
+                                            transparency=true)
             
-            push!(moment_plots, p_boundary)
+            push!(moment_plots, p_boundary_pos)
+            push!(moment_plots, p_boundary_neg)
             
             println("✓ Realizability boundary |Δ₁| = 0 displayed")
         catch e
@@ -565,18 +508,17 @@ function interactive_3d_timeseries(snapshots, grid, params;
         end
         
         # Update moment space title
-        ax_moment.title[] = latexstring("Moment Space - ", @sprintf("t=%.4f", snapshots[idx].t))
+        ax_moment.title[] = @sprintf("Moment Space - t=%.4f", snapshots[idx].t)
     end
     
     # Add moment threshold slider if we have standardized moments with label - wider
     if has_std_moments
         slider_moment_threshold = GLMakie.Slider(fig, range=0.001:0.001:0.5, startvalue=0.01, width=200)
-        controls[7, 1] = GLMakie.vgrid!(
+        controls[6, 1] = GLMakie.vgrid!(
             GLMakie.Label(fig, "Min |S|", fontsize=9, halign=:left),
             slider_moment_threshold;
-            tellwidth=false, tellheight=false
+            tellwidth=false
         )
-        
         
         # Update moment space when threshold changes
         GLMakie.on(slider_moment_threshold.value) do val
