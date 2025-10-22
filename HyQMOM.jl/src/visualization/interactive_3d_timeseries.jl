@@ -518,6 +518,51 @@ function interactive_3d_timeseries(snapshots, grid, params;
         push!(moment_plots, p2)
         push!(moment_plots, p3)
         
+        # Draw |Δ₁| = 0 realizability boundary surface (transparent)
+        # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
+        # This is the boundary of the realizable region in moment space
+        
+        try
+            # Use moderate resolution for balanced sharpness
+            n_grid = 50
+            s_range = range(-1.0, 1.0, length=n_grid)
+            
+            # Create 3D grid of Δ₁ values
+            Delta1_volume = zeros(Float64, n_grid, n_grid, n_grid)
+            
+            # Compute Δ₁ at all grid points
+            @inbounds for (i, s110) in enumerate(s_range)
+                @inbounds for (j, s101) in enumerate(s_range)
+                    @inbounds for (k, s011) in enumerate(s_range)
+                        # Compute Δ₁ (determinant of correlation matrix)
+                        Delta1_volume[i, j, k] = 1.0 + 2.0*s110*s101*s011 - 
+                                                 s110^2 - s101^2 - s011^2
+                    end
+                end
+            end
+            
+            # Fixed alpha value
+            boundary_alpha = 0.3
+            
+            # Use contour with moderate resolution
+            s_min, s_max = extrema(s_range)
+            
+            p_boundary = GLMakie.contour!(ax_moment,
+                                         (s_min, s_max), (s_min, s_max), (s_min, s_max),
+                                         Delta1_volume,
+                                         levels=[0.0],  # Exact Δ₁ = 0 surface
+                                         color=:white,
+                                         colormap=:grays,
+                                         alpha=boundary_alpha,
+                                         transparency=true,
+                                         linewidth=0)
+            
+            push!(moment_plots, p_boundary)
+            
+            println("✓ Realizability boundary |Δ₁| = 0 displayed")
+        catch e
+            @warn "Could not compute realizability boundary" exception=e
+        end
         
         # Update moment space title
         ax_moment.title[] = latexstring("Moment Space - ", @sprintf("t=%.4f", snapshots[idx].t))
