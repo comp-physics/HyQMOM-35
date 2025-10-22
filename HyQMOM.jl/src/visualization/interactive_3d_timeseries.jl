@@ -519,75 +519,45 @@ function interactive_3d_timeseries(snapshots, grid, params;
         push!(moment_plots, p2)
         push!(moment_plots, p3)
         
-        # Draw |Δ₁| = 0 realizability boundary as contour lines on cube faces
+        # Draw |Δ₁| = 0 realizability boundary surface with proper transparency
         # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
-        # Instead of a 3D isosurface (which has rendering issues), draw the boundary
-        # curves on each face of the [-1,1]³ cube. This gives sharp, clean edges.
+        # Use mesh/surface approach with observable for dynamic alpha control
         
         try
             # Get current boundary alpha from mapped slider (default 0.3)
-            boundary_alpha = slider_boundary_alpha !== nothing ? slider_boundary_alpha[] : 0.3
-            boundary_alpha = clamp(boundary_alpha, 0.0, 1.0)
-            println("  Boundary alpha: $(round(boundary_alpha, digits=3)) ($(round(boundary_alpha*100, digits=1))%)")
+            boundary_alpha_val = slider_boundary_alpha !== nothing ? slider_boundary_alpha[] : 0.3
+            boundary_alpha_val = clamp(boundary_alpha_val, 0.0, 1.0)
+            println("  Boundary alpha: $(round(boundary_alpha_val, digits=3)) ($(round(boundary_alpha_val*100, digits=1))%)")
             
-            # Create a fine grid for computing boundary curves on each face
-            n_face = 200
-            face_range = range(-1.0, 1.0, length=n_face)
+            # Create 3D grid for isosurface
+            n_grid = 60
+            s_range = range(-1.0, 1.0, length=n_grid)
             
-            gray_color = GLMakie.RGBAf(0.5, 0.5, 0.5, boundary_alpha)
+            # Compute Δ₁ at all grid points
+            Delta1_volume = zeros(Float32, n_grid, n_grid, n_grid)
+            @inbounds for (i, s110) in enumerate(s_range)
+                @inbounds for (j, s101) in enumerate(s_range)
+                    @inbounds for (k, s011) in enumerate(s_range)
+                        Delta1_volume[i, j, k] = 1.0 + 2.0*s110*s101*s011 - s110^2 - s101^2 - s011^2
+                    end
+                end
+            end
             
-            # Draw boundary curves on the 6 cube faces
-            # Use tuple notation to avoid deprecation warnings
+            # Create observable for boundary color with alpha
+            boundary_color_obs = GLMakie.@lift(GLMakie.RGBAf(0.5, 0.5, 0.5, $slider_boundary_alpha))
             
-            # Face 1: S110 = -1 (back face)
-            Delta_face = [1.0 + 2.0*(-1.0)*s101*s011 - (-1.0)^2 - s101^2 - s011^2 
-                         for s101 in face_range, s011 in face_range]
-            p1 = GLMakie.contour!(ax_moment, (-1.0, -1.0), (-1.0, 1.0), (-1.0, 1.0), 
-                                 zeros(2, n_face, n_face) .+ reshape(Delta_face, 1, n_face, n_face),
-                                 levels=[0.0], color=gray_color, linewidth=2)
-            push!(moment_plots, p1)
+            # Draw isosurface with observable color
+            p_boundary = GLMakie.contour!(ax_moment,
+                                         (-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0),
+                                         Delta1_volume,
+                                         levels=[0.0],
+                                         color=boundary_color_obs,
+                                         transparency=true,
+                                         linewidth=0)
             
-            # Face 2: S110 = +1 (front face)
-            Delta_face = [1.0 + 2.0*(1.0)*s101*s011 - (1.0)^2 - s101^2 - s011^2 
-                         for s101 in face_range, s011 in face_range]
-            p2 = GLMakie.contour!(ax_moment, (1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0),
-                                 zeros(2, n_face, n_face) .+ reshape(Delta_face, 1, n_face, n_face),
-                                 levels=[0.0], color=gray_color, linewidth=2)
-            push!(moment_plots, p2)
+            push!(moment_plots, p_boundary)
             
-            # Face 3: S101 = -1 (left face)
-            Delta_face = [1.0 + 2.0*s110*(-1.0)*s011 - s110^2 - (-1.0)^2 - s011^2 
-                         for s110 in face_range, s011 in face_range]
-            p3 = GLMakie.contour!(ax_moment, (-1.0, 1.0), (-1.0, -1.0), (-1.0, 1.0),
-                                 reshape(Delta_face, n_face, 1, n_face),
-                                 levels=[0.0], color=gray_color, linewidth=2)
-            push!(moment_plots, p3)
-            
-            # Face 4: S101 = +1 (right face)
-            Delta_face = [1.0 + 2.0*s110*(1.0)*s011 - s110^2 - (1.0)^2 - s011^2 
-                         for s110 in face_range, s011 in face_range]
-            p4 = GLMakie.contour!(ax_moment, (-1.0, 1.0), (1.0, 1.0), (-1.0, 1.0),
-                                 reshape(Delta_face, n_face, 1, n_face),
-                                 levels=[0.0], color=gray_color, linewidth=2)
-            push!(moment_plots, p4)
-            
-            # Face 5: S011 = -1 (bottom face)
-            Delta_face = [1.0 + 2.0*s110*s101*(-1.0) - s110^2 - s101^2 - (-1.0)^2 
-                         for s110 in face_range, s101 in face_range]
-            p5 = GLMakie.contour!(ax_moment, (-1.0, 1.0), (-1.0, 1.0), (-1.0, -1.0),
-                                 reshape(Delta_face, n_face, n_face, 1),
-                                 levels=[0.0], color=gray_color, linewidth=2)
-            push!(moment_plots, p5)
-            
-            # Face 6: S011 = +1 (top face)
-            Delta_face = [1.0 + 2.0*s110*s101*(1.0) - s110^2 - s101^2 - (1.0)^2 
-                         for s110 in face_range, s101 in face_range]
-            p6 = GLMakie.contour!(ax_moment, (-1.0, 1.0), (-1.0, 1.0), (1.0, 1.0),
-                                 reshape(Delta_face, n_face, n_face, 1),
-                                 levels=[0.0], color=gray_color, linewidth=2)
-            push!(moment_plots, p6)
-            
-            println("✓ Realizability boundary |Δ₁| = 0 displayed (curves on 6 cube faces)")
+            println("✓ Realizability boundary |Δ₁| = 0 displayed with dynamic transparency")
         catch e
             @warn "Could not compute realizability boundary" exception=e
             println("  Error: $e")
