@@ -524,9 +524,9 @@ function interactive_3d_timeseries(snapshots, grid, params;
         # This is the boundary of the realizable region in moment space
         
         try
-            # Use moderate resolution to balance sharpness with uniform transparency
-            # Lower resolution = fewer triangles = more uniform opacity
-            n_grid = 50  # Balanced resolution for uniform transparency
+            # Use high resolution to capture sharp corners at cube edges
+            # The realizability boundary has sharp intersections with the cube faces
+            n_grid = 100  # High resolution for sharp corner definition
             s_range = range(-1.0, 1.0, length=n_grid)
             
             # Create 3D grid of Δ₁ values
@@ -550,22 +550,21 @@ function interactive_3d_timeseries(snapshots, grid, params;
             boundary_alpha = clamp(boundary_alpha, 0.0, 1.0)
             println("  Boundary alpha: $(round(boundary_alpha, digits=3)) ($(round(boundary_alpha*100, digits=1))%)")
             
-            # Use contour with moderate resolution for better transparency behavior
+            # Use contour with high resolution for sharp edges
             s_min, s_max = extrema(s_range)
             
             p_boundary = GLMakie.contour!(ax_moment,
                                          (s_min, s_max), (s_min, s_max), (s_min, s_max),
                                          Delta1_volume,
                                          levels=[0.0],  # Exact Δ₁ = 0 surface
-                                         color=:white,  # Try white instead
-                                         colormap=:grays,  # Use grayscale colormap
+                                         color=GLMakie.RGB(0.6, 0.6, 0.6),  # Gray color
                                          alpha=boundary_alpha,
                                          transparency=true,
                                          linewidth=0)
             
             push!(moment_plots, p_boundary)
             
-            println("✓ Realizability boundary |Δ₁| = 0 displayed (50³ grid, uniform transparency)")
+            println("✓ Realizability boundary |Δ₁| = 0 displayed (100³ grid for sharp corners)")
         catch e
             @warn "Could not compute realizability boundary" exception=e
             println("  Error: $e")
