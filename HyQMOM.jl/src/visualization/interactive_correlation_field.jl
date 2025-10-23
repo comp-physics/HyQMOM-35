@@ -7,6 +7,7 @@ with interactive slicing planes and isosurfaces.
 
 import GLMakie
 using Printf
+using LaTeXStrings
 
 """
     interactive_correlation_field(snapshots::Vector, grid; kwargs...)
@@ -72,30 +73,32 @@ function interactive_correlation_field(snapshots::Vector, grid;
     y_min, y_max = minimum(ym), maximum(ym)
     z_min, z_max = minimum(zm), maximum(zm)
     
-    # Create figure with two 3D axes side by side
-    fig = GLMakie.Figure(size=(2400, 1000))
+    # Create figure with two 3D axes side by side, LaTeX font rendering
+    fig = GLMakie.Figure(size=(2400, 1000), fontsize=12,
+                        fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
     
     # Current snapshot index
     current_snapshot_idx = GLMakie.Observable(1)
     
     # Left axis: Moment space (S110, S101, S011) - Main view
     ax_moment = GLMakie.Axis3(fig[1:2, 1], 
-                             xlabel="S110 (u-v)", ylabel="S101 (u-w)", zlabel="S011 (v-w)",
-                             title=GLMakie.@lift(@sprintf("Moment Space - t=%.4f", 
-                                                         snapshots[$current_snapshot_idx].t)),
+                             xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
                              aspect=:data,
                              azimuth=0.3π,
                              elevation=π/8,
-                             limits=(-1, 1, -1, 1, -1, 1))
+                             limits=(-1, 1, -1, 1, -1, 1),
+                             xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                             xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
     # Right axis: Realizability boundary (|Δ₁| = 0)
     ax_realizability = GLMakie.Axis3(fig[1:2, 2], 
-                                    xlabel="S110 (u-v)", ylabel="S101 (u-w)", zlabel="S011 (v-w)",
-                                    title="Realizability Boundary (|Δ₁| = 0)",
+                                    xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
                                     aspect=:data,
                                     azimuth=0.3π,
                                     elevation=π/8,
-                                    limits=(-1, 1, -1, 1, -1, 1))
+                                    limits=(-1, 1, -1, 1, -1, 1),
+                                    xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                                    xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
     # Control panel
     controls = fig[1:2, 3] = GLMakie.GridLayout()

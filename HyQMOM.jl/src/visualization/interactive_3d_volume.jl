@@ -6,6 +6,7 @@ This version provides true 3D surfaces and volume rendering, not just slice plan
 
 import GLMakie
 using Printf
+using LaTeXStrings
 
 """
     interactive_3d_volume(M_final, grid, params; kwargs...)
@@ -58,16 +59,18 @@ function interactive_3d_volume(M_final, grid, params;
     temperature = (C200 .+ C020 .+ C002) ./ 3.0
     pressure = rho .* temperature
     
-    # Create figure
-    fig = GLMakie.Figure(size=(1600, 1000))
+    # Create figure with LaTeX font rendering
+    fig = GLMakie.Figure(size=(1600, 1000), fontsize=12,
+                        fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
     
     # Main 3D axis
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
-                       xlabel="x", ylabel="y", zlabel="z",
-                       title="3D Volume Visualization - Crossing Jets",
+                       xlabel=L"x", ylabel=L"y", zlabel=L"z",
                        aspect=:data,
                        azimuth=0.3π,
-                       elevation=π/8)
+                       elevation=π/8,
+                       xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                       xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
     # Control panel
     controls = fig[1:3, 3] = GLMakie.GridLayout()

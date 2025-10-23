@@ -110,6 +110,24 @@ Good for publications and batch processing.
 
 ## Visualization
 
+### Quick Visualization of Results
+
+After running simulations with `examples/run_3d_custom_jets.jl`, you'll get `.jld2` snapshot files. Use the provided script to quickly visualize them:
+
+```bash
+# Auto-detect and visualize .jld2 files
+julia visualize_jld2.jl
+
+# Or specify a file directly
+julia visualize_jld2.jl snapshots_crossing_Ma1.0_t0.3_N30.jld2
+```
+
+The script will:
+- **Auto-install** GLMakie if needed
+- **Auto-find** `.jld2` files in the current directory
+- **Launch** interactive 3D time-series viewer
+- **Show** both physical space (density/velocity isosurfaces) and moment space (if available)
+
 ### Interactive 3D Visualization
 
 HyQMOM includes interactive 3D visualization using GLMakie. GLMakie is included as a dependency and works out of the box.
@@ -121,9 +139,39 @@ HyQMOM includes interactive 3D visualization using GLMakie. GLMakie is included 
 - Isosurface sliders: Adjust visualization levels
 - Mouse: Drag to rotate, scroll to zoom
 
-### Disabling Visualization (for CI/HPC)
+**Manual Usage:**
+```julia
+using HyQMOM, JLD2, GLMakie
+@load "snapshots_file.jld2" snapshots grid params params_with_ic
 
-For CI pipelines or HPC systems without graphics:
+# Full time-series viewer
+interactive_3d_timeseries(snapshots, grid, params_with_ic)
+
+# Single snapshot viewer
+interactive_3d_volume(snapshots[end].M, grid, params_with_ic)
+
+# Standardized moment scatter plot (if S field available)
+interactive_standardized_scatter(snapshots[end], grid)
+```
+
+### Headless Systems (HPC/Clusters)
+
+**For running on systems without display/X11** (compute clusters, HPC, remote servers):
+
+```bash
+# Use the --no-viz flag to skip visualization but still save .jld2 files
+julia --project=. examples/run_3d_custom_jets.jl --no-viz true --snapshot-interval 5
+
+# Or for run_3d_jets_timeseries.jl
+julia --project=. examples/run_3d_jets_timeseries.jl --no-viz true
+
+# View results later on a system with display:
+julia visualize_jld2.jl
+```
+
+**See [HEADLESS_USAGE.md](HEADLESS_USAGE.md) for complete workflow examples, MPI batch jobs, and parameter sweeps.**
+
+**For CI pipelines or when installing the package** (skip loading GLMakie entirely):
 
 ```bash
 export HYQMOM_SKIP_PLOTTING=true
@@ -360,6 +408,9 @@ julia --project=. examples/run_3d_jets_timeseries.jl
 
 # MPI parallel
 mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100
+
+# Visualize results
+julia visualize_jld2.jl
 
 # Get help
 julia --project=. examples/run_3d_jets_timeseries.jl --help

@@ -31,20 +31,34 @@ Usage:
   
   # Disable standardized moments if needed
   julia --project=. examples/run_3d_custom_jets.jl --config crossing --snapshot-interval 5 --save-standardized-moments false
+  
+  # For headless systems (no X11/display):
+  julia --project=. examples/run_3d_custom_jets.jl --config crossing --snapshot-interval 5 --no-viz true
 
 To create your own configuration, edit the `get_jet_configuration` function below.
 """
 
+# Check if visualization should be disabled (for headless systems/CI)
+# This needs to be checked before loading any packages
+const VIZ_DISABLED = "--no-viz" in ARGS && 
+    (idx = findfirst(x -> x == "--no-viz", ARGS)) !== nothing &&
+    idx < length(ARGS) &&
+    lowercase(ARGS[idx + 1]) in ["true", "t", "yes", "y", "1"]
+
 # Load GLMakie first to enable visualization support in HyQMOM
-const GLMAKIE_LOADED = try
-    import GLMakie
-    true
-catch e
-    @warn """
-    GLMakie is not installed. Visualization will not be available.
-    To install: julia --project=. -e 'using Pkg; Pkg.add("GLMakie")'
-    """
+const GLMAKIE_LOADED = if VIZ_DISABLED
     false
+else
+    try
+        import GLMakie
+        true
+    catch e
+        @warn """
+        GLMakie is not installed. Visualization will not be available.
+        To install: julia --project=. -e 'using Pkg; Pkg.add("GLMakie")'
+        """
+        false
+    end
 end
 
 using HyQMOM
@@ -359,26 +373,39 @@ if params.snapshot_interval > 0
         end
         println("="^70)
         
-        # Launch interactive viewer
-        println("\nLaunching Interactive Time-Series Viewer...")
-        println("\nViewer Controls:")
-        println("  • Time slider: Step through snapshots")
-        println("  • Play/Pause/Reset: Animate the time evolution")
-        println("  • Quantity buttons: Switch between Density, U, V, W velocities")
-        println("  • Isosurface sliders: Adjust visualization levels")
-        println("  • Mouse: Rotate (drag), Zoom (scroll)")
-        println("="^70)
-        
-        try
-            interactive_3d_timeseries(snapshots, grid, params_with_ic)
-        catch e
-            @warn "Viewer failed" exception=(e, catch_backtrace())
-            println("Trying fallback single-frame viewer...")
+        # Launch interactive viewer (unless disabled)
+        if !params.no_viz && GLMAKIE_LOADED
+            println("\nLaunching Interactive Time-Series Viewer...")
+            println("\nViewer Controls:")
+            println("  • Time slider: Step through snapshots")
+            println("  • Play/Pause/Reset: Animate the time evolution")
+            println("  • Quantity buttons: Switch between Density, U, V, W velocities")
+            println("  • Isosurface sliders: Adjust visualization levels")
+            println("  • Mouse: Rotate (drag), Zoom (scroll)")
+            println("="^70)
+            
             try
-                interactive_3d_volume(snapshots[end].M, grid, params_with_ic)
-            catch e2
-                @warn "Fallback viewer also failed"
+                interactive_3d_timeseries(snapshots, grid, params_with_ic)
+            catch e
+                @warn "Viewer failed" exception=(e, catch_backtrace())
+                println("Trying fallback single-frame viewer...")
+                try
+                    interactive_3d_volume(snapshots[end].M, grid, params_with_ic)
+                catch e2
+                    @warn "Fallback viewer also failed"
+                end
             end
+        elseif params.no_viz
+            println("\n" * "="^70)
+            println("VISUALIZATION DISABLED (--no-viz flag)")
+            println("="^70)
+            println("Skipping interactive viewer (headless mode)")
+            println("Snapshots will still be saved to .jld2 file")
+            println("="^70)
+        else
+            println("\n" * "="^70)
+            println("GLMakie not available - skipping visualization")
+            println("="^70)
         end
         
         # Save snapshots to disk for later analysis
