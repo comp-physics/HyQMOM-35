@@ -358,20 +358,27 @@ if params.snapshot_interval > 0
     snapshots, grid = run_simulation_with_snapshots(params_with_ic; 
                                                      snapshot_interval=params.snapshot_interval)
     
-    if rank == 0 && snapshots !== nothing
-        println("\n" * "="^70)
-        println("SIMULATION COMPLETE")
-        println("="^70)
-        println("Collected $(length(snapshots)) snapshots")
-        println("\nSnapshot Timeline:")
-        for (i, snap) in enumerate(snapshots)
-            if i <= 5 || i > length(snapshots) - 5
-                @printf("  %2d: t = %.4f, step = %d\n", i, snap.t, snap.step)
-            elseif i == 6
-                println("  ...")
+    if rank == 0
+        if snapshots === nothing
+            @warn "Snapshots is nothing on rank 0! This should not happen."
+        else
+            println("\n" * "="^70)
+            println("SIMULATION COMPLETE")
+            println("="^70)
+            println("Collected $(length(snapshots)) snapshots")
+            println("\nSnapshot Timeline:")
+            for (i, snap) in enumerate(snapshots)
+                if i <= 5 || i > length(snapshots) - 5
+                    @printf("  %2d: t = %.4f, step = %d\n", i, snap.t, snap.step)
+                elseif i == 6
+                    println("  ...")
+                end
             end
+            println("="^70)
         end
-        println("="^70)
+    end
+    
+    if rank == 0 && snapshots !== nothing
         
         # Launch interactive viewer (unless disabled)
         if !params.no_viz && GLMAKIE_LOADED
