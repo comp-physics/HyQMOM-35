@@ -63,25 +63,27 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("="^70)
     println("Has standardized moments (S field)? ", has_std_moments)
     
-    # Create figure - default 1800x1000 for both layouts, minimal spacing
+    # Create figure with better sizing for interactive viewing
     if has_std_moments
-        println("Creating 3-column figure (1800×1000):")
+        println("Creating 3-column figure:")
         println("  Column 1: Physical space (x,y,z)")
         println("  Column 2: Moment space (S110, S101, S011)")
         println("  Column 3: Controls")
-        # Same width as standard, just split among 3 columns, minimal gaps
-        # Use LaTeX fonts for all plot text
-        fig = GLMakie.Figure(size=(1600, 700), fontsize=12,
-                            fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
-        # Reduce column gaps to maximize plot space
-        GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
+        # Larger window with good aspect ratio for 3 columns
+        fig = GLMakie.Figure(size=(2000, 800), fontsize=12,
+                            fonts=(; regular="CMU Serif"))
+        # Tight spacing between plots, more space before controls
+        GLMakie.colgap!(fig.layout, 1, 10)  # Small gap between plot columns
+        GLMakie.colgap!(fig.layout, 2, 20)  # Larger gap before controls
     else
-        println("Creating 2-column figure (1800×1000)")
-        # Default size: 1800x1000
-        # Use LaTeX fonts for all plot text
-        fig = GLMakie.Figure(size=(1600, 700), fontsize=12,
-                            fonts=(; regular="CMU Serif"))  # Computer Modern (LaTeX font)
-        GLMakie.colgap!(fig.layout, 5)  # 5 pixels between columns
+        println("Creating 2-column figure:")
+        println("  Column 1: Physical space")
+        println("  Column 2: Controls")
+        # Larger window, good aspect ratio for plot + controls
+        fig = GLMakie.Figure(size=(1400, 800), fontsize=12,
+                            fonts=(; regular="CMU Serif"))
+        # Space between plot and controls
+        GLMakie.colgap!(fig.layout, 15)
     end
     
     # Current snapshot index (observable) - needed for moment space title
