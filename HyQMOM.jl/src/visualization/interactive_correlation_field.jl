@@ -83,8 +83,6 @@ function interactive_correlation_field(snapshots::Vector, grid;
     # Left axis: Moment space (S110, S101, S011) - Main view
     ax_moment = GLMakie.Axis3(fig[1:2, 1], 
                              xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
-                             title=GLMakie.@lift(latexstring("Moment Space - ", 
-                                                            @sprintf("t=%.4f", snapshots[$current_snapshot_idx].t))),
                              aspect=:data,
                              azimuth=0.3π,
                              elevation=π/8,
@@ -95,7 +93,6 @@ function interactive_correlation_field(snapshots::Vector, grid;
     # Right axis: Realizability boundary (|Δ₁| = 0)
     ax_realizability = GLMakie.Axis3(fig[1:2, 2], 
                                     xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
-                                    title=L"Realizability Boundary~|\Delta_1| = 0",
                                     aspect=:data,
                                     azimuth=0.3π,
                                     elevation=π/8,

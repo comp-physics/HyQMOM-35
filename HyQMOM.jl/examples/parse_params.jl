@@ -77,6 +77,9 @@ function get_default_params()
         save_standardized_moments = true,  # Save S4 field with snapshots (default: ON)
         save_central_moments = false,  # Save C4 field with snapshots
         
+        # Visualization control
+        no_viz = false,  # Disable all visualization (for headless systems/CI)
+        
         # Initial condition configuration
         config = "crossing",  # Configuration name for custom ICs
     )
@@ -195,6 +198,8 @@ function print_help()
       --snapshot-interval N           Save snapshot every N steps (default: 0=disabled)
       --save-standardized-moments BOOL Save S4 field with snapshots (default: true)
       --save-central-moments BOOL      Save C4 field with snapshots (default: false)
+      
+      --no-viz BOOL         Disable all visualization (for headless/CI) (default: false)
       
       --config NAME         Initial condition configuration (default: crossing)
                            Options: crossing, triple-jet, quad-jet, vertical-jet, spiral

@@ -66,7 +66,6 @@ function interactive_3d_volume(M_final, grid, params;
     # Main 3D axis
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
                        xlabel=L"x", ylabel=L"y", zlabel=L"z",
-                       title="3D Volume Visualization - Crossing Jets",
                        aspect=:data,
                        azimuth=0.3π,
                        elevation=π/8,

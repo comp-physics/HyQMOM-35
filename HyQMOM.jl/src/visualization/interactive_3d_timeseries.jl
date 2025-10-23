@@ -88,7 +88,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
     # Left: Physical space (isosurfaces)
     ax_physical = GLMakie.Axis3(fig[1, 1], 
                                 xlabel=L"x", ylabel=L"y", zlabel=L"z",
-                                title="Physical Space - Crossing Jets",
                                 aspect=:data,
                                 azimuth=0.3π,
                                 elevation=π/8,
@@ -101,8 +100,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
         println("Creating moment space axis at position [1, 2]...")
         ax_moment = GLMakie.Axis3(fig[1, 2], 
                                  xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
-                                 title=GLMakie.@lift(latexstring("Moment Space - ", 
-                                                                @sprintf("t=%.4f", snapshots[$current_snapshot_idx].t))),
                                  aspect=:data,
                                  azimuth=0.3π,
                                  elevation=π/8,
@@ -516,8 +513,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             @warn "Could not compute realizability boundary" exception=e
         end
         
-        # Update moment space title
-        ax_moment.title[] = latexstring("Moment Space - ", @sprintf("t=%.4f", snapshots[idx].t))
+        # Title removed for cleaner visualization
     end
     
     # Add moment threshold slider if we have standardized moments with label - wider

@@ -82,7 +82,6 @@ function interactive_standardized_scatter(snapshot, grid;
     # Main 3D axis with fixed limits for full domain
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
                        xlabel=L"x", ylabel=L"y", zlabel=L"z",
-                       title=latexstring("Standardized Moments - ", @sprintf("t=%.4f", snapshot.t)),
                        aspect=:data,
                        azimuth=0.3π,
                        elevation=π/8,
@@ -446,11 +445,6 @@ function interactive_standardized_scatter(snapshots::Vector, grid;
     # Main 3D axis with fixed limits for full domain
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
                        xlabel=L"x", ylabel=L"y", zlabel=L"z",
-                       title=GLMakie.@lift(latexstring("Standardized Moments - ", 
-                                                      @sprintf("t=%.4f (snapshot %d/%d)", 
-                                                              snapshots[$current_snapshot_idx].t,
-                                                              $current_snapshot_idx,
-                                                              length(snapshots)))),
                        aspect=:data,
                        azimuth=0.3π,
                        elevation=π/8,
