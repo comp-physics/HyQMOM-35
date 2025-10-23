@@ -264,6 +264,12 @@ function main()
         println("  Time per step: $(total_time/time_steps) seconds")
         println("="^70)
         
+        # Build filename with parameters if using default name
+        if output_file == "results.jld2"
+            output_file = @sprintf("results_Nx%d_Ny%d_Nz%d_Kn%.2f_Ma%.2f_t%.4f.jld2",
+                                  Np, Np, Nz, Kn, Ma, tmax)
+        end
+        
         # Save results to file
         println("Saving results to $(output_file)...")
         jldsave(output_file;

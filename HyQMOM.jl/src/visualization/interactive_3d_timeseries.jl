@@ -188,13 +188,16 @@ function interactive_3d_timeseries(snapshots, grid, params;
             snap = snapshots[idx]
             timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMMSS")
             quantity_short = replace(current_quantity[], " " => "_")
-            filename = @sprintf("snapshot_%s_t%.4f_%s.png", quantity_short, snap.t, timestamp)
+            
+            # Build filename with simulation parameters
+            filename = @sprintf("snapshot_%s_Nx%d_Ny%d_Nz%d_Kn%.2f_t%.4f_%s.png",
+                               quantity_short, Nx, Ny, Nz, params.Kn, snap.t, timestamp)
             
             println("\nExporting current view to: $filename")
             println("  Resolution: $(fig.scene.viewport[].widths .* 8) pixels")
+            println("  Parameters: Nx=$(Nx), Ny=$(Ny), Nz=$(Nz), Kn=$(params.Kn)")
             
-            # Save at 4× native resolution for publication quality
-            # This gives approximately 300 DPI for a figure that's ~5 inches wide
+            # Save at 8× native resolution for publication quality
             GLMakie.save(filename, fig; px_per_unit=8)
             
             println("✓ Export complete!")

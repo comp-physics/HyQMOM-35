@@ -58,10 +58,14 @@ function main()
     if rank == 0
         println("\nSaving results...")
         
-        # Save to JLD2 file
-        @save "snapshots_with_standardized.jld2" snapshots grid
+        # Build filename with all key parameters
+        filename = @sprintf("snapshots_Nx%d_Ny%d_Nz%d_Kn%.2f_Ma%.2f_t%.4f.jld2",
+                           Nx, Ny, Nz, Kn, Ma, tmax)
         
-        println("Saved $(length(snapshots)) snapshots")
+        # Save to JLD2 file
+        @save filename snapshots grid
+        
+        println("Saved $(length(snapshots)) snapshots to: $filename")
         println("\nEach snapshot contains:")
         println("  - M: Raw moments ($(size(snapshots[1].M)))")
         println("  - S: Standardized moments ($(size(snapshots[1].S)))")

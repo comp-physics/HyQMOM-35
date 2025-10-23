@@ -413,7 +413,10 @@ if params.snapshot_interval > 0
         println("SAVING RESULTS")
         println("="^70)
         
-        filename = "snapshots_$(params.config)_Ma$(round(params.Ma, digits=2))_t$(params.tmax)_N$(params.Nx).jld2"
+        # Build filename with all key parameters
+        filename = @sprintf("snapshots_%s_Nx%d_Ny%d_Nz%d_Kn%.2f_Ma%.2f_t%.4f.jld2",
+                           params.config, params.Nx, params.Ny, params.Nz, 
+                           params.Kn, params.Ma, params.tmax)
         
         # Save snapshots, grid, and parameters
         @save filename snapshots grid params params_with_ic
