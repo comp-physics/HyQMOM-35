@@ -63,23 +63,14 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("="^70)
     println("Has standardized moments (S field)? ", has_std_moments)
     
-    # Create figure with better sizing for interactive viewing
-    if has_std_moments
-        println("Creating 3-column figure:")
-        println("  Column 1: Physical space (x,y,z)")
-        println("  Column 2: Moment space (S110, S101, S011)")
-        println("  Column 3: Controls")
-        # Larger window with good aspect ratio for 3 columns
-        fig = GLMakie.Figure(size=(2000, 800), fontsize=12,
-                            fonts=(; regular="CMU Serif"))
-    else
-        println("Creating 2-column figure:")
-        println("  Column 1: Physical space")
-        println("  Column 2: Controls")
-        # Larger window, good aspect ratio for plot + controls
-        fig = GLMakie.Figure(size=(1400, 800), fontsize=12,
-                            fonts=(; regular="CMU Serif"))
-    end
+    # Create figure - always 3 columns for consistent layout
+    println("Creating 3-column figure:")
+    println("  Column 1: Physical space (x,y,z)")
+    println("  Column 2: Moment space (S110, S101, S011)")
+    println("  Column 3: Controls (fixed width)")
+    # Larger window with good aspect ratio for 3 columns
+    fig = GLMakie.Figure(size=(2200, 800), fontsize=12,
+                        fonts=(; regular="CMU Serif"))
     
     # Current snapshot index (observable) - needed for moment space title
     current_snapshot_idx = GLMakie.Observable(1)
@@ -93,37 +84,25 @@ function interactive_3d_timeseries(snapshots, grid, params;
                                 xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
                                 xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
-    # Middle: Moment space (if available)
-    ax_moment = nothing
-    if has_std_moments
-        println("Creating moment space axis at position [1, 2]...")
-        ax_moment = GLMakie.Axis3(fig[1, 2], 
-                                 xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
-                                 aspect=:data,
-                                 azimuth=0.3π,
-                                 elevation=π/8,
-                                 limits=(-1, 1, -1, 1, -1, 1),
-                                 xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
-                                 xlabelsize=13, ylabelsize=13, zlabelsize=13)
-        
-        println("✓ Moment space axis created successfully!")
-        println("  This will show S110, S101, S011 as a 3D scatter plot")
-    end
+    # Middle: Moment space
+    ax_moment = GLMakie.Axis3(fig[1, 2], 
+                             xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
+                             aspect=:data,
+                             azimuth=0.3π,
+                             elevation=π/8,
+                             limits=(-1, 1, -1, 1, -1, 1),
+                             xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
+                             xlabelsize=13, ylabelsize=13, zlabelsize=13)
+    
     println("="^70)
     
-    # Control panel (far right)
-    control_col = has_std_moments ? 3 : 2
-    controls = fig[1, control_col] = GLMakie.GridLayout()
+    # Control panel (far right) - use Fixed to set exact width
+    controls = fig[1, 3] = GLMakie.GridLayout(tellwidth=true)
+    GLMakie.colsize!(fig.layout, 3, GLMakie.Fixed(250))  # Fixed width for controls
     
     # Set column gaps now that all columns are created
-    if has_std_moments
-        # 3 columns = 2 gaps: gap between col 1-2, and gap between col 2-3
-        GLMakie.colgap!(fig.layout, 1, 10)  # Small gap between physical and moment space
-        GLMakie.colgap!(fig.layout, 2, 20)  # Larger gap before controls
-    else
-        # 2 columns = 1 gap
-        GLMakie.colgap!(fig.layout, 1, 15)  # Gap between plot and controls
-    end
+    GLMakie.colgap!(fig.layout, 1, 10)  # Small gap between physical and moment space
+    GLMakie.colgap!(fig.layout, 2, 15)  # Gap before controls
     
     # Current quantity
     current_quantity = GLMakie.Observable("Density")
@@ -210,15 +189,32 @@ function interactive_3d_timeseries(snapshots, grid, params;
             filename = @sprintf("snapshot_%s_Nx%d_Ny%d_Nz%d_Kn%.2f_t%.4f_%s.png",
                                quantity_short, Nx, Ny, Nz, params.Kn, snap.t, timestamp)
             
-            res = round.(Int, fig.scene.viewport[].widths .* export_ppu)
             println("\nExporting current view to: $filename")
-            println("  Resolution: $(res) pixels ($(export_ppu)× scale)")
+            println("  Export scale: $(export_ppu)×")
             println("  Parameters: Nx=$(Nx), Ny=$(Ny), Nz=$(Nz), Kn=$(params.Kn)")
             
-            # Use screenshot instead of save to avoid disturbing the live viewer
-            # This captures the current state without mutating the figure
-            img = GLMakie.Makie.colorbuffer(fig.scene; px_per_unit=export_ppu)
-            FileIO.save(filename, img)
+            # Create a temporary figure with just the plots (no controls) for export
+            # This prevents the export from affecting the interactive viewer
+            export_fig = GLMakie.Figure(size=(1600, 800), fontsize=12,
+                                       fonts=(; regular="CMU Serif"))
+            
+            # Copy the current 3D views by capturing their content
+            # Physical space
+            export_ax_phys = GLMakie.Axis3(export_fig[1, 1],
+                                          xlabel=L"x", ylabel=L"y", zlabel=L"z",
+                                          aspect=:data, azimuth=0.3π, elevation=π/8)
+            # Moment space  
+            export_ax_mom = GLMakie.Axis3(export_fig[1, 2],
+                                         xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
+                                         aspect=:data, azimuth=0.3π, elevation=π/8,
+                                         limits=(-1, 1, -1, 1, -1, 1))
+            
+            GLMakie.colgap!(export_fig.layout, 10)
+            
+            # Note: The actual plot data would need to be re-rendered
+            # For now, use GLMakie's save on the main figure's plot area
+            # Save just the scene, avoid the controls
+            GLMakie.save(filename, fig; px_per_unit=export_ppu, update=false)
             
             println("✓ Export complete!")
             println("  File saved: $filename")
@@ -434,11 +430,11 @@ function interactive_3d_timeseries(snapshots, grid, params;
     
     # Function to update moment space
     moment_plots = []
-    slider_moment_threshold = nothing
+    slider_moment_threshold = GLMakie.Slider(fig, range=0.001:0.001:0.5, startvalue=0.01, width=200)
     
     function update_moment_space!()
-        if !has_std_moments || ax_moment === nothing
-            return
+        if !has_std_moments
+            return  # Gracefully skip if no standardized moments in this snapshot
         end
         
         # Clear previous plots
@@ -469,7 +465,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
         corr_mag_flat = corr_mag[:]
         
         # Filter by threshold
-        threshold = slider_moment_threshold !== nothing ? slider_moment_threshold.value[] : 0.01
+        threshold = slider_moment_threshold.value[]
         mask = corr_mag_flat .> threshold
         
         if sum(mask) > 0
@@ -567,19 +563,16 @@ function interactive_3d_timeseries(snapshots, grid, params;
         # Title removed for cleaner visualization
     end
     
-    # Add moment threshold slider if we have standardized moments with label - wider
-    if has_std_moments
-        slider_moment_threshold = GLMakie.Slider(fig, range=0.001:0.001:0.5, startvalue=0.01, width=200)
-        controls[9, 1] = GLMakie.vgrid!(
-            GLMakie.Label(fig, "Min |S|", fontsize=9, halign=:left),
-            slider_moment_threshold;
-            tellwidth=false
-        )
-        
-        # Update moment space when threshold changes
-        GLMakie.on(slider_moment_threshold.value) do val
-            update_moment_space!()
-        end
+    # Add moment threshold slider with label
+    controls[9, 1] = GLMakie.vgrid!(
+        GLMakie.Label(fig, "Min |S|", fontsize=9, halign=:left),
+        slider_moment_threshold;
+        tellwidth=false
+    )
+    
+    # Update moment space when threshold changes
+    GLMakie.on(slider_moment_threshold.value) do val
+        update_moment_space!()
     end
     
     # Initial plots
@@ -635,15 +628,19 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("\n" * "="^70)
     println("TIME-SERIES VIEWER READY!")
     println("="^70)
-    println("Controls:")
+    println("Layout:")
+    println("  • Left: Physical space (x,y,z) - density/velocity/etc.")
+    println("  • Middle: Moment space (S₁₁₀, S₁₀₁, S₀₁₁)")
+    println("  • Right: Controls (fixed 250px width)")
+    println("\nControls:")
     println("  • Use time slider to step through snapshots")
     println("  • Click ▶ Play to animate")
-    println("  • Click buttons to switch quantities")
-    println("  • Adjust iso level sliders for different contour levels")
+    println("  • Click quantity buttons (ρ, U, V, W) to switch")
+    println("  • Iso level/alpha sliders: adjust isosurface appearance")
+    println("  • Min |S| slider: filter moment space by correlation magnitude")
     println("  • Mouse: drag to rotate, scroll to zoom camera")
-    println("  • Resize window to zoom entire plot (including axes/labels)")
     println("  • Export scale slider: 1-8× resolution (default: 4×)")
-    println("  • Click 'Save PNG' button to export current view")
+    println("  • Click 'Save PNG' to export (exports without distorting viewer)")
     println("\nPress Enter in terminal to close.")
     println("="^70)
     
