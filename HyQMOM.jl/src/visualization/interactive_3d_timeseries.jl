@@ -193,31 +193,24 @@ function interactive_3d_timeseries(snapshots, grid, params;
             println("  Export scale: $(export_ppu)×")
             println("  Parameters: Nx=$(Nx), Ny=$(Ny), Nz=$(Nz), Kn=$(params.Kn)")
             
-            # Create a temporary figure with just the plots (no controls) for export
-            # This prevents the export from affecting the interactive viewer
-            export_fig = GLMakie.Figure(size=(1600, 800), fontsize=12,
-                                       fonts=(; regular="CMU Serif"))
+            # Use colorbuffer to get a screenshot without mutating the figure
+            # This is a read-only operation that doesn't affect the interactive viewer
+            # Get the screen that's displaying the figure
+            screen = GLMakie.Screen(fig.scene; start_renderloop=false)
             
-            # Copy the current 3D views by capturing their content
-            # Physical space
-            export_ax_phys = GLMakie.Axis3(export_fig[1, 1],
-                                          xlabel=L"x", ylabel=L"y", zlabel=L"z",
-                                          aspect=:data, azimuth=0.3π, elevation=π/8)
-            # Moment space  
-            export_ax_mom = GLMakie.Axis3(export_fig[1, 2],
-                                         xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
-                                         aspect=:data, azimuth=0.3π, elevation=π/8,
-                                         limits=(-1, 1, -1, 1, -1, 1))
+            # Capture the buffer at the requested resolution
+            # This creates a new image buffer without modifying the figure
+            img = GLMakie.colorbuffer(screen; px_per_unit=export_ppu)
             
-            GLMakie.colgap!(export_fig.layout, 10)
+            # Save the buffer to file
+            FileIO.save(filename, img)
             
-            # Note: The actual plot data would need to be re-rendered
-            # For now, use GLMakie's save on the main figure's plot area
-            # Save just the scene, avoid the controls
-            GLMakie.save(filename, fig; px_per_unit=export_ppu, update=false)
+            # Clean up the temporary screen
+            GLMakie.destroy!(screen)
             
             println("✓ Export complete!")
             println("  File saved: $filename")
+            println("  Viewer remains interactive and unchanged")
         catch e
             @error "Export failed" exception=(e, catch_backtrace())
             println("Failed to export figure.")
