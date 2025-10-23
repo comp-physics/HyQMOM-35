@@ -109,11 +109,15 @@ function parse_command_line_args(args=ARGS)
         if arg == "--help" || arg == "-h"
             print_help()
             exit(0)
+        elseif arg == "--no-viz"
+            # Flag argument (no value needed)
+            overrides[:no_viz] = true
+            i += 1
         elseif startswith(arg, "--")
             # Remove leading "--" and convert hyphens to underscores
             param_name = Symbol(replace(arg[3:end], "-" => "_"))
             
-            if i < length(args)
+            if i < length(args) && !startswith(args[i + 1], "--")
                 value_str = args[i + 1]
                 
                 # Try to parse the value
