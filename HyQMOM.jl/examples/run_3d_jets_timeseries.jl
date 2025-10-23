@@ -6,14 +6,15 @@ Demonstrates:
 - 3D initial conditions with cubic jet regions
 - Time-series snapshot collection
 - Interactive 3D visualization over time
+- High-resolution PNG export from interactive viewer
 - Automatic MPI support (serial or parallel)
 
 Requirements:
-  GLMakie must be installed for visualization. To install:
+  GLMakie for interactive visualization:
     julia --project=. -e 'using Pkg; Pkg.add("GLMakie")'
 
 Usage:
-  # Serial
+  # Serial with interactive viewer
   julia --project=. examples/run_3d_jets_timeseries.jl
   julia --project=. examples/run_3d_jets_timeseries.jl --Np 60 --tmax 0.1
   
@@ -21,8 +22,11 @@ Usage:
   mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100
   mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120 --snapshot-interval 5
   
-  # For headless systems (no X11/display):
+  # For headless systems/clusters (no X11/display) - just run simulation
   julia --project=. examples/run_3d_jets_timeseries.jl --no-viz true
+  mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --no-viz true
+  
+  # With interactive viewer - click 'Save PNG' button to export high-resolution images
 """
 
 # Check if visualization should be disabled (for headless systems/CI)
@@ -32,6 +36,7 @@ const VIZ_DISABLED = "--no-viz" in ARGS &&
     lowercase(ARGS[idx + 1]) in ["true", "t", "yes", "y", "1"]
 
 # Load GLMakie first to enable visualization support in HyQMOM
+# Only load if visualization is NOT disabled
 const GLMAKIE_LOADED = if VIZ_DISABLED
     false
 else
@@ -46,6 +51,7 @@ else
         false
     end
 end
+
 
 using HyQMOM
 using MPI
@@ -154,6 +160,7 @@ if params.snapshot_interval > 0
             println("GLMakie not available - skipping visualization")
             println("="^70)
         end
+        
     end
 else
     # Without snapshots
