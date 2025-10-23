@@ -165,17 +165,9 @@ function interactive_3d_timeseries(snapshots, grid, params;
         is_playing[] = false
     end
     
-    # Export resolution slider - allows user to choose quality vs performance
-    slider_export_ppu = GLMakie.Slider(fig, range=1:1:8, startvalue=4, width=200)
-    controls[7, 1] = GLMakie.vgrid!(
-        GLMakie.Label(fig, "Export scale", fontsize=9, halign=:left),
-        slider_export_ppu;
-        tellwidth=false
-    )
-    
-    # Export button - save current figure at high resolution without disturbing viewer
+    # Export button - save current view as PNG
     btn_export = GLMakie.Button(fig, label="Save PNG", fontsize=8)
-    controls[8, 1] = btn_export
+    controls[7, 1] = btn_export
     
     GLMakie.on(btn_export.clicks) do _
         try
@@ -183,34 +175,25 @@ function interactive_3d_timeseries(snapshots, grid, params;
             snap = snapshots[idx]
             timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMMSS")
             quantity_short = replace(current_quantity[], " " => "_")
-            export_ppu = slider_export_ppu.value[]  # User-selected quality (1-8)
             
             # Build filename with simulation parameters
             filename = @sprintf("snapshot_%s_Nx%d_Ny%d_Nz%d_Kn%.2f_t%.4f_%s.png",
                                quantity_short, Nx, Ny, Nz, params.Kn, snap.t, timestamp)
             
             println("\nExporting current view to: $filename")
-            println("  Export scale: $(export_ppu)×")
             println("  Parameters: Nx=$(Nx), Ny=$(Ny), Nz=$(Nz), Kn=$(params.Kn)")
             
-            # Use colorbuffer to get a screenshot without mutating the figure
-            # This is a read-only operation that doesn't affect the interactive viewer
-            # Get the screen that's displaying the figure
-            screen = GLMakie.Screen(fig.scene; start_renderloop=false)
-            
-            # Capture the buffer at the requested resolution
-            # This creates a new image buffer without modifying the figure
-            img = GLMakie.colorbuffer(screen; px_per_unit=export_ppu)
+            # Capture the current window at its current size
+            # This is a read-only operation that doesn't modify the viewer
+            img = GLMakie.Makie.colorbuffer(fig.scene)
             
             # Save the buffer to file
             FileIO.save(filename, img)
             
-            # Clean up the temporary screen
-            GLMakie.destroy!(screen)
-            
             println("✓ Export complete!")
             println("  File saved: $filename")
-            println("  Viewer remains interactive and unchanged")
+            println("  Resolution: $(size(img)) pixels")
+            println("  Tip: Maximize the window before export for higher resolution!")
         catch e
             @error "Export failed" exception=(e, catch_backtrace())
             println("Failed to export figure.")
@@ -557,7 +540,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
     end
     
     # Add moment threshold slider with label
-    controls[9, 1] = GLMakie.vgrid!(
+    controls[8, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, "Min |S|", fontsize=9, halign=:left),
         slider_moment_threshold;
         tellwidth=false
@@ -632,8 +615,10 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("  • Iso level/alpha sliders: adjust isosurface appearance")
     println("  • Min |S| slider: filter moment space by correlation magnitude")
     println("  • Mouse: drag to rotate, scroll to zoom camera")
-    println("  • Export scale slider: 1-8× resolution (default: 4×)")
-    println("  • Click 'Save PNG' to export (exports without distorting viewer)")
+    println("\nExport:")
+    println("  • Click 'Save PNG' to export current view at current window size")
+    println("  • Tip: Maximize the window first for higher resolution!")
+    println("  • Export is non-destructive and won't affect the viewer")
     println("\nPress Enter in terminal to close.")
     println("="^70)
     
