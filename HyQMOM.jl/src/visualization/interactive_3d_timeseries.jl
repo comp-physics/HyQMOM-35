@@ -8,6 +8,7 @@ import GLMakie
 using Printf
 using LaTeXStrings
 using Dates
+using FileIO
 
 # Import moment computation functions
 import ..get_standardized_moment
@@ -178,9 +179,17 @@ function interactive_3d_timeseries(snapshots, grid, params;
         is_playing[] = false
     end
     
-    # Export button - save current figure at high resolution
+    # Export resolution slider - allows user to choose quality vs performance
+    slider_export_ppu = GLMakie.Slider(fig, range=1:1:8, startvalue=4, width=200)
+    controls[7, 1] = GLMakie.vgrid!(
+        GLMakie.Label(fig, "Export scale", fontsize=9, halign=:left),
+        slider_export_ppu;
+        tellwidth=false
+    )
+    
+    # Export button - save current figure at high resolution without disturbing viewer
     btn_export = GLMakie.Button(fig, label="Save PNG", fontsize=8)
-    controls[7, 1] = btn_export
+    controls[8, 1] = btn_export
     
     GLMakie.on(btn_export.clicks) do _
         try
@@ -188,17 +197,21 @@ function interactive_3d_timeseries(snapshots, grid, params;
             snap = snapshots[idx]
             timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMMSS")
             quantity_short = replace(current_quantity[], " " => "_")
+            export_ppu = slider_export_ppu.value[]  # User-selected quality (1-8)
             
             # Build filename with simulation parameters
             filename = @sprintf("snapshot_%s_Nx%d_Ny%d_Nz%d_Kn%.2f_t%.4f_%s.png",
                                quantity_short, Nx, Ny, Nz, params.Kn, snap.t, timestamp)
             
+            res = round.(Int, fig.scene.viewport[].widths .* export_ppu)
             println("\nExporting current view to: $filename")
-            println("  Resolution: $(fig.scene.viewport[].widths .* 8) pixels")
+            println("  Resolution: $(res) pixels ($(export_ppu)× scale)")
             println("  Parameters: Nx=$(Nx), Ny=$(Ny), Nz=$(Nz), Kn=$(params.Kn)")
             
-            # Save at 8× native resolution for publication quality
-            GLMakie.save(filename, fig; px_per_unit=8)
+            # Use screenshot instead of save to avoid disturbing the live viewer
+            # This captures the current state without mutating the figure
+            img = GLMakie.Makie.colorbuffer(fig.scene; px_per_unit=export_ppu)
+            FileIO.save(filename, img)
             
             println("✓ Export complete!")
             println("  File saved: $filename")
@@ -550,7 +563,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
     # Add moment threshold slider if we have standardized moments with label - wider
     if has_std_moments
         slider_moment_threshold = GLMakie.Slider(fig, range=0.001:0.001:0.5, startvalue=0.01, width=200)
-        controls[6, 1] = GLMakie.vgrid!(
+        controls[9, 1] = GLMakie.vgrid!(
             GLMakie.Label(fig, "Min |S|", fontsize=9, halign=:left),
             slider_moment_threshold;
             tellwidth=false
@@ -622,7 +635,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("  • Adjust iso level sliders for different contour levels")
     println("  • Mouse: drag to rotate, scroll to zoom camera")
     println("  • Resize window to zoom entire plot (including axes/labels)")
-    println("  • Click 'Save PNG' button to export current view (high resolution)")
+    println("  • Export scale slider: 1-8× resolution (default: 4×)")
+    println("  • Click 'Save PNG' button to export current view")
     println("\nPress Enter in terminal to close.")
     println("="^70)
     
