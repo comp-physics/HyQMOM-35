@@ -72,9 +72,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
         # Larger window with good aspect ratio for 3 columns
         fig = GLMakie.Figure(size=(2000, 800), fontsize=12,
                             fonts=(; regular="CMU Serif"))
-        # Tight spacing between plots, more space before controls
-        GLMakie.colgap!(fig.layout, 1, 10)  # Small gap between plot columns
-        GLMakie.colgap!(fig.layout, 2, 20)  # Larger gap before controls
     else
         println("Creating 2-column figure:")
         println("  Column 1: Physical space")
@@ -82,8 +79,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
         # Larger window, good aspect ratio for plot + controls
         fig = GLMakie.Figure(size=(1400, 800), fontsize=12,
                             fonts=(; regular="CMU Serif"))
-        # Space between plot and controls
-        GLMakie.colgap!(fig.layout, 15)
     end
     
     # Current snapshot index (observable) - needed for moment space title
@@ -119,6 +114,16 @@ function interactive_3d_timeseries(snapshots, grid, params;
     # Control panel (far right)
     control_col = has_std_moments ? 3 : 2
     controls = fig[1, control_col] = GLMakie.GridLayout()
+    
+    # Set column gaps now that all columns are created
+    if has_std_moments
+        # 3 columns = 2 gaps: gap between col 1-2, and gap between col 2-3
+        GLMakie.colgap!(fig.layout, 1, 10)  # Small gap between physical and moment space
+        GLMakie.colgap!(fig.layout, 2, 20)  # Larger gap before controls
+    else
+        # 2 columns = 1 gap
+        GLMakie.colgap!(fig.layout, 1, 15)  # Gap between plot and controls
+    end
     
     # Current quantity
     current_quantity = GLMakie.Observable("Density")
