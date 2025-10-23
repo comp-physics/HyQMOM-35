@@ -7,6 +7,7 @@ This viewer allows stepping through simulation snapshots over time.
 import GLMakie
 using Printf
 using LaTeXStrings
+using Dates
 
 # Import moment computation functions
 import ..get_standardized_moment
@@ -175,6 +176,33 @@ function interactive_3d_timeseries(snapshots, grid, params;
     end
     GLMakie.on(btn_pause.clicks) do _
         is_playing[] = false
+    end
+    
+    # Export button - save current figure at high resolution
+    btn_export = GLMakie.Button(fig, label="Save PNG", fontsize=8)
+    controls[7, 1] = btn_export
+    
+    GLMakie.on(btn_export.clicks) do _
+        try
+            idx = time_slider.value[]
+            snap = snapshots[idx]
+            timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMMSS")
+            quantity_short = replace(current_quantity[], " " => "_")
+            filename = @sprintf("snapshot_%s_t%.4f_%s.png", quantity_short, snap.t, timestamp)
+            
+            println("\nExporting current view to: $filename")
+            println("  Resolution: $(fig.scene.viewport[].widths .* 8) pixels")
+            
+            # Save at 4× native resolution for publication quality
+            # This gives approximately 300 DPI for a figure that's ~5 inches wide
+            GLMakie.save(filename, fig; px_per_unit=8)
+            
+            println("✓ Export complete!")
+            println("  File saved: $filename")
+        catch e
+            @error "Export failed" exception=(e, catch_backtrace())
+            println("Failed to export figure.")
+        end
     end
     
     # Isosurface controls with labels - wider sliders
@@ -591,6 +619,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("  • Adjust iso level sliders for different contour levels")
     println("  • Mouse: drag to rotate, scroll to zoom camera")
     println("  • Resize window to zoom entire plot (including axes/labels)")
+    println("  • Click 'Save PNG' button to export current view (high resolution)")
     println("\nPress Enter in terminal to close.")
     println("="^70)
     
