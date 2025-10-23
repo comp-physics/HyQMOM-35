@@ -68,8 +68,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("  Column 1: Physical space (x,y,z)")
     println("  Column 2: Moment space (S110, S101, S011)")
     println("  Column 3: Controls (fixed width)")
-    # Larger window with good aspect ratio for 3 columns
-    fig = GLMakie.Figure(size=(2200, 800), fontsize=12,
+    # Compact window: 1600x600 total (1600 wide x 600 tall)
+    fig = GLMakie.Figure(size=(1500, 600), fontsize=12,
                         fonts=(; regular="CMU Serif"))
     
     # Current snapshot index (observable) - needed for moment space title
@@ -81,8 +81,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
                                 aspect=:data,
                                 azimuth=0.3π,
                                 elevation=π/8,
-                                xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
-                                xlabelsize=13, ylabelsize=13, zlabelsize=13)
+                                xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
+                                xlabelsize=18, ylabelsize=18, zlabelsize=18)
     
     # Middle: Moment space
     ax_moment = GLMakie.Axis3(fig[1, 2], 
@@ -91,8 +91,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
                              azimuth=0.3π,
                              elevation=π/8,
                              limits=(-1, 1, -1, 1, -1, 1),
-                             xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
-                             xlabelsize=13, ylabelsize=13, zlabelsize=13)
+                             xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
+                             xlabelsize=18, ylabelsize=18, zlabelsize=18)
     
     println("="^70)
     
@@ -205,8 +205,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
     slider_iso2 = slider_iso1  # Use same level
     slider_iso3 = slider_iso1  # Use same level
     slider_alpha = GLMakie.Slider(fig, range=0.3:0.1:1.0, startvalue=0.6, width=200)
-    toggle_isosurface = GLMakie.Toggle(fig, active=true)
-    toggle_streamlines = GLMakie.Toggle(fig, active=false)
     
     controls[4, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, "Iso Level", fontsize=9, halign=:left),
@@ -272,10 +270,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
             end
         end
         empty!(iso_plots)
-        
-        if !toggle_isosurface.active[]
-            return
-        end
         
         data = current_data_obs[]
         q = current_quantity[]
@@ -353,7 +347,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
         end
     end
     
-    # Function to create streamlines
+    # Function to create streamlines (disabled)
     function create_streamlines!()
         for plot in streamline_plots
             try
@@ -363,9 +357,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
         end
         empty!(streamline_plots)
         
-        if !toggle_streamlines.active[]
-            return
-        end
+        # Streamlines disabled - return early
+        return
         
         idx = time_slider.value[]
         quants = compute_quantities(snapshots[idx].M)
@@ -573,14 +566,6 @@ function interactive_3d_timeseries(snapshots, grid, params;
         GLMakie.on(slider.value) do val
             create_isosurfaces!()
         end
-    end
-    
-    # Update plots when toggles change
-    GLMakie.on(toggle_isosurface.active) do val
-        create_isosurfaces!()
-    end
-    GLMakie.on(toggle_streamlines.active) do val
-        create_streamlines!()
     end
     
     # Animation loop for playback
