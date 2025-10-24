@@ -6,7 +6,15 @@ Quick visualization script for HyQMOM .jld2 snapshot files
 Usage:
     julia visualize_jld2.jl [filename.jld2]
     
-If no filename provided, will look for .jld2 files in current directory.
+If no filename provided, will interactively select from .jld2 files in current directory.
+
+Examples:
+    julia visualize_jld2.jl snapshots_crossing_Nx20_Ny20_Nz20_Kn1.00_Ma1.00_t0.0100.jld2
+    julia visualize_jld2.jl
+    
+Generate snapshot files using:
+    julia examples/run_3d_crossing_jets.jl --save-standardized-moments true
+    julia examples/run_3d_jets_timeseries.jl --save-standardized-moments true
 """
 
 using Pkg
@@ -109,6 +117,7 @@ function main()
             println("This file may not be from HyQMOM examples/run_3d_custom_jets.jl")
         else
             println("ERROR loading file: $e")
+            rethrow()
         end
         return
     end
