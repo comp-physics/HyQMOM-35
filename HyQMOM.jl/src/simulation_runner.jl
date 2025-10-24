@@ -1,4 +1,6 @@
 using LinearAlgebra: norm
+using JLD2
+using Printf
 
 """
     simulation_runner(params)
@@ -38,15 +40,17 @@ This is the core time-stepping loop that orchestrates all components:
 
 # Returns
 If `snapshot_interval` is provided and > 0:
-- On rank 0: `snapshots` (vector of named tuples with fields M, t, step, and optionally S and C), `grid_out`
+- Snapshots are streamed directly to a JLD2 file (one snapshot at a time, never all in memory)
+- On rank 0: `snapshot_filename` (path to JLD2 file), `grid_out`
 - On other ranks: `nothing`, `nothing`
   
-Each snapshot is a NamedTuple containing:
-- `M`: Raw moment field (4D array: Nx × Ny × Nz × 35)
-- `t`: Simulation time
-- `step`: Time step number
-- `S`: (optional) Standardized moment field if `save_standardized_moments=true`
-- `C`: (optional) Central moment field if `save_central_moments=true`
+Snapshot file structure:
+- `meta/params`: Simulation parameters
+- `meta/snapshot_interval`: Interval value
+- `meta/n_snapshots`: Total number of snapshots saved
+- `grid`: Grid structure
+- `snapshots/000001/{M, t, step[, S][, C]}`: First snapshot
+- `snapshots/000002/...`: Second snapshot, etc.
 
 Otherwise (standard mode):
 - `M_final`: Final moment array (global, gathered to rank 0), or `nothing` on other ranks
@@ -98,7 +102,11 @@ function simulation_runner(params)
     save_snapshots = (snapshot_interval > 0)
     save_standardized = get(params, :save_standardized_moments, false)  # Save S4 with snapshots
     save_central = get(params, :save_central_moments, false)  # Save C4 with snapshots
-    snapshots = []  # Will store (M, t, step) or (M, S, C, t, step) tuples on rank 0
+    
+    # Streaming snapshot file (rank 0 only)
+    snapshot_filename = get(params, :snapshot_filename, nothing)
+    jld_file = nothing
+    snap_count = 0
     
     # Setup domain decomposition (2D in x-y, no decomposition in z)
     decomp = setup_mpi_cartesian_3d(Nx, Ny, Nz, halo, comm)
@@ -264,23 +272,51 @@ function simulation_runner(params)
     j0j1 = decomp.jstart_jend
     k0k1 = decomp.kstart_kend
     
+    # Initialize streaming snapshot file (rank 0 only)
+    if save_snapshots && rank == 0
+        if snapshot_filename === nothing
+            # Auto-generate filename with simulation parameters
+            snapshot_filename = @sprintf(
+                "snapshots_Nx%d_Ny%d_Nz%d_Kn%.2f_Ma%.2f_tmax%.4f.jld2",
+                Nx, Ny, Nz, Kn, Ma, tmax
+            )
+        end
+        
+        jld_file = jldopen(snapshot_filename, "w")
+        jld_file["meta/params"] = params
+        jld_file["meta/snapshot_interval"] = snapshot_interval
+        # Don't write n_snapshots yet - will write final count at end
+        
+        println("  Streaming snapshots to: $snapshot_filename")
+    end
+    
     if save_snapshots
         M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
         if rank == 0
             M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
             
-            # Compute standardized and/or central moments if requested
-            snapshot_data = Dict(:M => copy(M_gathered), :t => 0.0, :step => 0)
+            # Write snapshot to file (streaming mode)
+            snap_count += 1
+            snap_key = lpad(snap_count, 6, '0')
+            jld_file["snapshots/$snap_key/M"] = M_gathered
+            jld_file["snapshots/$snap_key/t"] = 0.0
+            jld_file["snapshots/$snap_key/step"] = 0
+            
             if save_standardized
-                snapshot_data[:S] = compute_standardized_field(M_gathered)
+                S = compute_standardized_field(M_gathered)
+                jld_file["snapshots/$snap_key/S"] = S
             end
             if save_central
-                snapshot_data[:C] = compute_central_field(M_gathered)
+                C = compute_central_field(M_gathered)
+                jld_file["snapshots/$snap_key/C"] = C
             end
-            push!(snapshots, (; snapshot_data...))  # Convert Dict to NamedTuple
+            
+            # Free memory immediately
+            M_gathered = nothing
+            GC.gc()
             
             if debug_output
-                println("Saved snapshot 1: t=0.0, step=0")
+                println("Streamed snapshot 1: t=0.0, step=0")
             end
         else
             gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
@@ -553,17 +589,27 @@ function simulation_runner(params)
             if rank == 0
                 M_gathered = gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
                 
-                # Compute standardized and/or central moments if requested
-                snapshot_data = Dict(:M => copy(M_gathered), :t => t, :step => nn)
+                # Write snapshot to file (streaming mode)
+                snap_count += 1
+                snap_key = lpad(snap_count, 6, '0')
+                jld_file["snapshots/$snap_key/M"] = M_gathered
+                jld_file["snapshots/$snap_key/t"] = t
+                jld_file["snapshots/$snap_key/step"] = nn
+                
                 if save_standardized
-                    snapshot_data[:S] = compute_standardized_field(M_gathered)
+                    S = compute_standardized_field(M_gathered)
+                    jld_file["snapshots/$snap_key/S"] = S
                 end
                 if save_central
-                    snapshot_data[:C] = compute_central_field(M_gathered)
+                    C = compute_central_field(M_gathered)
+                    jld_file["snapshots/$snap_key/C"] = C
                 end
-                push!(snapshots, (; snapshot_data...))  # Convert Dict to NamedTuple
                 
-                println("Saved snapshot $(length(snapshots)): t=$(round(t, digits=4)), step=$nn")
+                # Free memory immediately
+                M_gathered = nothing
+                GC.gc()
+                
+                println("Streamed snapshot $snap_count: t=$(round(t, digits=4)), step=$nn")
             else
                 gather_M(M_interior, i0i1, j0j1, k0k1, Nx, Ny, Nz, Nmom, comm)
             end
@@ -573,7 +619,7 @@ function simulation_runner(params)
     if rank == 0
         println("Time evolution complete: $(nn) steps, t = $(t)")
         if save_snapshots
-            println("Saved $(length(snapshots)) snapshots total")
+            println("Streamed $snap_count snapshots total")
         end
     end
     
@@ -593,9 +639,13 @@ function simulation_runner(params)
     
     # Return depends on whether snapshots were requested
     if save_snapshots
-        # Return snapshots mode
+        # Streaming snapshot mode: close file and return filename
         if rank == 0
-            return snapshots, grid_out
+            jld_file["grid"] = grid_out
+            jld_file["meta/n_snapshots"] = snap_count  # Write final count
+            close(jld_file)
+            println("Snapshot file closed: $snapshot_filename")
+            return snapshot_filename, grid_out
         else
             return nothing, nothing
         end
@@ -694,7 +744,7 @@ function run_simulation(; Np=nothing, Nx=20, Ny=20, Nz=1, tmax=0.1, num_workers=
     dy = 1.0 / Ny
     dz = 1.0 / Nz
     dtmax = CFL * min(dx, dy, dz)
-    nnmax = ceil(Int, tmax / dtmax) + 100  # Safety margin
+    nnmax = ceil(Int, tmax / dtmax) + 100000  # Safety margin
     
     # Initial condition parameters (crossing jets)
     rhol = 1.0    # High density in jets

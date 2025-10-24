@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH -J hyqmom
 #SBATCH -A gts-sbryngelson3
-#SBATCH -p cpu-small
-#SBATCH -N 2                      # number of nodes
-#SBATCH --ntasks-per-node=8       # 8 MPI ranks per node (total 16)
-#SBATCH --time=00:30:00
-
-# --exclusive
+#SBATCH -p cpu-gnr
+#SBATCH -N 4                       # number of nodes
+#SBATCH --ntasks-per-node=96       # 8 MPI ranks per node (total 16)
+#SBATCH --time=2:00:00
+#SBATCH --mem-per-cpu=8GB
+#SBATCH --constraint=graniterapids
 
 module load julia/1.11
 
@@ -25,4 +25,4 @@ srun --nodes=1 --ntasks=1 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pk
 export JULIA_PKG_PRECOMPILE_AUTO=0
 
 # Run: mpirun will respect the Slurm allocation
-srun --mpi=pmi2 julia --project=. examples/run_3d_custom_jets.jl --no-viz true --Nx 50 --Ny 50 --Nz 50 --tmax 0.01 --Ma 1.2 --Kn 0.1  --snapshot-interval 1
+srun --mpi=pmi2 julia --project=. examples/run_3d_custom_jets.jl --no-viz true --Nx 200 --Ny 200 --Nz 200 --tmax 0.1 --Ma 1.0 --Kn 0.1  --snapshot-interval 40

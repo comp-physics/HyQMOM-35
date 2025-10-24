@@ -103,62 +103,53 @@ end
 
 # Run simulation
 if params.snapshot_interval > 0
-    # With snapshots
+    # With snapshots (streaming mode)
     if rank == 0
-        println("\nRunning with snapshot collection...")
+        println("\nRunning with snapshot streaming...")
     end
     
-    snapshots, grid = run_simulation_with_snapshots(params; 
-                                                     snapshot_interval=params.snapshot_interval)
+    snapshot_filename, grid = simulation_runner(params)
     
-    if rank == 0 && snapshots !== nothing
+    if rank == 0 && snapshot_filename !== nothing
         println("\n" * "="^70)
         println("SIMULATION COMPLETE")
         println("="^70)
-        println("Collected $(length(snapshots)) snapshots")
-        println("\nSnapshot Timeline:")
-        for (i, snap) in enumerate(snapshots)
-            if i <= 5 || i > length(snapshots) - 5
-                @printf("  %2d: t = %.4f, step = %d\n", i, snap.t, snap.step)
-            elseif i == 6
-                println("  ...")
-            end
-        end
+        println("Snapshots saved to: $snapshot_filename")
         println("="^70)
         
         # Launch interactive viewer (unless disabled)
         if !params.no_viz && GLMAKIE_LOADED
-            println("\nLaunching Interactive Time-Series Viewer...")
+            println("\nLaunching Interactive Time-Series Viewer (Streaming)...")
             println("\nViewer Controls:")
-            println("  • Time slider: Step through snapshots")
-            println("  • Play/Pause/Reset: Animate the time evolution")
+            println("  • Time slider: Step through snapshots (loaded on-demand)")
+            println("  • Play/Pause: Animate the time evolution")
             println("  • Quantity buttons: Switch between Density, U, V, W velocities")
             println("  • Isosurface sliders: Adjust visualization levels")
             println("  • Mouse: Rotate (drag), Zoom (scroll)")
             println("="^70)
             
             try
-                interactive_3d_timeseries(snapshots, grid, params)
+                using JLD2
+                interactive_3d_timeseries_streaming(snapshot_filename, grid, params)
             catch e
                 @warn "Viewer failed" exception=(e, catch_backtrace())
-                println("Trying fallback single-frame viewer...")
-                try
-                    interactive_3d_volume(snapshots[end].M, grid, params)
-                catch e2
-                    @warn "Fallback viewer also failed"
-                end
+                println("\nTo view results later, use:")
+                println("  julia visualize_jld2.jl $snapshot_filename")
             end
         elseif params.no_viz
             println("\n" * "="^70)
             println("VISUALIZATION DISABLED (--no-viz flag)")
             println("="^70)
             println("Skipping interactive viewer (headless mode)")
-            println("Run 'julia visualize_jld2.jl' later to view results")
+            println("To view results later:")
+            println("  julia visualize_jld2.jl $snapshot_filename")
             println("="^70)
         else
             println("\n" * "="^70)
             println("GLMakie not available - skipping visualization")
             println("="^70)
+            println("To view results later:")
+            println("  julia visualize_jld2.jl $snapshot_filename")
         end
         
     end

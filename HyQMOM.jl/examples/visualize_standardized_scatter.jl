@@ -47,7 +47,7 @@ function main()
         dy = 1.0/30,
         dz = 1.0/15,
         Nmom = 35,
-        nnmax = 10000,
+        nnmax = 20000000,
         dtmax = 0.01,
         rhol = 1.0,
         rhor = 0.01,
