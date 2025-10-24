@@ -46,7 +46,7 @@ function get_default_params()
         
         # Time parameters
         tmax = 0.05,
-        nnmax = 100,
+        nnmax = 20000000,  # Maximum time steps (will be auto-calculated with safety margin)
         dtmax = 1e-2,
         CFL = 0.7,
         

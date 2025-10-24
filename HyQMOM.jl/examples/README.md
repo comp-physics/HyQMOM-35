@@ -239,8 +239,8 @@ print_params_summary(params, rank=MPI.Comm_rank(MPI.COMM_WORLD))
 
 # Run simulation
 if params.snapshot_interval > 0
-    snapshots, grid = run_simulation_with_snapshots(params; 
-                                                     snapshot_interval=params.snapshot_interval)
+    # Snapshots are automatically streamed to disk
+    snapshot_filename, grid = simulation_runner(params)
 else
     M_final, final_time, time_steps, grid = simulation_runner(params)
 end

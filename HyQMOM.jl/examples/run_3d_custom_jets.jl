@@ -350,108 +350,77 @@ params_with_ic = merge(params, (
 
 # Run simulation with custom initial conditions
 if params.snapshot_interval > 0
-    # With snapshots
+    # With snapshots (streaming mode)
     if rank == 0
-        println("\nRunning with snapshot collection...")
+        println("\nRunning with snapshot streaming...")
     end
     
-    snapshots, grid = run_simulation_with_snapshots(params_with_ic; 
-                                                     snapshot_interval=params.snapshot_interval)
+    snapshot_filename, grid = simulation_runner(params_with_ic)
     
-    if rank == 0
-        if snapshots === nothing
-            @warn "Snapshots is nothing on rank 0! This should not happen."
-        else
-            println("\n" * "="^70)
-            println("SIMULATION COMPLETE")
-            println("="^70)
-            println("Collected $(length(snapshots)) snapshots")
-            println("\nSnapshot Timeline:")
-            for (i, snap) in enumerate(snapshots)
-                if i <= 5 || i > length(snapshots) - 5
-                    @printf("  %2d: t = %.4f, step = %d\n", i, snap.t, snap.step)
-                elseif i == 6
-                    println("  ...")
-                end
-            end
-            println("="^70)
-        end
-    end
-    
-    if rank == 0 && snapshots !== nothing
+    if rank == 0 && snapshot_filename !== nothing
+        println("\n" * "="^70)
+        println("SIMULATION COMPLETE")
+        println("="^70)
+        println("Snapshots saved to: $snapshot_filename")
+        println("  File size: ~$(round(filesize(snapshot_filename)/1e6, digits=1)) MB")
+        println("="^70)
         
         # Launch interactive viewer (unless disabled)
         if !params.no_viz && GLMAKIE_LOADED
-            println("\nLaunching Interactive Time-Series Viewer...")
+            println("\nLaunching Interactive Time-Series Viewer (Streaming)...")
             println("\nViewer Controls:")
-            println("  • Time slider: Step through snapshots")
-            println("  • Play/Pause/Reset: Animate the time evolution")
+            println("  • Time slider: Step through snapshots (loaded on-demand)")
+            println("  • Play/Pause: Animate the time evolution")
             println("  • Quantity buttons: Switch between Density, U, V, W velocities")
             println("  • Isosurface sliders: Adjust visualization levels")
             println("  • Mouse: Rotate (drag), Zoom (scroll)")
             println("="^70)
             
             try
-                interactive_3d_timeseries(snapshots, grid, params_with_ic)
+                interactive_3d_timeseries_streaming(snapshot_filename, grid, params_with_ic)
             catch e
                 @warn "Viewer failed" exception=(e, catch_backtrace())
-                println("Trying fallback single-frame viewer...")
-                try
-                    interactive_3d_volume(snapshots[end].M, grid, params_with_ic)
-                catch e2
-                    @warn "Fallback viewer also failed"
-                end
+                println("\nTo view results later, use:")
+                println("  julia visualize_jld2.jl $snapshot_filename")
             end
         elseif params.no_viz
             println("\n" * "="^70)
             println("VISUALIZATION DISABLED (--no-viz flag)")
             println("="^70)
             println("Skipping interactive viewer (headless mode)")
-            println("Snapshots will still be saved to .jld2 file")
+            println("To view results later:")
+            println("  julia visualize_jld2.jl $snapshot_filename")
             println("="^70)
         else
             println("\n" * "="^70)
             println("GLMakie not available - skipping visualization")
             println("="^70)
+            println("To view results later:")
+            println("  julia visualize_jld2.jl $snapshot_filename")
         end
         
-        # Save snapshots to disk for later analysis
-        println("\n" * "="^70)
-        println("SAVING RESULTS")
-        println("="^70)
-        
-        # Build filename with all key parameters
-        filename = @sprintf("snapshots_%s_Nx%d_Ny%d_Nz%d_Kn%.2f_Ma%.2f_t%.4f.jld2",
-                           params.config, params.Nx, params.Ny, params.Nz, 
-                           params.Kn, params.Ma, params.tmax)
-        
-        # Save snapshots, grid, and parameters
-        @save filename snapshots grid params params_with_ic
-        
-        println("✓ Saved $(length(snapshots)) snapshots to: $filename")
-        println("  File size: ~$(round(filesize(filename)/1e6, digits=1)) MB")
-        println("\nTo reload later:")
-        println("  julia> using HyQMOM, JLD2, GLMakie")
-        println("  julia> @load \"$filename\" snapshots grid")
-        println("  julia> interactive_standardized_scatter(snapshots[5], grid)")
-        
-        # Note about standardized moments (now shown in main viewer)
-        if haskey(snapshots[1], :S)
-            println("\n" * "="^70)
-            println("✓ STANDARDIZED MOMENTS INCLUDED")
-            println("="^70)
-            println("Moment space (S110, S101, S011) is displayed alongside")
-            println("physical space in the main viewer.")
-            println("  • Adjust moment threshold slider in controls panel")
-            println("  • Watch moment-space evolution with time slider")
-            println("="^70)
-        else
-            println("\n" * "="^70)
-            println("NOTE: Standardized moments not saved")
-            println("="^70)
-            println("To visualize standardized moments, run with:")
-            println("  --save-standardized-moments true")
-            println("="^70)
+        # Check for standardized moments
+        using JLD2
+        jldopen(snapshot_filename, "r") do f
+            snap_keys = sort!(collect(keys(f["snapshots"])))
+            first_snap = f["snapshots/$(snap_keys[1])"]
+            if haskey(first_snap, "S")
+                println("\n" * "="^70)
+                println("✓ STANDARDIZED MOMENTS INCLUDED")
+                println("="^70)
+                println("Moment space (S110, S101, S011) is displayed alongside")
+                println("physical space in the main viewer.")
+                println("  • Adjust moment threshold slider in controls panel")
+                println("  • Watch moment-space evolution with time slider")
+                println("="^70)
+            else
+                println("\n" * "="^70)
+                println("NOTE: Standardized moments not saved")
+                println("="^70)
+                println("To visualize standardized moments, run with:")
+                println("  --save-standardized-moments true")
+                println("="^70)
+            end
         end
     end
 else
