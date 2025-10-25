@@ -128,7 +128,7 @@ done
 
 Each `.jld2` file contains:
 - `snapshots`: Vector of snapshots with fields:
-  - `M`: Raw moment field (Nx × Ny × Nz × 35)
+  - `M`: Raw moment field (Nx x Ny x Nz x 35)
   - `t`: Simulation time
   - `step`: Time step number
   - `S`: Standardized moments (if enabled, default: ON)

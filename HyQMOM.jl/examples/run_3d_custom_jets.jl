@@ -147,14 +147,14 @@ function get_jet_configuration(config_name::String, params)
                 center = (x_center - offset, y_center - offset, z_center),
                 width = (jet_width, jet_width, jet_width),
                 density = rhol,
-                velocity = (Uc, Uc, 0.0),  # Moving ↗ in x-y plane
+                velocity = (Uc, Uc, 0.0),  # Moving northeast in x-y plane
                 temperature = T
             ),
             CubicRegion(
                 center = (x_center + offset, y_center + offset, z_center),
                 width = (jet_width, jet_width, jet_width),
                 density = rhol,
-                velocity = (-Uc, -Uc, 0.0),  # Moving ↙ in x-y plane
+                velocity = (-Uc, -Uc, 0.0),  # Moving southwest in x-y plane
                 temperature = T
             )
         ]
@@ -197,7 +197,7 @@ function get_jet_configuration(config_name::String, params)
         offset = jet_width * 1.2
         
         jets = [
-            # Bottom-left (moving ↗)
+            # Bottom-left (moving northeast)
             CubicRegion(
                 center = (x_center - offset, y_center - offset, z_center),
                 width = (jet_width, jet_width, jet_width),
@@ -205,7 +205,7 @@ function get_jet_configuration(config_name::String, params)
                 velocity = (Uc, Uc, 0.0),
                 temperature = T
             ),
-            # Bottom-right (moving ↖)
+            # Bottom-right (moving northwest)
             CubicRegion(
                 center = (x_center + offset, y_center - offset, z_center),
                 width = (jet_width, jet_width, jet_width),
@@ -213,7 +213,7 @@ function get_jet_configuration(config_name::String, params)
                 velocity = (-Uc, Uc, 0.0),
                 temperature = T
             ),
-            # Top-left (moving ↘)
+            # Top-left (moving southeast)
             CubicRegion(
                 center = (x_center - offset, y_center + offset, z_center),
                 width = (jet_width, jet_width, jet_width),
@@ -221,7 +221,7 @@ function get_jet_configuration(config_name::String, params)
                 velocity = (Uc, -Uc, 0.0),
                 temperature = T
             ),
-            # Top-right (moving ↙)
+            # Top-right (moving southwest)
             CubicRegion(
                 center = (x_center + offset, y_center + offset, z_center),
                 width = (jet_width, jet_width, jet_width),
@@ -369,11 +369,11 @@ if params.snapshot_interval > 0
         if !params.no_viz && GLMAKIE_LOADED
             println("\nLaunching Interactive Time-Series Viewer (Streaming)...")
             println("\nViewer Controls:")
-            println("  • Time slider: Step through snapshots (loaded on-demand)")
-            println("  • Play/Pause: Animate the time evolution")
-            println("  • Quantity buttons: Switch between Density, U, V, W velocities")
-            println("  • Isosurface sliders: Adjust visualization levels")
-            println("  • Mouse: Rotate (drag), Zoom (scroll)")
+            println("  * Time slider: Step through snapshots (loaded on-demand)")
+            println("  * Play/Pause: Animate the time evolution")
+            println("  * Quantity buttons: Switch between Density, U, V, W velocities")
+            println("  * Isosurface sliders: Adjust visualization levels")
+            println("  * Mouse: Rotate (drag), Zoom (scroll)")
             println("="^70)
             
             try
@@ -406,12 +406,12 @@ if params.snapshot_interval > 0
             first_snap = f["snapshots/$(snap_keys[1])"]
             if haskey(first_snap, "S")
                 println("\n" * "="^70)
-                println("✓ STANDARDIZED MOMENTS INCLUDED")
+                println("[OK] STANDARDIZED MOMENTS INCLUDED")
                 println("="^70)
                 println("Moment space (S110, S101, S011) is displayed alongside")
                 println("physical space in the main viewer.")
-                println("  • Adjust moment threshold slider in controls panel")
-                println("  • Watch moment-space evolution with time slider")
+                println("  * Adjust moment threshold slider in controls panel")
+                println("  * Watch moment-space evolution with time slider")
                 println("="^70)
             else
                 println("\n" * "="^70)

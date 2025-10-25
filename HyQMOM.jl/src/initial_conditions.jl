@@ -15,7 +15,7 @@ Defines a cubic/box region with specified moment properties.
 # Fields
 - `center::NTuple{3,Float64}`: Center position (x, y, z) in physical coordinates
 - `width::NTuple{3,Float64}`: Width in each direction (dx, dy, dz)
-- `density::Float64`: Density (ρ) in the region
+- `density::Float64`: Density (rho) in the region
 - `velocity::NTuple{3,Float64}`: Mean velocity (U, V, W)
 - `temperature::Float64`: Temperature (for covariance matrix)
 
@@ -85,7 +85,7 @@ jet1 = CubicRegion(
     center = (-0.25, -0.25, 0.0),
     width = (0.1, 0.1, 0.1),
     density = 1.0,
-    velocity = (0.707, 0.707, 0.0),  # Moving ↗
+    velocity = (0.707, 0.707, 0.0),  # Moving northeast
     temperature = 1.0
 )
 
@@ -93,7 +93,7 @@ jet2 = CubicRegion(
     center = (0.25, 0.25, 0.0),
     width = (0.1, 0.1, 0.1),
     density = 1.0,
-    velocity = (-0.707, -0.707, 0.0),  # Moving ↙
+    velocity = (-0.707, -0.707, 0.0),  # Moving southwest
     temperature = 1.0
 )
 
@@ -215,7 +215,7 @@ Convert a CubicRegion specification to a moment vector.
 """
 function region_to_moments(region::CubicRegion, r110, r101, r011)
     U, V, W = region.velocity
-    ρ = region.density
+    rho = region.density
     T = region.temperature
     
     # Covariance matrix components
@@ -226,7 +226,7 @@ function region_to_moments(region::CubicRegion, r110, r101, r011)
     C101 = r101 * sqrt(C200 * C002)
     C011 = r011 * sqrt(C020 * C002)
     
-    return InitializeM4_35(ρ, U, V, W, C200, C110, C101, C020, C011, C002)
+    return InitializeM4_35(rho, U, V, W, C200, C110, C101, C020, C011, C002)
 end
 
 """
@@ -328,7 +328,7 @@ function crossing_jets_ic(Nx, Ny, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
         temperature = T
     )
     
-    # Bottom-left jet (moving ↗)
+    # Bottom-left jet (moving northeast)
     jet1 = CubicRegion(
         center = (x_center - offset_dist - jet_width_x/2, 
                   y_center - offset_dist - jet_width_y/2, 
@@ -339,7 +339,7 @@ function crossing_jets_ic(Nx, Ny, Nz, xmin, xmax, ymin, ymax, zmin, zmax;
         temperature = T
     )
     
-    # Top-right jet (moving ↙)
+    # Top-right jet (moving southwest)
     jet2 = CubicRegion(
         center = (x_center + offset_dist + jet_width_x/2,
                   y_center + offset_dist + jet_width_y/2,

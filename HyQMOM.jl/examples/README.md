@@ -4,7 +4,7 @@ All examples support **full parameter control** via both code defaults and comma
 
 ## Available Examples
 
-### 🎬 `run_3d_jets_timeseries.jl` - Interactive Time-Series (Recommended)
+### `run_3d_jets_timeseries.jl` - Interactive Time-Series (Recommended)
 **Main example with interactive 3D visualization over time. Works in both serial and MPI parallel modes.**
 
 ```bash
@@ -29,7 +29,7 @@ mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 120 --Ny 
 - Isosurface visualization with positive/negative values
 - Full parameter control via command-line
 
-### 📊 `run_3d_crossing_jets.jl` - Static Plots
+### `run_3d_crossing_jets.jl` - Static Plots
 **Static matplotlib/PyPlot visualization (no GLMakie required). Also supports serial and MPI.**
 
 ```bash
@@ -171,8 +171,8 @@ print_params_summary(params, rank=rank)
 
 ### For Visualization
 - Balance snapshot interval with memory
-- Too many snapshots (interval=1) → uses lots of RAM
-- Too few snapshots (interval=20) → choppy animation
+- Too many snapshots (interval=1) -> uses lots of RAM
+- Too few snapshots (interval=20) -> choppy animation
 - Sweet spot: `--snapshot-interval 2` to `5`
 
 ### For Parameter Sweeps

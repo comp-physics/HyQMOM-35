@@ -80,9 +80,9 @@ function load_matlab_golden(golden_file)
     time_steps = Int(golden_data["parameters"]["time_steps"])
     num_ranks = Int(golden_data["parameters"]["num_workers"])
     
-    println("  ✓ Loaded: Np=$Np, tmax=$tmax, ranks=$num_ranks")
-    println("  ✓ MATLAB final time: $final_time ($(time_steps) steps)")
-    println("  ✓ Moment array shape: ", size(M_matlab))
+    println("  [OK] Loaded: Np=$Np, tmax=$tmax, ranks=$num_ranks")
+    println("  [OK] MATLAB final time: $final_time ($(time_steps) steps)")
+    println("  [OK] Moment array shape: ", size(M_matlab))
     
     return (M=M_matlab, Np=Np, tmax=tmax, final_time=final_time, 
             time_steps=time_steps, num_ranks=num_ranks)
@@ -167,10 +167,10 @@ function run_julia_simulation(Np, tmax)
     M_final, final_time, time_steps, grid_out = HyQMOM.simulation_runner(params)
     elapsed = time() - start_time
     
-    println("  ✓ Julia simulation complete in $(round(elapsed, digits=2))s")
-    println("  ✓ Julia final time: $final_time ($(time_steps) steps)")
+    println("  [OK] Julia simulation complete in $(round(elapsed, digits=2))s")
+    println("  [OK] Julia final time: $final_time ($(time_steps) steps)")
     if M_final !== nothing
-        println("  ✓ Moment array shape: ", size(M_final))
+        println("  [OK] Moment array shape: ", size(M_final))
     end
     
     return (M=M_final, final_time=final_time, time_steps=time_steps, grid=grid_out)
@@ -187,7 +187,7 @@ function compare_results(matlab_result, julia_result;
     
     if M_julia === nothing
         if verbose
-            println("  ⚠ Julia result is nothing (not on rank 0)")
+            println("  [WARNING] Julia result is nothing (not on rank 0)")
         end
         return false
     end
@@ -204,13 +204,13 @@ function compare_results(matlab_result, julia_result;
     end
     if size(M_matlab) != size(M_julia)
         if verbose
-            println("  ✗ DIMENSION MISMATCH!")
+            println("  [X] DIMENSION MISMATCH!")
             println("     MATLAB: ", size(M_matlab))
             println("     Julia:  ", size(M_julia))
         end
         return false
     elseif verbose
-        println("  ✓ Dimensions match: ", size(M_julia))
+        println("  [OK] Dimensions match: ", size(M_julia))
     end
     
     # Check time
@@ -220,13 +220,13 @@ function compare_results(matlab_result, julia_result;
     time_diff = abs(matlab_result.final_time - julia_result.final_time)
     if time_diff > 1e-10
         if verbose
-            println("  ⚠ Time mismatch:")
+            println("  [WARNING] Time mismatch:")
             println("     MATLAB: $(matlab_result.final_time) ($(matlab_result.time_steps) steps)")
             println("     Julia:  $(julia_result.final_time) ($(julia_result.time_steps) steps)")
             println("     Diff:   $time_diff")
         end
     elseif verbose
-        println("  ✓ Time matches: $(julia_result.final_time)")
+        println("  [OK] Time matches: $(julia_result.final_time)")
         println("     MATLAB steps: $(matlab_result.time_steps)")
         println("     Julia steps:  $(julia_result.time_steps)")
     end
@@ -240,13 +240,13 @@ function compare_results(matlab_result, julia_result;
     
     if nan_count > 0 || inf_count > 0
         if verbose
-            println("  ✗ NUMERICAL ISSUES:")
+            println("  [X] NUMERICAL ISSUES:")
             println("     NaN count: $nan_count")
             println("     Inf count: $inf_count")
         end
         return false
     elseif verbose
-        println("  ✓ No NaN or Inf values")
+        println("  [OK] No NaN or Inf values")
     end
     
     # Compute differences
@@ -302,7 +302,7 @@ function compare_results(matlab_result, julia_result;
                     moment_name, max_abs, max_rel, mean_abs)
             
             if max_abs > tolerance_abs || max_rel > tolerance_rel
-                print("  ⚠")
+                print("  [WARNING]")
             end
             println()
         end
@@ -322,10 +322,10 @@ function compare_results(matlab_result, julia_result;
         println()
         
         if passed
-            println("  ✓ TEST PASSED!")
+            println("  [OK] TEST PASSED!")
             println("  Julia matches MATLAB within tolerance.")
         else
-            println("  ✗ TEST FAILED!")
+            println("  [X] TEST FAILED!")
             println("  Differences exceed tolerance thresholds.")
             
             exceed_abs = sum(abs_diff .> tolerance_abs)
@@ -450,13 +450,13 @@ if !STANDALONE
                 # Handle both 2D and 3D golden file formats
                 if ndims(M_matlab_raw) == 3
                     # Old 2D format (Np, Np, Nmom) - reshape to 3D physical space
-                    @info "Golden file is in 2D format (Np×Np×Nmom), reshaping to 3D (Np×Np×1×Nmom)"
+                    @info "Golden file is in 2D format (NpxNpxNmom), reshaping to 3D (NpxNpx1xNmom)"
                     Np = size(M_matlab_raw, 1)
                     global M_matlab = reshape(M_matlab_raw, Np, Np, 1, 35)
                     Nz = 1
                 elseif ndims(M_matlab_raw) == 4
                     # New 3D format (Np, Np, Nz, Nmom)
-                    @info "Golden file is in 3D format (Np×Np×Nz×Nmom)"
+                    @info "Golden file is in 3D format (NpxNpxNzxNmom)"
                     global M_matlab = M_matlab_raw
                     Nz = size(M_matlab, 3)
                 else
@@ -533,14 +533,14 @@ if !STANDALONE
                     RELAXED_REL_TOL = 1.0  # Allow up to 100% relative difference
                     
                     if max_abs_diff < INTEGRATION_TOL_ABS && max_rel_diff < INTEGRATION_TOL_REL
-                        @info "  ✓ Julia matches MATLAB within strict tolerance"
+                        @info "  [OK] Julia matches MATLAB within strict tolerance"
                         @test true
                     elseif max_abs_diff < RELAXED_ABS_TOL
-                        @warn "  ⚠ Julia differs from MATLAB golden file (max diff = $max_abs_diff)"
+                        @warn "  [WARNING] Julia differs from MATLAB golden file (max diff = $max_abs_diff)"
                         @warn "    This is expected for 2D golden files with 3D Julia code"
                         @test true  # Pass with warning
                     else
-                        @warn "  ✗ Large difference from MATLAB golden file (max diff = $max_abs_diff)"
+                        @warn "  [X] Large difference from MATLAB golden file (max diff = $max_abs_diff)"
                         @warn "    Note: Golden file is from 2D MATLAB, significant differences expected"
                         @test_broken max_abs_diff < RELAXED_ABS_TOL
                     end

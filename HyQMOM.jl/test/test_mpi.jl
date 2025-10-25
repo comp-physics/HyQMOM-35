@@ -76,7 +76,7 @@ function save_reference(M, final_time, time_steps, Np, nprocs, config_name)
         write(io, M)
     end
     
-    println("  ✓ Saved successfully")
+    println("  [OK] Saved successfully")
     return ref_file
 end
 
@@ -100,7 +100,7 @@ function load_reference(config_name, ref_nprocs=1)
         (nprocs, Np, final_time, time_steps, M)
     end
     
-    println("  ✓ Loaded: Np=$(Np), t=$(final_time), steps=$(time_steps)")
+    println("  [OK] Loaded: Np=$(Np), t=$(final_time), steps=$(time_steps)")
     
     return (nprocs=nprocs, Np=Np, final_time=final_time, 
             time_steps=time_steps, M=M)
@@ -129,7 +129,7 @@ function load_golden_file(config_name)
         (nranks, Np, tmax, tfinal, steps, M)
     end
     
-    println("  ✓ Loaded: Np=$(Np), tmax=$(tmax), t=$(tfinal), steps=$(steps)")
+    println("  [OK] Loaded: Np=$(Np), tmax=$(tmax), t=$(tfinal), steps=$(steps)")
     
     return (nranks=nranks, Np=Np, tmax=tmax, final_time=tfinal, 
             time_steps=steps, M=M)
@@ -180,7 +180,7 @@ function run_simulation(config_name)
         final_time = results[:final_time]
         time_steps = results[:time_steps]
         
-        println("  ✓ Simulation complete")
+        println("  [OK] Simulation complete")
         println("    Final time: $(final_time)")
         println("    Time steps: $(time_steps)")
         
@@ -205,13 +205,13 @@ function compare_results(ref_result, test_result, test_nprocs; verbose=true)
     # Check dimensions
     if size(M_ref) != size(M_test)
         if verbose
-            println("  ✗ DIMENSION MISMATCH!")
+            println("  [X] DIMENSION MISMATCH!")
             println("    1 rank:  ", size(M_ref))
             println("    $(test_nprocs) ranks: ", size(M_test))
         end
         return false
     elseif verbose
-        println("\n1. Dimensions: ", size(M_test), " ✓")
+        println("\n1. Dimensions: ", size(M_test), " [OK]")
     end
     
     # Check time
@@ -221,13 +221,13 @@ function compare_results(ref_result, test_result, test_nprocs; verbose=true)
     time_diff = abs(ref_result.final_time - test_result.final_time)
     if time_diff > 1e-12
         if verbose
-            println("  ⚠ Time differs:")
+            println("  [WARNING] Time differs:")
             println("    1 rank:  $(ref_result.final_time) ($(ref_result.time_steps) steps)")
             println("    $(test_nprocs) ranks: $(test_result.final_time) ($(test_result.time_steps) steps)")
             println("    Diff:    $(time_diff)")
         end
     elseif verbose
-        println("  ✓ Final time: $(test_result.final_time)")
+        println("  [OK] Final time: $(test_result.final_time)")
         println("    Steps: $(test_result.time_steps)")
     end
     
@@ -239,13 +239,13 @@ function compare_results(ref_result, test_result, test_nprocs; verbose=true)
     
     if nan_ref > 0 || inf_ref > 0 || nan_test > 0 || inf_test > 0
         if verbose
-            println("\n3. Numerical Health: ✗")
+            println("\n3. Numerical Health: [X]")
             println("  1 rank:  NaN=$(nan_ref), Inf=$(inf_ref)")
             println("  $(test_nprocs) ranks: NaN=$(nan_test), Inf=$(inf_test)")
         end
         return false
     elseif verbose
-        println("\n3. Numerical Health: ✓ (no NaN/Inf)")
+        println("\n3. Numerical Health: [OK] (no NaN/Inf)")
     end
     
     # Compute differences
@@ -278,14 +278,14 @@ function compare_results(ref_result, test_result, test_nprocs; verbose=true)
             end
             
             if moment_abs > MPI_TOL_ABS * 10
-                @printf("    Moment %2d: %.6e ⚠\n", k, moment_abs)
+                @printf("    Moment %2d: %.6e [WARNING]\n", k, moment_abs)
             end
         end
         
         if max_moment_diff <= MPI_TOL_ABS
-            println("  ✓ All moments within tolerance")
+            println("  [OK] All moments within tolerance")
         else
-            println("  ⚠ Worst moment: #$(worst_moment) (diff: $(max_moment_diff))")
+            println("  [WARNING] Worst moment: #$(worst_moment) (diff: $(max_moment_diff))")
         end
     end
     
@@ -300,10 +300,10 @@ function compare_results(ref_result, test_result, test_nprocs; verbose=true)
         println()
         
         if passed
-            println("  ✓ MPI CONSISTENCY TEST PASSED!")
+            println("  [OK] MPI CONSISTENCY TEST PASSED!")
             println("    Results match within tolerance")
         else
-            println("  ✗ MPI CONSISTENCY TEST FAILED!")
+            println("  [X] MPI CONSISTENCY TEST FAILED!")
             println("    Differences exceed tolerance")
             
             # Show location of max diff
@@ -352,7 +352,7 @@ function run_mpi_tests()
         if rank == 0
             golden_result = load_golden_file(config_name)
             if golden_result === nothing
-                println("✗ Golden file not found")
+                println("[X] Golden file not found")
                 MPI.Finalize()
                 return 1
             end
@@ -383,7 +383,7 @@ function run_mpi_tests()
                              nprocs, config_name)
                 
                 println("\n" * "="^70)
-                println("✓ Reference data generated (1 rank)")
+                println("[OK] Reference data generated (1 rank)")
                 println("="^70)
                 println("\nNext step: Run with multiple ranks to compare:")
                 println("  mpiexec -n 2 julia --project=. test/test_mpi.jl")
@@ -396,7 +396,7 @@ function run_mpi_tests()
                 ref_result = load_reference(config_name, 1)
                 
                 if ref_result === nothing
-                    println("✗ Reference data not found for $(config_name)")
+                    println("[X] Reference data not found for $(config_name)")
                     println("  First run with 1 rank to generate reference:")
                     println("    julia --project=. test/test_mpi.jl")
                     MPI.Finalize()
@@ -463,9 +463,9 @@ else
                         @test passed
                         
                         if passed
-                            println("  ✓ MPI $(nprocs)-rank test passed")
+                            println("  [OK] MPI $(nprocs)-rank test passed")
                         else
-                            println("  ✗ MPI $(nprocs)-rank test failed")
+                            println("  [X] MPI $(nprocs)-rank test failed")
                         end
                     end
                 end

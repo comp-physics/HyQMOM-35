@@ -499,7 +499,7 @@ function hyperbolic_plots_3D(xm, ym, eig_data, Np)
         Z = lam6x[:, :, k]
         contourf(X, Y, Z', 50, cmap="sky")
         axis("square")
-        title("λ_$k")
+        title("lambda_$k")
         format_colorbar()
     end
     
@@ -508,21 +508,21 @@ function hyperbolic_plots_3D(xm, ym, eig_data, Np)
     Z = lam6x[:, :, 2] .- lam6x[:, :, 1]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("λ_2 - λ_1")
+    title("lambda_2 - lambda_1")
     format_colorbar()
     
     subplot(3, 3, 8)
     Z = lam6x[:, :, 4] .- lam6x[:, :, 3]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("λ_4 - λ_3")
+    title("lambda_4 - lambda_3")
     format_colorbar()
     
     subplot(3, 3, 9)
     Z = lam6x[:, :, 6] .- lam6x[:, :, 5]
     contourf(X, Y, Z', 50, cmap="sky")
     axis("square")
-    title("λ_6 - λ_5")
+    title("lambda_6 - lambda_5")
     format_colorbar()
 end
 

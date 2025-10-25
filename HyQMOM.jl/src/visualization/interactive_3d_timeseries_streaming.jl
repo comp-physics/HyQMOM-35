@@ -40,10 +40,10 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     println("3D TIME-SERIES VIEWER (STREAMING MODE)")
     println("="^70)
     println("Features:")
-    println("  • Snapshots loaded on-demand (low memory usage)")
-    println("  • TRUE 3D isosurface contours")
-    println("  • Velocity isosurfaces: Blue=positive, Red=negative")
-    println("  • Time slider to navigate through evolution")
+    println("  * Snapshots loaded on-demand (low memory usage)")
+    println("  * TRUE 3D isosurface contours")
+    println("  * Velocity isosurfaces: Blue=positive, Red=negative")
+    println("  * Time slider to navigate through evolution")
     println("="^70)
     
     # Open file and read metadata
@@ -88,8 +88,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     ax_physical = GLMakie.Axis3(fig[1, 1], 
                                 xlabel=L"x", ylabel=L"y", zlabel=L"z",
                                 aspect=:data,
-                                azimuth=0.3π,
-                                elevation=π/8,
+                                azimuth=0.3pi,
+                                elevation=pi/8,
                                 xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
                                 xlabelsize=18, ylabelsize=18, zlabelsize=18)
     
@@ -97,8 +97,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     ax_moment = GLMakie.Axis3(fig[1, 2], 
                              xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
                              aspect=:data,
-                             azimuth=0.3π,
-                             elevation=π/8,
+                             azimuth=0.3pi,
+                             elevation=pi/8,
                              limits=(-1, 1, -1, 1, -1, 1),
                              xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
                              xlabelsize=18, ylabelsize=18, zlabelsize=18)
@@ -117,7 +117,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     current_quantity = GLMakie.Observable("Density")
     
     # Quantity buttons
-    btn_density = GLMakie.Button(fig, label="ρ", fontsize=8)
+    btn_density = GLMakie.Button(fig, label="rho", fontsize=8)
     btn_u = GLMakie.Button(fig, label="U", fontsize=8)
     btn_v = GLMakie.Button(fig, label="V", fontsize=8)
     btn_w = GLMakie.Button(fig, label="W", fontsize=8)
@@ -185,7 +185,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             img = GLMakie.Makie.colorbuffer(fig.scene)
             FileIO.save(filename_out, img)
             
-            println("✓ Export complete!")
+            println("[OK] Export complete!")
         catch e
             @error "Export failed" exception=(e, catch_backtrace())
         end
@@ -371,8 +371,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                      color=:blue, linewidth=2, alpha=0.3)
         push!(moment_plots, p1, p2, p3)
         
-        # Draw |Δ₁| = 0 realizability boundary surface (transparent)
-        # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
+        # Draw |Delta_1| = 0 realizability boundary surface (transparent)
+        # Delta_1 = 1 + 2*S110*S101*S011 - S110^2 - S101^2 - S011^2 = 0
         # This is the boundary of the realizable region in moment space
         
         try
@@ -382,8 +382,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             s2_range = range(-1, 1, length=n_points)
             
             # We'll create the surface by solving for S011 given S110, S101
-            # Rearranging: S011² - 2*S110*S101*S011 + (S110² + S101² - 1) = 0
-            # Using quadratic formula: S011 = S110*S101 ± sqrt((S110*S101)² - (S110² + S101² - 1))
+            # Rearranging: S011^2 - 2*S110*S101*S011 + (S110^2 + S101^2 - 1) = 0
+            # Using quadratic formula: S011 = S110*S101 +/- sqrt((S110*S101)^2 - (S110^2 + S101^2 - 1))
             
             S110_grid = zeros(n_points, n_points)
             S101_grid = zeros(n_points, n_points)
@@ -396,7 +396,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                     S101_grid[i, j] = s101
                     
                     # Quadratic formula coefficients
-                    # S011² - 2*a*b*S011 + (a² + b² - 1) = 0
+                    # S011^2 - 2*a*b*S011 + (a^2 + b^2 - 1) = 0
                     discriminant = (s110 * s101)^2 - (s110^2 + s101^2 - 1)
                     
                     if discriminant >= 0
@@ -491,15 +491,15 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     println("TIME-SERIES VIEWER READY! (STREAMING MODE)")
     println("="^70)
     println("Layout:")
-    println("  • Left: Physical space (x,y,z)")
-    println("  • Middle: Moment space (S₁₁₀, S₁₀₁, S₀₁₁)")
-    println("  • Right: Controls")
+    println("  * Left: Physical space (x,y,z)")
+    println("  * Middle: Moment space (S_1_1_0, S_1_0_1, S_0_1_1)")
+    println("  * Right: Controls")
     println("\nControls:")
-    println("  • Time slider steps through snapshots (loaded on-demand)")
-    println("  • Click ▶ Play to animate")
-    println("  • Click quantity buttons to switch")
-    println("  • Iso level/alpha sliders adjust appearance")
-    println("  • Min |S| slider filters moment space")
+    println("  * Time slider steps through snapshots (loaded on-demand)")
+    println("  * Click > Play to animate")
+    println("  * Click quantity buttons to switch")
+    println("  * Iso level/alpha sliders adjust appearance")
+    println("  * Min |S| slider filters moment space")
     println("\nPress Enter in terminal to close.")
     println("="^70)
     

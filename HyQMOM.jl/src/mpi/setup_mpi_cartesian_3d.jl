@@ -33,8 +33,8 @@ A named tuple with fields:
 # Example
 ```julia
 decomp = setup_mpi_cartesian_3d(40, 40, 4, 2, MPI.COMM_WORLD)
-# For 4 ranks: creates 2×2×1 process grid
-# Each rank gets 20×20×4 interior cells
+# For 4 ranks: creates 2x2x1 process grid
+# Each rank gets 20x20x4 interior cells
 ```
 """
 function setup_mpi_cartesian_3d(Nx::Int, Ny::Int, Nz::Int, halo::Int, comm::MPI.Comm)

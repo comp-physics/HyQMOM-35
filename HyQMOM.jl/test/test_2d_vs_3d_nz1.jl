@@ -35,7 +35,7 @@ module HyQMOM_2D_Wrapper
 end
 const HyQMOM_2D = HyQMOM_2D_Wrapper.HyQMOM
 
-println("✓ Both modules loaded successfully")
+println("[OK] Both modules loaded successfully")
 
 @testset "2D vs 3D (Nz=1) Comparison" begin
     
@@ -100,7 +100,7 @@ println("✓ Both modules loaded successfully")
         M_3d_slice = M_3d[:, :, 1, :]
         
         @test size(M_3d_slice) == size(M_2d)
-        println("\n✓ Array dimensions match after extracting z-slice")
+        println("\n[OK] Array dimensions match after extracting z-slice")
     end
     
     @testset "Compare Final Times" begin
@@ -132,7 +132,7 @@ println("✓ Both modules loaded successfully")
         @test abs(final_time_3d - final_time_2d) < 1e-10
         
         if time_steps_2d == time_steps_3d
-            println("  ✓ Time step counts match: $time_steps_2d")
+            println("  [OK] Time step counts match: $time_steps_2d")
         else
             @warn "Time step counts differ: 2D=$time_steps_2d, 3D=$time_steps_3d"
             # This is OK if they both reach tmax - may use slightly different dt
@@ -189,15 +189,15 @@ println("✓ Both modules loaded successfully")
         @test max_abs_diff < TEST_TOL_ABS || max_rel_diff < TEST_TOL_REL
         
         if max_abs_diff < TEST_TOL_ABS && max_rel_diff < TEST_TOL_REL
-            println("\n✓ 3D (Nz=1) matches 2D within tolerance!")
+            println("\n[OK] 3D (Nz=1) matches 2D within tolerance!")
             println("  Absolute: $max_abs_diff < $TEST_TOL_ABS")
             println("  Relative: $max_rel_diff < $TEST_TOL_REL")
         elseif max_abs_diff < TEST_TOL_ABS
-            println("\n✓ 3D (Nz=1) matches 2D within absolute tolerance")
+            println("\n[OK] 3D (Nz=1) matches 2D within absolute tolerance")
             println("  Absolute: $max_abs_diff < $TEST_TOL_ABS")
             @warn "Relative difference large but absolute is OK: $max_rel_diff"
         else
-            println("\n✗ Differences exceed tolerance!")
+            println("\n[X] Differences exceed tolerance!")
             @warn "This may indicate a problem with the 3D implementation"
         end
     end
@@ -233,8 +233,8 @@ println("✓ Both modules loaded successfully")
         @test length(grid_3d.z) == 2  # Cell edges: 2 points for 1 cell
         @test length(grid_3d.zm) == 1  # Cell centers: 1 point for 1 cell
         
-        println("  ✓ X and Y grids match")
-        println("  ✓ Z grid properly defined for Nz=1")
+        println("  [OK] X and Y grids match")
+        println("  [OK] Z grid properly defined for Nz=1")
     end
 end
 

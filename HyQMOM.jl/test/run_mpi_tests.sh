@@ -132,14 +132,14 @@ fi
 # All tests passed
 echo ""
 echo "========================================================================"
-echo "✓ ALL MPI TESTS PASSED"
+echo "[OK] ALL MPI TESTS PASSED"
 echo "========================================================================"
 echo ""
 echo "Summary:"
-echo "  ✓ 1-rank simulation runs successfully"
-echo "  ✓ 2-rank simulation produces identical results"
+echo "  [OK] 1-rank simulation runs successfully"
+echo "  [OK] 2-rank simulation produces identical results"
 if [ "$EXTENDED" = true ]; then
-    echo "  ✓ 4-rank simulation produces identical results"
+    echo "  [OK] 4-rank simulation produces identical results"
 fi
 echo ""
 echo "MPI parallelization is working correctly!"

@@ -85,7 +85,7 @@ function main()
                 params = f["meta/params"]
                 params_with_ic = params
                 
-                println("✓ Loaded successfully!")
+                println("[OK] Loaded successfully!")
                 println("  Snapshots: $n_snapshots")
                 
                 # Load first and last snapshot to get time range
@@ -94,18 +94,18 @@ function main()
                 last_snap = f["snapshots/$(snap_keys[end])"]
                 
                 println("  Time range: $(first_snap["t"]) to $(last_snap["t"])")
-                println("  Grid: $(params.Nx)×$(params.Ny)×$(params.Nz)")
+                println("  Grid: $(params.Nx)x$(params.Ny)x$(params.Nz)")
                 
                 # Check what fields are available
                 has_standardized = haskey(first_snap, "S")
                 if has_standardized
-                    println("  ✓ Standardized moments (S) available")
+                    println("  [OK] Standardized moments (S) available")
                 else
-                    println("  ⚠ No standardized moments - run with --save-standardized-moments true for moment space view")
+                    println("  [WARNING] No standardized moments - run with --save-standardized-moments true for moment space view")
                 end
             else
                 # Legacy format - convert to streaming by saving
-                println("⚠ Legacy format detected - converting to streaming format...")
+                println("[WARNING] Legacy format detected - converting to streaming format...")
                 @load filename snapshots grid params params_with_ic
                 
                 # Save in streaming format
@@ -130,7 +130,7 @@ function main()
                     end
                 end
                 
-                println("✓ Converted to streaming format: $new_filename")
+                println("[OK] Converted to streaming format: $new_filename")
                 filename = new_filename
                 
                 params_with_ic = params
@@ -141,14 +141,14 @@ function main()
             println("LAUNCHING INTERACTIVE 3D TIME-SERIES VIEWER")
             println("="^70)
             println("Controls:")
-            println("  • Time slider: Navigate through snapshots (loaded on-demand)")
-            println("  • Play/Pause: Animate evolution")
-            println("  • Quantity buttons: Switch between ρ, U, V, W, P")
-            println("  • Iso Level slider: Adjust contour levels")
-            println("  • Mouse: Rotate (drag), Zoom (scroll)")
+            println("  * Time slider: Navigate through snapshots (loaded on-demand)")
+            println("  * Play/Pause: Animate evolution")
+            println("  * Quantity buttons: Switch between rho, U, V, W, P")
+            println("  * Iso Level slider: Adjust contour levels")
+            println("  * Mouse: Rotate (drag), Zoom (scroll)")
             if has_standardized
-                println("  • Moment space: Shows S110, S101, S011 correlations")
-                println("  • Min |S| slider: Filter moment space points")
+                println("  * Moment space: Shows S110, S101, S011 correlations")
+                println("  * Min |S| slider: Filter moment space points")
             end
             println("="^70)
         end

@@ -82,12 +82,12 @@ function main()
         # Launch interactive scatterplot viewer
         println("\nLaunching interactive 3D scatterplot viewer...")
         println("You can:")
-        println("  • Click buttons to switch between moments (S110, S022, etc.)")
-        println("  • Adjust threshold slider to filter small values")
-        println("  • Change point size for better visibility")
-        println("  • Subsample to improve performance")
-        println("  • Toggle positive/negative values")
-        println("  • Rotate/zoom with mouse")
+        println("  * Click buttons to switch between moments (S110, S022, etc.)")
+        println("  * Adjust threshold slider to filter small values")
+        println("  * Change point size for better visibility")
+        println("  * Subsample to improve performance")
+        println("  * Toggle positive/negative values")
+        println("  * Rotate/zoom with mouse")
         
         interactive_standardized_scatter(snap, grid;
                                         threshold=0.15,

@@ -96,18 +96,18 @@ echo ""
 echo "Checking prerequisites..."
 
 if ! command -v julia &> /dev/null; then
-    echo -e "${RED}✗ Julia not found. Please install Julia 1.9 or later.${NC}"
+    echo -e "${RED}[X] Julia not found. Please install Julia 1.9 or later.${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓${NC} Julia found: $(julia --version)"
+echo -e "${GREEN}[OK]${NC} Julia found: $(julia --version)"
 
 if ! command -v mpiexec &> /dev/null && [ "$TEST_TYPE" = "mpi" -o "$TEST_TYPE" = "all" ]; then
-    echo -e "${YELLOW}⚠${NC} MPI not found. MPI tests will be skipped."
+    echo -e "${YELLOW}[WARNING]${NC} MPI not found. MPI tests will be skipped."
     SKIP_MPI=true
 else
     SKIP_MPI=false
     if [ "$TEST_TYPE" = "mpi" -o "$TEST_TYPE" = "all" ]; then
-        echo -e "${GREEN}✓${NC} MPI found: $(mpiexec --version | head -n 1)"
+        echo -e "${GREEN}[OK]${NC} MPI found: $(mpiexec --version | head -n 1)"
     fi
 fi
 
@@ -115,12 +115,12 @@ fi
 GOLDEN_FILE="../goldenfiles/goldenfile_mpi_1ranks_Np20_tmax100.mat"
 if [ "$TEST_TYPE" = "integration" -o "$TEST_TYPE" = "all" ]; then
     if [ ! -f "$GOLDEN_FILE" ]; then
-        echo -e "${YELLOW}⚠${NC} MATLAB golden file not found: $GOLDEN_FILE"
+        echo -e "${YELLOW}[WARNING]${NC} MATLAB golden file not found: $GOLDEN_FILE"
         echo "  Integration tests will be skipped."
         echo "  Run create_goldenfiles('ci') in MATLAB to generate it."
         SKIP_INTEGRATION=true
     else
-        echo -e "${GREEN}✓${NC} MATLAB golden file found"
+        echo -e "${GREEN}[OK]${NC} MATLAB golden file found"
         SKIP_INTEGRATION=false
     fi
 else
@@ -138,10 +138,10 @@ print_result() {
     local test_name=$2
     
     if [ $exit_code -eq 0 ]; then
-        echo -e "${GREEN}✓ $test_name PASSED${NC}"
+        echo -e "${GREEN}[OK] $test_name PASSED${NC}"
         return 0
     else
-        echo -e "${RED}✗ $test_name FAILED (exit code: $exit_code)${NC}"
+        echo -e "${RED}[X] $test_name FAILED (exit code: $exit_code)${NC}"
         return 1
     fi
 }
@@ -203,9 +203,9 @@ if [ "$TEST_TYPE" = "all" -o "$TEST_TYPE" = "mpi" ]; then
             
             echo "Generating reference (1 rank)..."
             if julia --project=. test/test_mpi.jl; then
-                echo -e "${GREEN}✓ Reference generated${NC}"
+                echo -e "${GREEN}[OK] Reference generated${NC}"
             else
-                echo -e "${RED}✗ Reference generation failed${NC}"
+                echo -e "${RED}[X] Reference generation failed${NC}"
                 FAILED=1
             fi
             
@@ -238,22 +238,22 @@ echo "========================================================================"
 if [ $FAILED -eq 0 ]; then
     echo -e "${GREEN}"
     cat << EOF
-╔══════════════════════════════════════════════════════════════════════╗
-║                    ALL TESTS PASSED! ✓✓✓                            ║
-║                                                                      ║
-║  Your code is working correctly. Safe to commit and push.           ║
-╚══════════════════════════════════════════════════════════════════════╝
++======================================================================+
+|                    ALL TESTS PASSED! [OK][OK][OK]                            |
+|                                                                      |
+|  Your code is working correctly. Safe to commit and push.           |
++======================================================================+
 EOF
     echo -e "${NC}"
     exit 0
 else
     echo -e "${RED}"
     cat << EOF
-╔══════════════════════════════════════════════════════════════════════╗
-║                    SOME TESTS FAILED ✗✗✗                            ║
-║                                                                      ║
-║  Please fix the failing tests before committing.                    ║
-╚══════════════════════════════════════════════════════════════════════╝
++======================================================================+
+|                    SOME TESTS FAILED [X][X][X]                            |
+|                                                                      |
+|  Please fix the failing tests before committing.                    |
++======================================================================+
 EOF
     echo -e "${NC}"
     exit 1

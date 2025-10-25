@@ -53,10 +53,10 @@ function interactive_correlation_field(snapshots::Vector, grid;
     println("3D CORRELATION FIELD VIEWER")
     println("="^70)
     println("Features:")
-    println("  • Interactive slicing planes (XY, YZ, XZ)")
-    println("  • Sliders control plane positions")
-    println("  • Isosurfaces of correlation magnitude")
-    println("  • Time slider to step through snapshots")
+    println("  * Interactive slicing planes (XY, YZ, XZ)")
+    println("  * Sliders control plane positions")
+    println("  * Isosurfaces of correlation magnitude")
+    println("  * Time slider to step through snapshots")
     println("="^70)
     println("Loaded $(length(snapshots)) snapshots")
     println("  Time range: $(snapshots[1].t) to $(snapshots[end].t)")
@@ -84,18 +84,18 @@ function interactive_correlation_field(snapshots::Vector, grid;
     ax_moment = GLMakie.Axis3(fig[1:2, 1], 
                              xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
                              aspect=:data,
-                             azimuth=0.3π,
-                             elevation=π/8,
+                             azimuth=0.3pi,
+                             elevation=pi/8,
                              limits=(-1, 1, -1, 1, -1, 1),
                              xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
                              xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
-    # Right axis: Realizability boundary (|Δ₁| = 0)
+    # Right axis: Realizability boundary (|Delta_1| = 0)
     ax_realizability = GLMakie.Axis3(fig[1:2, 2], 
                                     xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
                                     aspect=:data,
-                                    azimuth=0.3π,
-                                    elevation=π/8,
+                                    azimuth=0.3pi,
+                                    elevation=pi/8,
                                     limits=(-1, 1, -1, 1, -1, 1),
                                     xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
                                     xlabelsize=13, ylabelsize=13, zlabelsize=13)
@@ -208,17 +208,17 @@ function interactive_correlation_field(snapshots::Vector, grid;
     # ============================================
     # REALIZABILITY BOUNDARY (Right panel - static)
     # ============================================
-    # The realizability boundary is where |Δ₁| = 0
+    # The realizability boundary is where |Delta_1| = 0
     
     try
-        # Create a sphere as simplified boundary (placeholder for actual Δ₁=0 surface)
-        θ = range(0, 2π, length=50)
-        φ = range(0, π, length=50)
+        # Create a sphere as simplified boundary (placeholder for actual Delta_1=0 surface)
+        theta = range(0, 2pi, length=50)
+        phi = range(0, pi, length=50)
         r = 0.7  # radius of simplified boundary (scaled for [-1,1] space)
         
-        S110_boundary = [r * sin(φ_val) * cos(θ_val) for θ_val in θ, φ_val in φ]
-        S101_boundary = [r * sin(φ_val) * sin(θ_val) for θ_val in θ, φ_val in φ]
-        S011_boundary = [r * cos(φ_val) for θ_val in θ, φ_val in φ]
+        S110_boundary = [r * sin(phi_val) * cos(theta_val) for theta_val in theta, phi_val in phi]
+        S101_boundary = [r * sin(phi_val) * sin(theta_val) for theta_val in theta, phi_val in phi]
+        S011_boundary = [r * cos(phi_val) for theta_val in theta, phi_val in phi]
         
         GLMakie.surface!(ax_realizability, S110_boundary, S101_boundary, S011_boundary,
                         colormap=:thermal,
@@ -287,19 +287,19 @@ function interactive_correlation_field(snapshots::Vector, grid;
     println("="^70)
     println("\nDual 3D Visualization:")
     println("  LEFT:  Moment space trajectory - evolves with time")
-    println("  RIGHT: Realizability boundary (|Δ₁| = 0)")
+    println("  RIGHT: Realizability boundary (|Delta_1| = 0)")
     println("\nControls:")
-    println("  • Time slider: Step through snapshots")
-    println("  • Threshold slider: Filter points by |S| magnitude")
-    println("  • Mouse: Rotate (drag), Zoom (scroll), Pan (right-drag)")
+    println("  * Time slider: Step through snapshots")
+    println("  * Threshold slider: Filter points by |S| magnitude")
+    println("  * Mouse: Rotate (drag), Zoom (scroll), Pan (right-drag)")
     println("\nMoment Interpretation:")
     println("  S110: u-v velocity correlation (xy shear)")
     println("  S101: u-w velocity correlation (xz shear)")
     println("  S011: v-w velocity correlation (yz shear)")
-    println("  |S|: √(S110² + S101² + S011²)")
+    println("  |S|: sqrt(S110^2 + S101^2 + S011^2)")
     println("\nRealizability:")
-    println("  Points inside boundary → physically realizable")
-    println("  Boundary surface → |Δ₁| = 0 (marginal realizability)")
+    println("  Points inside boundary -> physically realizable")
+    println("  Boundary surface -> |Delta_1| = 0 (marginal realizability)")
     println("\nPress Enter to close.")
     println("="^70)
     

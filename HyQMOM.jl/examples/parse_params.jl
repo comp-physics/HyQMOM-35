@@ -36,7 +36,7 @@ function get_default_params()
         Ny = 40,
         Nz = 20,
         
-        # Domain extents (default: [-0.5, 0.5]³)
+        # Domain extents (default: [-0.5, 0.5]^3)
         xmin = -0.5,
         xmax = 0.5,
         ymin = -0.5,
@@ -283,7 +283,7 @@ function print_params_summary(params; rank=0, comm=nothing)
                 
                 # Estimate local grid size (assumes uniform distribution)
                 local_nx = div(params.Nx, nprocs) + (params.Nx % nprocs > 0 ? 1 : 0)
-                println("  Estimated local grid per rank: ~$(local_nx)×$(params.Ny)×$(params.Nz) (uniform distribution estimate)")
+                println("  Estimated local grid per rank: ~$(local_nx)x$(params.Ny)x$(params.Nz) (uniform distribution estimate)")
             else
                 println("\nExecution: Single rank (serial)")
             end
@@ -295,8 +295,8 @@ function print_params_summary(params; rank=0, comm=nothing)
     end
     
     println("\nGrid & Domain:")
-    println("  Resolution: $(params.Nx)×$(params.Ny)×$(params.Nz)")
-    println("  Domain: [$(params.xmin), $(params.xmax)] × [$(params.ymin), $(params.ymax)] × [$(params.zmin), $(params.zmax)]")
+    println("  Resolution: $(params.Nx)x$(params.Ny)x$(params.Nz)")
+    println("  Domain: [$(params.xmin), $(params.xmax)] x [$(params.ymin), $(params.ymax)] x [$(params.zmin), $(params.zmax)]")
     
     dx = (params.xmax - params.xmin) / params.Nx
     dy = (params.ymax - params.ymin) / params.Ny

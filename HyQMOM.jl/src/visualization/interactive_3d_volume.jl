@@ -30,11 +30,11 @@ function interactive_3d_volume(M_final, grid, params;
     println("3D VOLUME & ISOSURFACE VIEWER")
     println("="^70)
     println("Features:")
-    println("  • TRUE 3D isosurface contours (not dots!)")
-    println("  • Volume rendering with transparency")
-    println("  • Multiple quantities selectable")
-    println("  • Velocity isosurfaces: Blue=positive, Red=negative")
-    println("  • Interactive controls")
+    println("  * TRUE 3D isosurface contours (not dots!)")
+    println("  * Volume rendering with transparency")
+    println("  * Multiple quantities selectable")
+    println("  * Velocity isosurfaces: Blue=positive, Red=negative")
+    println("  * Interactive controls")
     println("="^70)
     
     # Extract grid
@@ -67,8 +67,8 @@ function interactive_3d_volume(M_final, grid, params;
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
                        xlabel=L"x", ylabel=L"y", zlabel=L"z",
                        aspect=:data,
-                       azimuth=0.3π,
-                       elevation=π/8,
+                       azimuth=0.3pi,
+                       elevation=pi/8,
                        xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
                        xlabelsize=13, ylabelsize=13, zlabelsize=13)
     
@@ -375,12 +375,12 @@ function interactive_3d_volume(M_final, grid, params;
           Mean: %+.4e
           
         Isosurface Levels:
-          Level 1: %.2f × max
-          Level 2: %.2f × max
-          Level 3: %.2f × max
+          Level 1: %.2f x max
+          Level 2: %.2f x max
+          Level 3: %.2f x max
           
         Grid: %dx%dx%d
-        Flow |U|ₘₐₓ: %.3f
+        Flow |U|_m_a_x: %.3f
         """, name, minimum(data), maximum(data), sum(data)/length(data),
              $(slider_iso1.value), $(slider_iso2.value), $(slider_iso3.value),
              Nx, Ny, Nz, maximum(abs.(U)))
@@ -393,11 +393,11 @@ function interactive_3d_volume(M_final, grid, params;
     println("VIEWER READY - TRUE 3D SURFACES!")
     println("="^70)
     println("\nControls:")
-    println("  • Click buttons to switch quantities")
-    println("  • Adjust iso level sliders for different contour levels")
-    println("  • Adjust transparency slider")  
-    println("  • Toggle visualization elements on/off")
-    println("  • Mouse: drag to rotate, scroll to zoom")
+    println("  * Click buttons to switch quantities")
+    println("  * Adjust iso level sliders for different contour levels")
+    println("  * Adjust transparency slider")  
+    println("  * Toggle visualization elements on/off")
+    println("  * Mouse: drag to rotate, scroll to zoom")
     println("\nYou should see THREE colored isosurfaces:")
     println("  Blue   = low level (30% of max)")
     println("  Green  = mid level (50% of max)")
