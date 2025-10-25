@@ -73,48 +73,94 @@ function main()
     
     # Load the data
     try
-        @load filename snapshots grid params params_with_ic
+        # Variables to store outside jldopen block
+        local grid, params_with_ic, has_standardized
         
-        println("✓ Loaded successfully!")
-        println("  Snapshots: $(length(snapshots))")
-        println("  Time range: $(snapshots[1].t) to $(snapshots[end].t)")
-        println("  Grid: $(params.Nx)×$(params.Ny)×$(params.Nz)")
-        
-        # Check what fields are available
-        sample_snap = snapshots[1]
-        available_fields = keys(sample_snap)
-        println("  Available fields: $(collect(available_fields))")
-        
-        has_standardized = haskey(sample_snap, :S)
-        if has_standardized
-            println("  ✓ Standardized moments (S) available")
-        else
-            println("  ⚠ No standardized moments - run with --save-standardized-moments true for moment space view")
+        jldopen(filename, "r") do f
+            # Check format and extract metadata
+            if haskey(f, "meta/n_snapshots")
+                # Streaming format (current)
+                n_snapshots = f["meta/n_snapshots"]
+                grid = f["grid"]
+                params = f["meta/params"]
+                params_with_ic = params
+                
+                println("✓ Loaded successfully!")
+                println("  Snapshots: $n_snapshots")
+                
+                # Load first and last snapshot to get time range
+                snap_keys = sort!(collect(keys(f["snapshots"])))
+                first_snap = f["snapshots/$(snap_keys[1])"]
+                last_snap = f["snapshots/$(snap_keys[end])"]
+                
+                println("  Time range: $(first_snap["t"]) to $(last_snap["t"])")
+                println("  Grid: $(params.Nx)×$(params.Ny)×$(params.Nz)")
+                
+                # Check what fields are available
+                has_standardized = haskey(first_snap, "S")
+                if has_standardized
+                    println("  ✓ Standardized moments (S) available")
+                else
+                    println("  ⚠ No standardized moments - run with --save-standardized-moments true for moment space view")
+                end
+            else
+                # Legacy format - convert to streaming by saving
+                println("⚠ Legacy format detected - converting to streaming format...")
+                @load filename snapshots grid params params_with_ic
+                
+                # Save in streaming format
+                new_filename = replace(filename, r"\.jld2$" => "_streaming.jld2")
+                jldopen(new_filename, "w") do f_new
+                    f_new["meta/params"] = params
+                    f_new["meta/snapshot_interval"] = 1  # Unknown, use 1
+                    f_new["meta/n_snapshots"] = length(snapshots)
+                    f_new["grid"] = grid
+                    
+                    for (i, snap) in enumerate(snapshots)
+                        snap_key = lpad(i, 6, '0')
+                        f_new["snapshots/$snap_key/M"] = snap.M
+                        f_new["snapshots/$snap_key/t"] = snap.t
+                        f_new["snapshots/$snap_key/step"] = snap.step
+                        if haskey(snap, :S)
+                            f_new["snapshots/$snap_key/S"] = snap.S
+                        end
+                        if haskey(snap, :C)
+                            f_new["snapshots/$snap_key/C"] = snap.C
+                        end
+                    end
+                end
+                
+                println("✓ Converted to streaming format: $new_filename")
+                filename = new_filename
+                
+                params_with_ic = params
+                has_standardized = haskey(snapshots[1], :S)
+            end
+            
+            println("="^70)
+            println("LAUNCHING INTERACTIVE 3D TIME-SERIES VIEWER")
+            println("="^70)
+            println("Controls:")
+            println("  • Time slider: Navigate through snapshots (loaded on-demand)")
+            println("  • Play/Pause: Animate evolution")
+            println("  • Quantity buttons: Switch between ρ, U, V, W, P")
+            println("  • Iso Level slider: Adjust contour levels")
+            println("  • Mouse: Rotate (drag), Zoom (scroll)")
+            if has_standardized
+                println("  • Moment space: Shows S110, S101, S011 correlations")
+                println("  • Min |S| slider: Filter moment space points")
+            end
+            println("="^70)
         end
         
-        println("="^70)
-        println("LAUNCHING INTERACTIVE 3D TIME-SERIES VIEWER")
-        println("="^70)
-        println("Controls:")
-        println("  • Time slider: Navigate through snapshots")
-        println("  • Play/Pause: Animate evolution")
-        println("  • Quantity buttons: Switch between ρ, U, V, W, P")
-        println("  • Iso Level slider: Adjust contour levels")
-        println("  • Mouse: Rotate (drag), Zoom (scroll)")
-        if has_standardized
-            println("  • Moment space: Shows S110, S101, S011 correlations")
-            println("  • Min |S| slider: Filter moment space points")
-        end
-        println("="^70)
-        
-        # Launch the viewer
-        interactive_3d_timeseries(snapshots, grid, params_with_ic)
+        # Launch the viewer with streaming file (outside the jldopen block)
+        interactive_3d_timeseries_streaming(filename, grid, params_with_ic)
         
     catch e
         if isa(e, KeyError)
             println("ERROR: Invalid .jld2 file format")
-            println("Expected fields: snapshots, grid, params, params_with_ic")
-            println("This file may not be from HyQMOM examples/run_3d_custom_jets.jl")
+            println("Expected fields: meta/n_snapshots, grid, meta/params OR snapshots, grid, params")
+            println("This file may not be from HyQMOM examples (e.g., run_3d_crossing_jets.jl, run_3d_jets_timeseries.jl)")
         else
             println("ERROR loading file: $e")
             rethrow()
