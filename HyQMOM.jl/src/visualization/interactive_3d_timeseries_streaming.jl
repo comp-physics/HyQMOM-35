@@ -233,17 +233,6 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     slider_iso1 = GLMakie.Slider(fig, range=0.1:0.05:0.9, startvalue=iso_levels[1], width=200)
     slider_alpha = GLMakie.Slider(fig, range=0.3:0.1:1.0, startvalue=0.6, width=200)
     
-    controls[4, 1] = GLMakie.vgrid!(
-        GLMakie.Label(fig, "Iso Level", fontsize=9, halign=:left),
-        slider_iso1;
-        tellwidth=false
-    )
-    controls[5, 1] = GLMakie.vgrid!(
-        GLMakie.Label(fig, "Alpha", fontsize=9, halign=:left),
-        slider_alpha;
-        tellwidth=false
-    )
-    
     # Function to compute quantities from M snapshot
     function compute_quantities(M_snapshot)
         rho = M_snapshot[:, :, :, 1]
@@ -254,8 +243,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         C200 = M_snapshot[:, :, :, 3] ./ rho .- U.^2
         C020 = M_snapshot[:, :, :, 7] ./ rho .- V.^2
         C002 = M_snapshot[:, :, :, 17] ./ rho .- W.^2
-        temperature = (C200 .+ C020 .+ C002) ./ 3.0
-        pressure = rho .* temperature
+        # Pressure: P = rho * (1/3 trace of velocity covariance)
+        pressure = rho .* (C200 .+ C020 .+ C002) ./ 3.0
         
         return (rho=rho, U=U, V=V, W=W, pressure=pressure)
     end
@@ -280,6 +269,57 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             quants.pressure
         end
     end
+    
+    # Observable for isosurface value display (must come after current_data_obs)
+    iso_value_text = GLMakie.@lift begin
+        data = $(current_data_obs)
+        q = $(current_quantity)
+        iso_frac = $(slider_iso1.value)
+        
+        is_velocity = (q == "U velocity" || q == "V velocity" || q == "W velocity")
+        data_min = minimum(data)
+        data_max = maximum(data)
+        data_absmax = maximum(abs.(data))
+        
+        # Get short label for quantity
+        q_label = if q == "U velocity"
+            "U"
+        elseif q == "V velocity"
+            "V"
+        elseif q == "W velocity"
+            "W"
+        elseif q == "Density"
+            "ρ"
+        elseif q == "Pressure"
+            "P"
+        else
+            q
+        end
+        
+        if is_velocity
+            # For velocities: show both positive and negative levels
+            pos_level = iso_frac * data_absmax
+            @sprintf("%s = ±%.4f", q_label, pos_level)
+        else
+            # For other quantities: show single level
+            data_range = data_max - data_min
+            level = data_min + iso_frac * data_range
+            @sprintf("%s = %.4f", q_label, level)
+        end
+    end
+    
+    # Add isosurface controls to sidebar
+    controls[4, 1] = GLMakie.vgrid!(
+        GLMakie.Label(fig, "Iso Level", fontsize=9, halign=:left),
+        slider_iso1,
+        GLMakie.Label(fig, iso_value_text, fontsize=8, halign=:left, color=:gray);
+        tellwidth=false
+    )
+    controls[5, 1] = GLMakie.vgrid!(
+        GLMakie.Label(fig, "Alpha", fontsize=9, halign=:left),
+        slider_alpha;
+        tellwidth=false
+    )
     
     # Storage for plots
     iso_plots = []

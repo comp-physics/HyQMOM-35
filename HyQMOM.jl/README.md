@@ -144,11 +144,8 @@ HyQMOM includes interactive 3D visualization using GLMakie. GLMakie is included 
 using HyQMOM, JLD2, GLMakie
 @load "snapshots_file.jld2" snapshots grid params params_with_ic
 
-# Full time-series viewer
-interactive_3d_timeseries(snapshots, grid, params_with_ic)
-
-# Single snapshot viewer
-interactive_3d_volume(snapshots[end].M, grid, params_with_ic)
+# Interactive time-series viewer (streams from file)
+interactive_3d_timeseries_streaming("snapshots_file.jld2", grid, params_with_ic)
 
 # Standardized moment scatter plot (if S field available)
 interactive_standardized_scatter(snapshots[end], grid)
@@ -264,8 +261,9 @@ import GLMakie
 snapshots, grid = run_simulation_with_snapshots(params; snapshot_interval=2)
 
 # Launch interactive viewer (rank 0 only)
+# Note: Save snapshots to file first, then use interactive_3d_timeseries_streaming
 if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-    interactive_3d_timeseries(snapshots, grid, params)
+    @info "Save snapshots to file, then use: interactive_3d_timeseries_streaming(filename, grid, params)"
 end
 ```
 
@@ -371,8 +369,7 @@ julia ... --Np 60 --Nz 30
 - `run_simulation_with_snapshots(params; snapshot_interval)` - Collect time snapshots
 
 **Visualization:**
-- `interactive_3d_timeseries(snapshots, grid, params)` - Time-series viewer
-- `interactive_3d_volume(M_final, grid, params)` - Single snapshot viewer
+- `interactive_3d_timeseries_streaming(filename, grid, params)` - Streaming time-series viewer
 
 **Core algorithms:**
 - `hyqmom_3D`, `InitializeM4_35`, `Moments5_3D` - Moment operations
