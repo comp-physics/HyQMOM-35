@@ -29,12 +29,16 @@ Launch an interactive 3D viewer that streams snapshots from a JLD2 file.
 - `n_streamlines::Int=8`: Number of streamline seeds
 - `vector_step::Int=4`: Subsampling for vector field
 - `iso_levels::Vector{Float64}=[0.3, 0.5, 0.7]`: Isosurface levels
+- `snapshot_mode::Symbol=:all`: Display mode (:all, :first, :last, :specific)
+- `snapshot_number::Union{Int,Nothing}=nothing`: Specific snapshot number if mode is :specific
 """
 function interactive_3d_timeseries_streaming(filename, grid, params;
                                              n_streamlines=8,
                                              vector_step=4,
                                              streamline_length=50,
-                                             iso_levels=[0.3, 0.5, 0.7])
+                                             iso_levels=[0.3, 0.5, 0.7],
+                                             snapshot_mode=:all,
+                                             snapshot_number=nothing)
     
     println("\n" * "="^70)
     println("3D TIME-SERIES VIEWER (STREAMING MODE)")
@@ -72,6 +76,17 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     println("="^70)
     println("Has standardized moments (S field)? ", has_std_moments)
     
+    # Determine initial snapshot index based on mode
+    initial_snapshot_idx = if snapshot_mode == :first
+        1
+    elseif snapshot_mode == :last
+        n_snapshots
+    elseif snapshot_mode == :specific
+        snapshot_number
+    else
+        1  # :all mode starts at first snapshot
+    end
+    
     # Create figure - always 3 columns for consistent layout
     println("Creating 3-column figure:")
     println("  Column 1: Physical space (x,y,z)")
@@ -82,7 +97,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                         fonts=(; regular="CMU Serif"))
     
     # Current snapshot index (observable)
-    current_snapshot_idx = GLMakie.Observable(1)
+    current_snapshot_idx = GLMakie.Observable(initial_snapshot_idx)
     
     # Left: Physical space (isosurfaces)
     ax_physical = GLMakie.Axis3(fig[1, 1], 
@@ -141,27 +156,44 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         current_quantity[] = "Pressure"
     end
     
-    # Time slider
-    time_slider = GLMakie.Slider(fig, range=1:n_snapshots, startvalue=1, width=200)
-    btn_play = GLMakie.Button(fig, label=">", fontsize=8)
-    btn_pause = GLMakie.Button(fig, label="||", fontsize=8)
-    
-    time_label = GLMakie.@lift(@sprintf("Snap %d/%d", $(time_slider.value), n_snapshots))
-    
-    controls[2, 1] = GLMakie.vgrid!(
-        GLMakie.Label(fig, time_label, fontsize=9, halign=:left),
-        time_slider;
-        tellwidth=false
-    )
-    controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false)
-    
-    is_playing = GLMakie.Observable(false)
-    
-    GLMakie.on(btn_play.clicks) do _
-        is_playing[] = true
-    end
-    GLMakie.on(btn_pause.clicks) do _
-        is_playing[] = false
+    # Time slider and controls (only show if in :all mode)
+    if snapshot_mode == :all
+        time_slider = GLMakie.Slider(fig, range=1:n_snapshots, startvalue=initial_snapshot_idx, width=200)
+        btn_play = GLMakie.Button(fig, label=">", fontsize=8)
+        btn_pause = GLMakie.Button(fig, label="||", fontsize=8)
+        
+        time_label = GLMakie.@lift(@sprintf("Snap %d/%d", $(time_slider.value), n_snapshots))
+        
+        controls[2, 1] = GLMakie.vgrid!(
+            GLMakie.Label(fig, time_label, fontsize=9, halign=:left),
+            time_slider;
+            tellwidth=false
+        )
+        controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false)
+        
+        is_playing = GLMakie.Observable(false)
+        
+        GLMakie.on(btn_play.clicks) do _
+            is_playing[] = true
+        end
+        GLMakie.on(btn_pause.clicks) do _
+            is_playing[] = false
+        end
+    else
+        # Single snapshot mode - create a dummy slider that won't be displayed
+        time_slider = GLMakie.Slider(fig, range=1:n_snapshots, startvalue=initial_snapshot_idx, width=200)
+        
+        # Show which snapshot we're viewing
+        if snapshot_mode == :first
+            snap_label_text = "Showing: First snapshot"
+        elseif snapshot_mode == :last
+            snap_label_text = "Showing: Last snapshot"
+        else
+            snap_label_text = @sprintf("Showing: Snapshot %d/%d", initial_snapshot_idx, n_snapshots)
+        end
+        controls[2, 1] = GLMakie.Label(fig, snap_label_text, fontsize=10, halign=:center)
+        
+        is_playing = GLMakie.Observable(false)
     end
     
     # Export button
@@ -488,18 +520,38 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     display(fig)
     
     println("\n" * "="^70)
-    println("TIME-SERIES VIEWER READY! (STREAMING MODE)")
-    println("="^70)
-    println("Layout:")
-    println("  * Left: Physical space (x,y,z)")
-    println("  * Middle: Moment space (S_1_1_0, S_1_0_1, S_0_1_1)")
-    println("  * Right: Controls")
-    println("\nControls:")
-    println("  * Time slider steps through snapshots (loaded on-demand)")
-    println("  * Click > Play to animate")
-    println("  * Click quantity buttons to switch")
-    println("  * Iso level/alpha sliders adjust appearance")
-    println("  * Min |S| slider filters moment space")
+    if snapshot_mode == :all
+        println("TIME-SERIES VIEWER READY! (STREAMING MODE)")
+        println("="^70)
+        println("Layout:")
+        println("  * Left: Physical space (x,y,z)")
+        println("  * Middle: Moment space (S_1_1_0, S_1_0_1, S_0_1_1)")
+        println("  * Right: Controls")
+        println("\nControls:")
+        println("  * Time slider steps through snapshots (loaded on-demand)")
+        println("  * Click > Play to animate")
+        println("  * Click quantity buttons to switch")
+        println("  * Iso level/alpha sliders adjust appearance")
+        println("  * Min |S| slider filters moment space")
+    else
+        println("SINGLE SNAPSHOT VIEWER READY!")
+        println("="^70)
+        if snapshot_mode == :first
+            println("Viewing: First snapshot")
+        elseif snapshot_mode == :last
+            println("Viewing: Last snapshot")
+        else
+            println("Viewing: Snapshot $initial_snapshot_idx of $n_snapshots")
+        end
+        println("\nLayout:")
+        println("  * Left: Physical space (x,y,z)")
+        println("  * Middle: Moment space (S_1_1_0, S_1_0_1, S_0_1_1)")
+        println("  * Right: Controls")
+        println("\nControls:")
+        println("  * Click quantity buttons to switch")
+        println("  * Iso level/alpha sliders adjust appearance")
+        println("  * Min |S| slider filters moment space")
+    end
     println("\nPress Enter in terminal to close.")
     println("="^70)
     

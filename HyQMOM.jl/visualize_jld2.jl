@@ -4,13 +4,22 @@
 Quick visualization script for HyQMOM .jld2 snapshot files
 
 Usage:
-    julia visualize_jld2.jl [filename.jld2]
+    julia visualize_jld2.jl [filename.jld2] [--snapshot first|last|N]
     
 If no filename provided, will interactively select from .jld2 files in current directory.
 
+Options:
+    --snapshot first    Show only the first snapshot
+    --snapshot last     Show only the last snapshot
+    --snapshot N        Show only snapshot number N (1-indexed)
+    (default: show all snapshots with time slider)
+
 Examples:
-    julia visualize_jld2.jl snapshots_crossing_Nx20_Ny20_Nz20_Kn1.00_Ma1.00_t0.0100.jld2
-    julia visualize_jld2.jl
+    julia visualize_jld2.jl snapshots.jld2                    # All snapshots
+    julia visualize_jld2.jl snapshots.jld2 --snapshot first   # First only
+    julia visualize_jld2.jl snapshots.jld2 --snapshot last    # Last only
+    julia visualize_jld2.jl snapshots.jld2 --snapshot 5       # Snapshot #5 only
+    julia visualize_jld2.jl                                   # Interactive file selection
     
 Generate snapshot files using:
     julia examples/run_3d_crossing_jets.jl --save-standardized-moments true
@@ -37,15 +46,55 @@ function find_jld2_files()
     return files
 end
 
+function parse_args()
+    filename = nothing
+    snapshot_mode = :all  # :all, :first, :last, or specific number
+    snapshot_number = nothing
+    
+    i = 1
+    while i <= length(ARGS)
+        arg = ARGS[i]
+        if arg == "--snapshot"
+            if i + 1 > length(ARGS)
+                error("--snapshot requires an argument (first|last|N)")
+            end
+            snapshot_arg = ARGS[i + 1]
+            if snapshot_arg == "first"
+                snapshot_mode = :first
+            elseif snapshot_arg == "last"
+                snapshot_mode = :last
+            else
+                # Try to parse as number
+                try
+                    snapshot_number = parse(Int, snapshot_arg)
+                    snapshot_mode = :specific
+                catch
+                    error("Invalid --snapshot argument: $snapshot_arg (expected first|last|N)")
+                end
+            end
+            i += 2
+        elseif startswith(arg, "--")
+            error("Unknown option: $arg")
+        else
+            # Assume it's the filename
+            filename = arg
+            i += 1
+        end
+    end
+    
+    return filename, snapshot_mode, snapshot_number
+end
+
 function main()
+    # Parse command line arguments
+    filename, snapshot_mode, snapshot_number = parse_args()
+    
     # Get filename from command line or find automatically
-    if length(ARGS) >= 1
-        filename = ARGS[1]
-    else
+    if filename === nothing
         jld2_files = find_jld2_files()
         if isempty(jld2_files)
             println("ERROR: No .jld2 files found in current directory")
-            println("Usage: julia visualize_jld2.jl [filename.jld2]")
+            println("Usage: julia visualize_jld2.jl [filename.jld2] [--snapshot first|last|N]")
             return
         elseif length(jld2_files) == 1
             filename = jld2_files[1]
@@ -69,6 +118,15 @@ function main()
     
     println("="^70)
     println("LOADING: $filename")
+    if snapshot_mode != :all
+        if snapshot_mode == :first
+            println("MODE: Showing first snapshot only")
+        elseif snapshot_mode == :last
+            println("MODE: Showing last snapshot only")
+        else
+            println("MODE: Showing snapshot #$snapshot_number only")
+        end
+    end
     println("="^70)
     
     # Load the data
@@ -95,6 +153,14 @@ function main()
                 
                 println("  Time range: $(first_snap["t"]) to $(last_snap["t"])")
                 println("  Grid: $(params.Nx)x$(params.Ny)x$(params.Nz)")
+                
+                # Validate snapshot selection
+                if snapshot_mode == :specific
+                    if snapshot_number < 1 || snapshot_number > n_snapshots
+                        println("ERROR: Snapshot number $snapshot_number out of range (1-$n_snapshots)")
+                        return
+                    end
+                end
                 
                 # Check what fields are available
                 has_standardized = haskey(first_snap, "S")
@@ -138,23 +204,44 @@ function main()
             end
             
             println("="^70)
-            println("LAUNCHING INTERACTIVE 3D TIME-SERIES VIEWER")
-            println("="^70)
-            println("Controls:")
-            println("  * Time slider: Navigate through snapshots (loaded on-demand)")
-            println("  * Play/Pause: Animate evolution")
-            println("  * Quantity buttons: Switch between rho, U, V, W, P")
-            println("  * Iso Level slider: Adjust contour levels")
-            println("  * Mouse: Rotate (drag), Zoom (scroll)")
-            if has_standardized
-                println("  * Moment space: Shows S110, S101, S011 correlations")
-                println("  * Min |S| slider: Filter moment space points")
+            if snapshot_mode == :all
+                println("LAUNCHING INTERACTIVE 3D TIME-SERIES VIEWER")
+                println("="^70)
+                println("Controls:")
+                println("  * Time slider: Navigate through snapshots (loaded on-demand)")
+                println("  * Play/Pause: Animate evolution")
+                println("  * Quantity buttons: Switch between rho, U, V, W, P")
+                println("  * Iso Level slider: Adjust contour levels")
+                println("  * Mouse: Rotate (drag), Zoom (scroll)")
+                if has_standardized
+                    println("  * Moment space: Shows S110, S101, S011 correlations")
+                    println("  * Min |S| slider: Filter moment space points")
+                end
+            else
+                println("LAUNCHING SINGLE SNAPSHOT VIEWER")
+                println("="^70)
+                println("Controls:")
+                println("  * Quantity buttons: Switch between rho, U, V, W, P")
+                println("  * Iso Level slider: Adjust contour levels")
+                println("  * Mouse: Rotate (drag), Zoom (scroll)")
+                if has_standardized
+                    println("  * Moment space: Shows S110, S101, S011 correlations")
+                    println("  * Min |S| slider: Filter moment space points")
+                end
             end
             println("="^70)
         end
         
-        # Launch the viewer with streaming file (outside the jldopen block)
-        interactive_3d_timeseries_streaming(filename, grid, params_with_ic)
+        # Launch the appropriate viewer (outside the jldopen block)
+        if snapshot_mode == :all
+            # Show all snapshots with time slider
+            interactive_3d_timeseries_streaming(filename, grid, params_with_ic)
+        else
+            # Show single snapshot
+            interactive_3d_timeseries_streaming(filename, grid, params_with_ic, 
+                                               snapshot_mode=snapshot_mode,
+                                               snapshot_number=snapshot_number)
+        end
         
     catch e
         if isa(e, KeyError)
