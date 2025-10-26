@@ -41,7 +41,7 @@ exit_code=$?
 if [ $exit_code -eq 0 ]; then
     echo ""
     echo "========================================================================"
-    echo "✓ GOLDEN FILES CREATED SUCCESSFULLY"
+    echo "[OK] GOLDEN FILES CREATED SUCCESSFULLY"
     echo "========================================================================"
     echo ""
     echo "Golden files saved in: test/goldenfiles/"
@@ -52,7 +52,7 @@ if [ $exit_code -eq 0 ]; then
 else
     echo ""
     echo "========================================================================"
-    echo "✗ GOLDEN FILE GENERATION FAILED"
+    echo "[X] GOLDEN FILE GENERATION FAILED"
     echo "========================================================================"
     exit $exit_code
 fi

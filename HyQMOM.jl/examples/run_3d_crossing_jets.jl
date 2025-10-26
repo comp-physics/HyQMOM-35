@@ -73,7 +73,7 @@ if rank == 0
             grid.xm, grid.ym, grid.zm,
             final_time
         )
-        println("✓ Plots generated successfully")
+        println("[OK] Plots generated successfully")
     catch e
         @warn "Plotting failed" exception=(e, catch_backtrace())
         println("Note: Install PyPlot if not available: using Pkg; Pkg.add(\"PyPlot\")")

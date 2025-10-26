@@ -57,10 +57,10 @@ function interactive_standardized_scatter(snapshot, grid;
     println("3D SCATTERPLOT VIEWER - STANDARDIZED MOMENTS")
     println("="^70)
     println("Features:")
-    println("  • View standardized moments as 3D point clouds")
-    println("  • Color by moment value")
-    println("  • Filter by threshold")
-    println("  • Explore moment correlations and distributions")
+    println("  * View standardized moments as 3D point clouds")
+    println("  * Color by moment value")
+    println("  * Filter by threshold")
+    println("  * Explore moment correlations and distributions")
     println("="^70)
     
     S_field = snapshot.S
@@ -83,8 +83,8 @@ function interactive_standardized_scatter(snapshot, grid;
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
                        xlabel=L"x", ylabel=L"y", zlabel=L"z",
                        aspect=:data,
-                       azimuth=0.3π,
-                       elevation=π/8,
+                       azimuth=0.3pi,
+                       elevation=pi/8,
                        limits=(x_min, x_max, y_min, y_max, z_min, z_max),
                        xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
                        xlabelsize=13, ylabelsize=13, zlabelsize=13)
@@ -343,12 +343,12 @@ function interactive_standardized_scatter(snapshot, grid;
     println("SCATTERPLOT VIEWER READY!")
     println("="^70)
     println("\nControls:")
-    println("  • Click moment buttons to switch quantities")
-    println("  • Adjust threshold to filter small values")
-    println("  • Adjust point size for visibility")
-    println("  • Subsample for better performance")
-    println("  • Toggle positive/negative to filter by sign")
-    println("  • Mouse: drag to rotate, scroll to zoom")
+    println("  * Click moment buttons to switch quantities")
+    println("  * Adjust threshold to filter small values")
+    println("  * Adjust point size for visibility")
+    println("  * Subsample for better performance")
+    println("  * Toggle positive/negative to filter by sign")
+    println("  * Mouse: drag to rotate, scroll to zoom")
     println("\nPhysical Interpretation:")
     println("  S110: u-v velocity correlation (xy shear)")
     println("  S101: u-w velocity correlation (xz shear)")
@@ -414,11 +414,11 @@ function interactive_standardized_scatter(snapshots::Vector, grid;
     println("3D SCATTERPLOT VIEWER - STANDARDIZED MOMENTS (TIME SERIES)")
     println("="^70)
     println("Features:")
-    println("  • Step through simulation snapshots over time")
-    println("  • View standardized moments as 3D point clouds")
-    println("  • Color by moment value")
-    println("  • Filter by threshold")
-    println("  • Explore moment correlations and distributions")
+    println("  * Step through simulation snapshots over time")
+    println("  * View standardized moments as 3D point clouds")
+    println("  * Color by moment value")
+    println("  * Filter by threshold")
+    println("  * Explore moment correlations and distributions")
     println("="^70)
     println("Loaded $(length(snapshots)) snapshots")
     println("  Time range: $(snapshots[1].t) to $(snapshots[end].t)")
@@ -446,8 +446,8 @@ function interactive_standardized_scatter(snapshots::Vector, grid;
     ax = GLMakie.Axis3(fig[1:3, 1:2], 
                        xlabel=L"x", ylabel=L"y", zlabel=L"z",
                        aspect=:data,
-                       azimuth=0.3π,
-                       elevation=π/8,
+                       azimuth=0.3pi,
+                       elevation=pi/8,
                        limits=(x_min, x_max, y_min, y_max, z_min, z_max),
                        xticklabelsize=11, yticklabelsize=11, zticklabelsize=11,
                        xlabelsize=13, ylabelsize=13, zlabelsize=13)
@@ -739,13 +739,13 @@ function interactive_standardized_scatter(snapshots::Vector, grid;
     println("SCATTERPLOT VIEWER READY!")
     println("="^70)
     println("\nControls:")
-    println("  • Use time slider to step through snapshots")
-    println("  • Click moment buttons to switch quantities")
-    println("  • Adjust threshold to filter small values")
-    println("  • Adjust point size for visibility")
-    println("  • Subsample for better performance")
-    println("  • Toggle positive/negative to filter by sign")
-    println("  • Mouse: drag to rotate, scroll to zoom")
+    println("  * Use time slider to step through snapshots")
+    println("  * Click moment buttons to switch quantities")
+    println("  * Adjust threshold to filter small values")
+    println("  * Adjust point size for visibility")
+    println("  * Subsample for better performance")
+    println("  * Toggle positive/negative to filter by sign")
+    println("  * Mouse: drag to rotate, scroll to zoom")
     println("\nPhysical Interpretation:")
     println("  S110: u-v velocity correlation (xy shear)")
     println("  S101: u-w velocity correlation (xz shear)")

@@ -29,21 +29,25 @@ Launch an interactive 3D viewer that streams snapshots from a JLD2 file.
 - `n_streamlines::Int=8`: Number of streamline seeds
 - `vector_step::Int=4`: Subsampling for vector field
 - `iso_levels::Vector{Float64}=[0.3, 0.5, 0.7]`: Isosurface levels
+- `snapshot_mode::Symbol=:all`: Display mode (:all, :first, :last, :specific)
+- `snapshot_number::Union{Int,Nothing}=nothing`: Specific snapshot number if mode is :specific
 """
 function interactive_3d_timeseries_streaming(filename, grid, params;
                                              n_streamlines=8,
                                              vector_step=4,
                                              streamline_length=50,
-                                             iso_levels=[0.3, 0.5, 0.7])
+                                             iso_levels=[0.3, 0.5, 0.7],
+                                             snapshot_mode=:all,
+                                             snapshot_number=nothing)
     
     println("\n" * "="^70)
     println("3D TIME-SERIES VIEWER (STREAMING MODE)")
     println("="^70)
     println("Features:")
-    println("  • Snapshots loaded on-demand (low memory usage)")
-    println("  • TRUE 3D isosurface contours")
-    println("  • Velocity isosurfaces: Blue=positive, Red=negative")
-    println("  • Time slider to navigate through evolution")
+    println("  * Snapshots loaded on-demand (low memory usage)")
+    println("  * TRUE 3D isosurface contours")
+    println("  * Velocity isosurfaces: Blue=positive, Red=negative")
+    println("  * Time slider to navigate through evolution")
     println("="^70)
     
     # Open file and read metadata
@@ -72,6 +76,17 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     println("="^70)
     println("Has standardized moments (S field)? ", has_std_moments)
     
+    # Determine initial snapshot index based on mode
+    initial_snapshot_idx = if snapshot_mode == :first
+        1
+    elseif snapshot_mode == :last
+        n_snapshots
+    elseif snapshot_mode == :specific
+        snapshot_number
+    else
+        1  # :all mode starts at first snapshot
+    end
+    
     # Create figure - always 3 columns for consistent layout
     println("Creating 3-column figure:")
     println("  Column 1: Physical space (x,y,z)")
@@ -82,14 +97,14 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                         fonts=(; regular="CMU Serif"))
     
     # Current snapshot index (observable)
-    current_snapshot_idx = GLMakie.Observable(1)
+    current_snapshot_idx = GLMakie.Observable(initial_snapshot_idx)
     
     # Left: Physical space (isosurfaces)
     ax_physical = GLMakie.Axis3(fig[1, 1], 
                                 xlabel=L"x", ylabel=L"y", zlabel=L"z",
                                 aspect=:data,
-                                azimuth=0.3π,
-                                elevation=π/8,
+                                azimuth=0.3pi,
+                                elevation=pi/8,
                                 xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
                                 xlabelsize=18, ylabelsize=18, zlabelsize=18)
     
@@ -97,8 +112,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     ax_moment = GLMakie.Axis3(fig[1, 2], 
                              xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
                              aspect=:data,
-                             azimuth=0.3π,
-                             elevation=π/8,
+                             azimuth=0.3pi,
+                             elevation=pi/8,
                              limits=(-1, 1, -1, 1, -1, 1),
                              xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
                              xlabelsize=18, ylabelsize=18, zlabelsize=18)
@@ -117,7 +132,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     current_quantity = GLMakie.Observable("Density")
     
     # Quantity buttons
-    btn_density = GLMakie.Button(fig, label="ρ", fontsize=8)
+    btn_density = GLMakie.Button(fig, label="rho", fontsize=8)
     btn_u = GLMakie.Button(fig, label="U", fontsize=8)
     btn_v = GLMakie.Button(fig, label="V", fontsize=8)
     btn_w = GLMakie.Button(fig, label="W", fontsize=8)
@@ -141,27 +156,50 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         current_quantity[] = "Pressure"
     end
     
-    # Time slider
-    time_slider = GLMakie.Slider(fig, range=1:n_snapshots, startvalue=1, width=200)
-    btn_play = GLMakie.Button(fig, label=">", fontsize=8)
-    btn_pause = GLMakie.Button(fig, label="||", fontsize=8)
-    
-    time_label = GLMakie.@lift(@sprintf("Snap %d/%d", $(time_slider.value), n_snapshots))
-    
-    controls[2, 1] = GLMakie.vgrid!(
-        GLMakie.Label(fig, time_label, fontsize=9, halign=:left),
-        time_slider;
-        tellwidth=false
-    )
-    controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false)
-    
-    is_playing = GLMakie.Observable(false)
-    
-    GLMakie.on(btn_play.clicks) do _
-        is_playing[] = true
-    end
-    GLMakie.on(btn_pause.clicks) do _
-        is_playing[] = false
+    # Time slider and controls (only show if in :all mode)
+    # Also create an observable for current snapshot index that works in both modes
+    local time_slider
+    if snapshot_mode == :all
+        time_slider = GLMakie.Slider(fig, range=1:n_snapshots, startvalue=initial_snapshot_idx, width=200)
+        btn_play = GLMakie.Button(fig, label=">", fontsize=8)
+        btn_pause = GLMakie.Button(fig, label="||", fontsize=8)
+        
+        time_label = GLMakie.@lift(@sprintf("Snap %d/%d", $(time_slider.value), n_snapshots))
+        
+        controls[2, 1] = GLMakie.vgrid!(
+            GLMakie.Label(fig, time_label, fontsize=9, halign=:left),
+            time_slider;
+            tellwidth=false
+        )
+        controls[3, 1] = GLMakie.hgrid!(btn_play, btn_pause; tellwidth=false)
+        
+        is_playing = GLMakie.Observable(false)
+        
+        GLMakie.on(btn_play.clicks) do _
+            is_playing[] = true
+        end
+        GLMakie.on(btn_pause.clicks) do _
+            is_playing[] = false
+        end
+        
+        # Use time_slider.value as the observable index
+        current_snapshot_observable = time_slider.value
+    else
+        # Single snapshot mode - use a fixed observable at the initial index
+        # Show which snapshot we're viewing
+        if snapshot_mode == :first
+            snap_label_text = "Showing: First snapshot"
+        elseif snapshot_mode == :last
+            snap_label_text = "Showing: Last snapshot"
+        else
+            snap_label_text = @sprintf("Showing: Snapshot %d/%d", initial_snapshot_idx, n_snapshots)
+        end
+        controls[2, 1] = GLMakie.Label(fig, snap_label_text, fontsize=10, halign=:center)
+        
+        is_playing = GLMakie.Observable(false)
+        
+        # Create an observable that stays fixed at the initial snapshot
+        current_snapshot_observable = GLMakie.Observable(initial_snapshot_idx)
     end
     
     # Export button
@@ -170,7 +208,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     
     GLMakie.on(btn_export.clicks) do _
         try
-            idx = time_slider.value[]
+            idx = current_snapshot_observable[]
             snap_key = snap_keys[idx]
             snap = jld_file["snapshots/$snap_key"]
             t = snap["t"]
@@ -185,7 +223,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             img = GLMakie.Makie.colorbuffer(fig.scene)
             FileIO.save(filename_out, img)
             
-            println("✓ Export complete!")
+            println("[OK] Export complete!")
         catch e
             @error "Export failed" exception=(e, catch_backtrace())
         end
@@ -224,7 +262,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     
     # Observable for current data (loads from file)
     current_data_obs = GLMakie.@lift begin
-        idx = $(time_slider.value)
+        idx = $(current_snapshot_observable)
         q = $(current_quantity)
         snap_key = snap_keys[idx]
         M = jld_file["snapshots/$snap_key/M"]
@@ -329,7 +367,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         end
         empty!(moment_plots)
         
-        idx = time_slider.value[]
+        idx = current_snapshot_observable[]
         snap_key = snap_keys[idx]
         S_field = jld_file["snapshots/$snap_key/S"]
         
@@ -371,8 +409,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                      color=:blue, linewidth=2, alpha=0.3)
         push!(moment_plots, p1, p2, p3)
         
-        # Draw |Δ₁| = 0 realizability boundary surface (transparent)
-        # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
+        # Draw |Delta_1| = 0 realizability boundary surface (transparent)
+        # Delta_1 = 1 + 2*S110*S101*S011 - S110^2 - S101^2 - S011^2 = 0
         # This is the boundary of the realizable region in moment space
         
         try
@@ -382,8 +420,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             s2_range = range(-1, 1, length=n_points)
             
             # We'll create the surface by solving for S011 given S110, S101
-            # Rearranging: S011² - 2*S110*S101*S011 + (S110² + S101² - 1) = 0
-            # Using quadratic formula: S011 = S110*S101 ± sqrt((S110*S101)² - (S110² + S101² - 1))
+            # Rearranging: S011^2 - 2*S110*S101*S011 + (S110^2 + S101^2 - 1) = 0
+            # Using quadratic formula: S011 = S110*S101 +/- sqrt((S110*S101)^2 - (S110^2 + S101^2 - 1))
             
             S110_grid = zeros(n_points, n_points)
             S101_grid = zeros(n_points, n_points)
@@ -396,7 +434,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                     S101_grid[i, j] = s101
                     
                     # Quadratic formula coefficients
-                    # S011² - 2*a*b*S011 + (a² + b² - 1) = 0
+                    # S011^2 - 2*a*b*S011 + (a^2 + b^2 - 1) = 0
                     discriminant = (s110 * s101)^2 - (s110^2 + s101^2 - 1)
                     
                     if discriminant >= 0
@@ -446,10 +484,12 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     create_isosurfaces!()
     update_moment_space!()
     
-    # Update plots when time slider changes
-    GLMakie.on(time_slider.value) do val
-        create_isosurfaces!()
-        update_moment_space!()
+    # Update plots when snapshot changes (only in :all mode with time slider)
+    if snapshot_mode == :all
+        GLMakie.on(current_snapshot_observable) do val
+            create_isosurfaces!()
+            update_moment_space!()
+        end
     end
     
     # Update plots when quantity changes
@@ -469,17 +509,19 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         update_moment_space!()
     end
     
-    # Animation loop for playback
-    GLMakie.on(is_playing) do playing
-        if playing
-            @async begin
-                while is_playing[] && time_slider.value[] < n_snapshots
-                    sleep(0.1)
-                    if is_playing[]
-                        time_slider.value[] = time_slider.value[] + 1
+    # Animation loop for playback (only in :all mode)
+    if snapshot_mode == :all
+        GLMakie.on(is_playing) do playing
+            if playing
+                @async begin
+                    while is_playing[] && current_snapshot_observable[] < n_snapshots
+                        sleep(0.1)
+                        if is_playing[]
+                            current_snapshot_observable[] = current_snapshot_observable[] + 1
+                        end
                     end
+                    is_playing[] = false
                 end
-                is_playing[] = false
             end
         end
     end
@@ -488,18 +530,38 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     display(fig)
     
     println("\n" * "="^70)
-    println("TIME-SERIES VIEWER READY! (STREAMING MODE)")
-    println("="^70)
-    println("Layout:")
-    println("  • Left: Physical space (x,y,z)")
-    println("  • Middle: Moment space (S₁₁₀, S₁₀₁, S₀₁₁)")
-    println("  • Right: Controls")
-    println("\nControls:")
-    println("  • Time slider steps through snapshots (loaded on-demand)")
-    println("  • Click ▶ Play to animate")
-    println("  • Click quantity buttons to switch")
-    println("  • Iso level/alpha sliders adjust appearance")
-    println("  • Min |S| slider filters moment space")
+    if snapshot_mode == :all
+        println("TIME-SERIES VIEWER READY! (STREAMING MODE)")
+        println("="^70)
+        println("Layout:")
+        println("  * Left: Physical space (x,y,z)")
+        println("  * Middle: Moment space (S_1_1_0, S_1_0_1, S_0_1_1)")
+        println("  * Right: Controls")
+        println("\nControls:")
+        println("  * Time slider steps through snapshots (loaded on-demand)")
+        println("  * Click > Play to animate")
+        println("  * Click quantity buttons to switch")
+        println("  * Iso level/alpha sliders adjust appearance")
+        println("  * Min |S| slider filters moment space")
+    else
+        println("SINGLE SNAPSHOT VIEWER READY!")
+        println("="^70)
+        if snapshot_mode == :first
+            println("Viewing: First snapshot")
+        elseif snapshot_mode == :last
+            println("Viewing: Last snapshot")
+        else
+            println("Viewing: Snapshot $initial_snapshot_idx of $n_snapshots")
+        end
+        println("\nLayout:")
+        println("  * Left: Physical space (x,y,z)")
+        println("  * Middle: Moment space (S_1_1_0, S_1_0_1, S_0_1_1)")
+        println("  * Right: Controls")
+        println("\nControls:")
+        println("  * Click quantity buttons to switch")
+        println("  * Iso level/alpha sliders adjust appearance")
+        println("  * Min |S| slider filters moment space")
+    end
     println("\nPress Enter in terminal to close.")
     println("="^70)
     

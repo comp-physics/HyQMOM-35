@@ -95,7 +95,7 @@ for config_name in configs_to_generate
         write(io, M_final)         # Final moments
     end
     
-    println("  ✓ Saved: $(filename)")
+    println("  [OK] Saved: $(filename)")
     @printf("    Final time: %.6f, Steps: %d\n", t_final, steps)
     println()
 end

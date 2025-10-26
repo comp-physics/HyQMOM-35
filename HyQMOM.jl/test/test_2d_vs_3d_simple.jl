@@ -24,7 +24,7 @@ const TEST_TOL_REL = 1e-8
 golden_file_2d = joinpath(@__DIR__, "goldenfiles", "test_2d_nz1_comparison.jld2")
 
 if !isfile(golden_file_2d)
-    println("\n📁 Generating 2D golden file...")
+    println("\n[folder] Generating 2D golden file...")
     println("   This requires running the archived 2D code separately")
     println("   Run from HyQMOM_2D_archive:")
     println("   julia --project=. -e 'using HyQMOM, JLD2; ...
@@ -34,7 +34,7 @@ if !isfile(golden_file_2d)
     @info "Skipping comparison - will just test that 3D with Nz=1 runs"
     HAS_GOLDEN = false
 else
-    println("\n✓ Found 2D golden file")
+    println("\n[OK] Found 2D golden file")
     HAS_GOLDEN = true
 end
 
@@ -71,7 +71,7 @@ println("  M shape: $(size(results_3d[:M]))")
     @test results_3d[:final_time] ≈ tmax atol=1e-10
     @test all(results_3d[:M][:, :, 1, 1] .> 0)  # Density positive
     
-    println("  ✓ All basic checks pass")
+    println("  [OK] All basic checks pass")
 end
 
 # Step 3: Compare if golden file exists
@@ -121,9 +121,9 @@ if HAS_GOLDEN
         @test max_abs_diff < TEST_TOL_ABS || max_rel_diff < TEST_TOL_REL
         
         if max_abs_diff < TEST_TOL_ABS && max_rel_diff < TEST_TOL_REL
-            println("\n✅ 3D (Nz=1) MATCHES 2D within tolerance!")
+            println("\n[OK] 3D (Nz=1) MATCHES 2D within tolerance!")
         else
-            println("\n⚠️  Differences found")
+            println("\n[WARNING]  Differences found")
         end
     end
 else

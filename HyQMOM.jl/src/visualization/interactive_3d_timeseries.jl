@@ -38,10 +38,10 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("3D TIME-SERIES VIEWER")
     println("="^70)
     println("Features:")
-    println("  • Step through simulation snapshots over time")
-    println("  • TRUE 3D isosurface contours")
-    println("  • Velocity isosurfaces: Blue=positive, Red=negative")
-    println("  • Time slider to navigate through evolution")
+    println("  * Step through simulation snapshots over time")
+    println("  * TRUE 3D isosurface contours")
+    println("  * Velocity isosurfaces: Blue=positive, Red=negative")
+    println("  * Time slider to navigate through evolution")
     println("="^70)
     println("Loaded $(length(snapshots)) snapshots")
     println("  Time range: $(snapshots[1].t) to $(snapshots[end].t)")
@@ -79,8 +79,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
     ax_physical = GLMakie.Axis3(fig[1, 1], 
                                 xlabel=L"x", ylabel=L"y", zlabel=L"z",
                                 aspect=:data,
-                                azimuth=0.3π,
-                                elevation=π/8,
+                                azimuth=0.3pi,
+                                elevation=pi/8,
                                 xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
                                 xlabelsize=18, ylabelsize=18, zlabelsize=18)
     
@@ -88,8 +88,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
     ax_moment = GLMakie.Axis3(fig[1, 2], 
                              xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
                              aspect=:data,
-                             azimuth=0.3π,
-                             elevation=π/8,
+                             azimuth=0.3pi,
+                             elevation=pi/8,
                              limits=(-1, 1, -1, 1, -1, 1),
                              xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
                              xlabelsize=18, ylabelsize=18, zlabelsize=18)
@@ -108,7 +108,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
     current_quantity = GLMakie.Observable("Density")
     
     # Quantity buttons (minimal - single row)
-    btn_density = GLMakie.Button(fig, label="ρ", fontsize=8)
+    btn_density = GLMakie.Button(fig, label="rho", fontsize=8)
     btn_u = GLMakie.Button(fig, label="U", fontsize=8)
     btn_v = GLMakie.Button(fig, label="V", fontsize=8)
     btn_w = GLMakie.Button(fig, label="W", fontsize=8)
@@ -190,7 +190,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             # Save the buffer to file
             FileIO.save(filename, img)
             
-            println("✓ Export complete!")
+            println("[OK] Export complete!")
             println("  File saved: $filename")
             println("  Resolution: $(size(img)) pixels")
             println("  Tip: Maximize the window before export for higher resolution!")
@@ -464,8 +464,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
         push!(moment_plots, p2)
         push!(moment_plots, p3)
         
-        # Draw |Δ₁| = 0 realizability boundary surface (transparent)
-        # Δ₁ = 1 + 2*S110*S101*S011 - S110² - S101² - S011² = 0
+        # Draw |Delta_1| = 0 realizability boundary surface (transparent)
+        # Delta_1 = 1 + 2*S110*S101*S011 - S110^2 - S101^2 - S011^2 = 0
         # This is the boundary of the realizable region in moment space
         
         try
@@ -475,8 +475,8 @@ function interactive_3d_timeseries(snapshots, grid, params;
             s2_range = range(-1, 1, length=n_points)
             
             # We'll create the surface by solving for S011 given S110, S101
-            # Rearranging: S011² - 2*S110*S101*S011 + (S110² + S101² - 1) = 0
-            # Using quadratic formula: S011 = S110*S101 ± sqrt((S110*S101)² - (S110² + S101² - 1))
+            # Rearranging: S011^2 - 2*S110*S101*S011 + (S110^2 + S101^2 - 1) = 0
+            # Using quadratic formula: S011 = S110*S101 +/- sqrt((S110*S101)^2 - (S110^2 + S101^2 - 1))
             
             S110_grid = zeros(n_points, n_points)
             S101_grid = zeros(n_points, n_points)
@@ -489,7 +489,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
                     S101_grid[i, j] = s101
                     
                     # Quadratic formula coefficients
-                    # S011² - 2*a*b*S011 + (a² + b² - 1) = 0
+                    # S011^2 - 2*a*b*S011 + (a^2 + b^2 - 1) = 0
                     discriminant = (s110 * s101)^2 - (s110^2 + s101^2 - 1)
                     
                     if discriminant >= 0
@@ -524,7 +524,7 @@ function interactive_3d_timeseries(snapshots, grid, params;
             push!(moment_plots, p_boundary_pos)
             push!(moment_plots, p_boundary_neg)
             
-            println("✓ Realizability boundary |Δ₁| = 0 displayed")
+            println("[OK] Realizability boundary |Delta_1| = 0 displayed")
         catch e
             @warn "Could not compute realizability boundary" exception=e
         end
@@ -590,20 +590,20 @@ function interactive_3d_timeseries(snapshots, grid, params;
     println("TIME-SERIES VIEWER READY!")
     println("="^70)
     println("Layout:")
-    println("  • Left: Physical space (x,y,z) - density/velocity/etc.")
-    println("  • Middle: Moment space (S₁₁₀, S₁₀₁, S₀₁₁)")
-    println("  • Right: Controls (fixed 250px width)")
+    println("  * Left: Physical space (x,y,z) - density/velocity/etc.")
+    println("  * Middle: Moment space (S_1_1_0, S_1_0_1, S_0_1_1)")
+    println("  * Right: Controls (fixed 250px width)")
     println("\nControls:")
-    println("  • Use time slider to step through snapshots")
-    println("  • Click ▶ Play to animate")
-    println("  • Click quantity buttons (ρ, U, V, W) to switch")
-    println("  • Iso level/alpha sliders: adjust isosurface appearance")
-    println("  • Min |S| slider: filter moment space by correlation magnitude")
-    println("  • Mouse: drag to rotate, scroll to zoom camera")
+    println("  * Use time slider to step through snapshots")
+    println("  * Click > Play to animate")
+    println("  * Click quantity buttons (rho, U, V, W) to switch")
+    println("  * Iso level/alpha sliders: adjust isosurface appearance")
+    println("  * Min |S| slider: filter moment space by correlation magnitude")
+    println("  * Mouse: drag to rotate, scroll to zoom camera")
     println("\nExport:")
-    println("  • Click 'Save PNG' to export current view at current window size")
-    println("  • Tip: Maximize the window first for higher resolution!")
-    println("  • Export is non-destructive and won't affect the viewer")
+    println("  * Click 'Save PNG' to export current view at current window size")
+    println("  * Tip: Maximize the window first for higher resolution!")
+    println("  * Export is non-destructive and won't affect the viewer")
     println("\nPress Enter in terminal to close.")
     println("="^70)
     

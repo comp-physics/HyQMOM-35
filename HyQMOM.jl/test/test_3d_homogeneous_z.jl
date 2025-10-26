@@ -105,7 +105,7 @@ end
                 # Upper z should have only background (low density)
                 @test max_upper < 0.1
                 
-                println("  ✓ PASS: 3D simulation runs with z-variation")
+                println("  [OK] PASS: 3D simulation runs with z-variation")
             end
         end
         
@@ -146,7 +146,7 @@ end
                 println("  Relative variation across z: $rel_variation")
                 @test rel_variation < 0.5
                 
-                println("  ✓ PASS: Homogeneous z shows jets at all levels")
+                println("  [OK] PASS: Homogeneous z shows jets at all levels")
             end
         end
         
@@ -187,7 +187,7 @@ end
                 println("  Max density with Nz=1: $max_density")
                 @test max_density > 0.5
                 
-                println("  ✓ PASS: Nz=1 case runs successfully")
+                println("  [OK] PASS: Nz=1 case runs successfully")
             end
         end
         
@@ -249,7 +249,7 @@ end
                     @test rel_diff < 2.0  # More tolerance for background
                 end
                 
-                println("  ✓ PASS: Z-slices show consistent behavior")
+                println("  [OK] PASS: Z-slices show consistent behavior")
             end
         end
         
@@ -263,6 +263,6 @@ end
 # Run if standalone
 if abspath(PROGRAM_FILE) == @__FILE__
     # Tests already ran above
-    println("\n✅ All 3D homogeneous z tests completed!")
+    println("\n[OK] All 3D homogeneous z tests completed!")
 end
 

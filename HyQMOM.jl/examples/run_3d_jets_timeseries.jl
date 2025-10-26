@@ -96,8 +96,8 @@ print_params_summary(params, rank=rank, comm=comm)
 if rank == 0
     println("\nJet Configuration:")
     println("  True 3D cubic jets (homogeneous_z = false)")
-    println("  Bottom-left jet: velocity (+U, +V) → moving ↗")
-    println("  Top-right jet:   velocity (-U, -V) → moving ↙")
+    println("  Bottom-left jet: velocity (+U, +V) -> moving northeast")
+    println("  Top-right jet:   velocity (-U, -V) -> moving southwest")
     println("="^70)
 end
 
@@ -121,11 +121,11 @@ if params.snapshot_interval > 0
         if !params.no_viz && GLMAKIE_LOADED
             println("\nLaunching Interactive Time-Series Viewer (Streaming)...")
             println("\nViewer Controls:")
-            println("  • Time slider: Step through snapshots (loaded on-demand)")
-            println("  • Play/Pause: Animate the time evolution")
-            println("  • Quantity buttons: Switch between Density, U, V, W velocities")
-            println("  • Isosurface sliders: Adjust visualization levels")
-            println("  • Mouse: Rotate (drag), Zoom (scroll)")
+            println("  * Time slider: Step through snapshots (loaded on-demand)")
+            println("  * Play/Pause: Animate the time evolution")
+            println("  * Quantity buttons: Switch between Density, U, V, W velocities")
+            println("  * Isosurface sliders: Adjust visualization levels")
+            println("  * Mouse: Rotate (drag), Zoom (scroll)")
             println("="^70)
             
             try
