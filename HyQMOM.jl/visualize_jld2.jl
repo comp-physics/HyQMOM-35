@@ -41,6 +41,62 @@ end
 using HyQMOM, JLD2
 using Printf
 
+function show_help()
+    println("""
+    HyQMOM JLD2 Visualization Tool
+    ==============================
+    
+    USAGE:
+        julia visualize_jld2.jl [OPTIONS] [FILENAME]
+    
+    ARGUMENTS:
+        FILENAME                JLD2 snapshot file to visualize
+                               If omitted, will prompt for file selection
+    
+    OPTIONS:
+        --help, -h             Show this help message and exit
+        
+        --snapshot MODE        Control which snapshot(s) to display:
+          first                Show only the first snapshot
+          last                 Show only the last snapshot  
+          N                    Show only snapshot number N (1-indexed)
+                               (default: show all snapshots with time slider)
+    
+    VISUALIZATION FEATURES:
+        * Interactive 3D isosurface rendering
+        * Time-series animation with play/pause controls
+        * Multiple quantities: Density, Velocity (U/V/W), Pressure
+        * Moment space visualization (if standardized moments available)
+        * Mouse controls: Rotate (drag), Zoom (scroll)
+        * Adjustable iso-levels and transparency
+    
+    EXAMPLES:
+        # Interactive file selection with all snapshots
+        julia visualize_jld2.jl
+        
+        # Visualize all snapshots from specific file
+        julia visualize_jld2.jl snapshots.jld2
+        
+        # Show only the first snapshot
+        julia visualize_jld2.jl snapshots.jld2 --snapshot first
+        
+        # Show only the last snapshot  
+        julia visualize_jld2.jl snapshots.jld2 --snapshot last
+        
+        # Show specific snapshot (e.g., snapshot #5)
+        julia visualize_jld2.jl snapshots.jld2 --snapshot 5
+    
+    GENERATING SNAPSHOT FILES:
+        Run examples with --save-standardized-moments flag:
+        julia examples/run_3d_crossing_jets.jl --save-standardized-moments true
+        julia examples/run_3d_jets_timeseries.jl --save-standardized-moments true
+    
+    REQUIREMENTS:
+        * GLMakie package (installed automatically if missing)
+        * JLD2 snapshot file from HyQMOM simulation
+    """)
+end
+
 function find_jld2_files()
     files = filter(f -> endswith(f, ".jld2"), readdir("."))
     return files
@@ -54,7 +110,10 @@ function parse_args()
     i = 1
     while i <= length(ARGS)
         arg = ARGS[i]
-        if arg == "--snapshot"
+        if arg == "--help" || arg == "-h"
+            show_help()
+            exit(0)
+        elseif arg == "--snapshot"
             if i + 1 > length(ARGS)
                 error("--snapshot requires an argument (first|last|N)")
             end
@@ -74,7 +133,9 @@ function parse_args()
             end
             i += 2
         elseif startswith(arg, "--")
-            error("Unknown option: $arg")
+            println("ERROR: Unknown option: $arg")
+            println("Run 'julia visualize_jld2.jl --help' for usage information")
+            exit(1)
         else
             # Assume it's the filename
             filename = arg
