@@ -41,9 +41,9 @@ if [ $? -eq 0 ]; then
     echo "   Local file: $(pwd)/docs/build/html/index.html"
     echo ""
     echo "🌐 To serve locally (requires Python):"
-    echo "   cd HyQMOM.jl/docs/build/html && python -m http.server 8000"
+    echo "   cd HyQMOM.jl/docs/build/html && python3 -m http.server 4000"
     echo "   Or use the convenience script: ./serve_docs.sh"
-    echo "   Then open: http://localhost:8000"
+    echo "   Then open: http://localhost:4000"
     echo ""
     echo "🔍 Documentation files:"
     ls -la docs/build/html/*.html | head -10

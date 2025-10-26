@@ -29,11 +29,14 @@ DocMeta.setdocmeta!(HyQMOM, :DocTestSetup, :(using HyQMOM); recursive=true)
 # Determine the HTML output dir (Read the Docs provides READTHEDOCS_OUTPUT)
 html_out = joinpath(get(ENV, "READTHEDOCS_OUTPUT", joinpath(@__DIR__, "build")), "html")
 
-makedocs(
-    sitename = "HyQMOM.jl",
+makedocs(;
     modules = [HyQMOM],
+    authors = "Spencer H. Bryngelson and contributors",
+    repo = "https://github.com/comp-physics/HyQMOM.jl/blob/{commit}{path}#{line}",
+    sitename = "HyQMOM.jl",
     format = Documenter.HTML(; prettyurls = get(ENV, "CI", "false") == "true"),
     clean = true,
+    build = html_out,
     pages = [
         "Home" => "index.md",
         "Quickstart" => "quickstart.md",
@@ -46,5 +49,13 @@ makedocs(
         "API Reference" => "api.md",
         "Developer Guide" => "dev_guide.md",
     ],
-    build = html_out,
 )
+
+# Only deploy to GitHub Pages when NOT on Read the Docs
+if get(ENV, "READTHEDOCS", "") != "True"
+    deploydocs(;
+        repo = "github.com/comp-physics/HyQMOM.jl",
+        devbranch = "main",
+        push_preview = true,
+    )
+end

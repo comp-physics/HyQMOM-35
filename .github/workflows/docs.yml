@@ -1,0 +1,60 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main, docs ]
+    paths:
+      - 'HyQMOM.jl/docs/**'
+      - 'HyQMOM.jl/src/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'HyQMOM.jl/docs/**'
+      - 'HyQMOM.jl/src/**'
+      - '.github/workflows/docs.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+
+      - name: Cache Julia artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-julia-artifacts-${{ hashFiles('**/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-artifacts-
+
+      - name: Install documentation dependencies
+        env:
+          HYQMOM_SKIP_PLOTTING: 'true'
+        run: |
+          julia --project=HyQMOM.jl/docs -e 'using Pkg; Pkg.develop(PackageSpec(path="HyQMOM.jl")); Pkg.instantiate()'
+
+      - name: Build documentation
+        env:
+          HYQMOM_SKIP_PLOTTING: 'true'
+          CI: 'true'
+        run: |
+          julia --project=HyQMOM.jl/docs HyQMOM.jl/docs/make.jl
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: HyQMOM.jl/docs/build/html/
+          retention-days: 7
+
+      - name: Check for broken links (optional)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          echo "Link checking can be added here if desired"
+

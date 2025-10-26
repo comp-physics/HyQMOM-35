@@ -21,5 +21,10 @@ build:
     JULIA_NUM_THREADS: "2"
 
 # Tell RTD where the docs are built (dummy sphinx config to satisfy RTD)
+# This is required even if you're not using Sphinx
 sphinx:
   configuration: docs/conf.py
+
+# Output format
+formats:
+  - html
