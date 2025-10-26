@@ -38,6 +38,7 @@ makedocs(
         "Home" => "index.md",
         "Quickstart" => "quickstart.md",
         "User Guide" => "user_guide.md",
+        "Mathematical Foundations" => "mathematical_foundations.md",
         "MPI & Parallelization" => "mpi.md",
         "Tutorials" => [
             "Interactive Visualization" => "tutorials/interactive_visualization.md",

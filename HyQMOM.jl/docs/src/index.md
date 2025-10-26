@@ -4,7 +4,11 @@
 
 ## Overview
 
-HyQMOM.jl is a high-performance computational fluid dynamics solver that uses the method of moments to solve the Boltzmann equation. It features:
+HyQMOM.jl is a high-performance computational fluid dynamics solver that implements the Hyperbolic Quadrature Method of Moments (HyQMOM) for solving multidimensional kinetic equations. The solver extends the one-dimensional HyQMOM closure to handle 2D and 3D velocity distribution functions using up to 35 fourth-order velocity moments.
+
+The method provides closures for higher-order moments without requiring quadrature points or velocity distribution function reconstruction. Instead, it uses orthogonal polynomials constructed directly from known moments to define the unclosed moments needed for the hyperbolic flux terms. This approach ensures global hyperbolicity and moment realizability across arbitrary Knudsen and Mach number regimes.
+
+Key features include:
 
 - **3D moment-based kinetic solver** for Boltzmann-BGK equation
 - **MPI parallelization** with domain decomposition

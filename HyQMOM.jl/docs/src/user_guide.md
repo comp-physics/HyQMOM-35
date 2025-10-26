@@ -19,8 +19,15 @@ HyQMOM.jl examples support extensive command-line configuration. All parameters 
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--Ma M` | Mach number | 1.0 | `--Ma 1.5` |
-| `--Kn K` | Knudsen number | 1.0 | `--Kn 0.5` |
+| `--Ma M` | Mach number (jet velocity / thermal velocity) | 1.0 | `--Ma 1.5` |
+| `--Kn K` | Knudsen number (mean free path / characteristic length) | 1.0 | `--Kn 0.5` |
+
+**Physical Regimes:**
+- **Low Kn (< 0.1)**: Continuum/hydrodynamic regime with frequent collisions
+- **Moderate Kn (0.1-10)**: Transitional regime with mixed kinetic-continuum behavior  
+- **High Kn (> 10)**: Free molecular/kinetic regime with rare collisions
+- **Low Ma (< 1)**: Subsonic flows, moments remain close to equilibrium
+- **High Ma (> 1)**: Supersonic flows, strong non-equilibrium effects, crossing jets
 
 ### Visualization and Output
 

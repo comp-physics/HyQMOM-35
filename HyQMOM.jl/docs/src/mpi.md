@@ -4,12 +4,14 @@ HyQMOM.jl is designed from the ground up for parallel execution using MPI (Messa
 
 ## Overview
 
-HyQMOM.jl uses domain decomposition parallelization with the following characteristics:
+HyQMOM.jl uses domain decomposition parallelization optimized for the 35-moment kinetic system:
 
 - **xy-plane decomposition**: The computational domain is divided among MPI ranks in the x-y plane
-- **z-direction replication**: Each rank holds the complete z-dimension data
-- **Automatic halo exchange**: Ghost cells are automatically synchronized between neighboring ranks
+- **z-direction replication**: Each rank holds the complete z-dimension data  
+- **Moment-aware halo exchange**: All 35 moments synchronized between neighboring ranks
+- **Realizability-preserving communication**: Ensures moment realizability across processor boundaries
 - **Rank 0 visualization**: Interactive visualization runs only on the master rank (rank 0)
+- **Load balancing**: Automatic distribution of grid points for optimal performance
 
 ## Quick Start
 
@@ -195,6 +197,39 @@ mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl --no-viz true
 export CI=true
 mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl
 ```
+
+## Performance Scaling
+
+### Memory and Communication Scaling
+
+Each processor stores:
+- **35 moments** × **local grid points** × **8 bytes/float64**
+- **Halo cells**: Additional boundary data for neighbor communication
+- **Temporary arrays**: For flux computation and realizability checking
+
+**Memory estimate**: ~280 bytes × (Nx/√P) × (Ny/√P) × Nz per processor, where P is the number of processors.
+
+**Communication Patterns:**
+
+*Halo Exchange Frequency:*
+- Every time step for spatial flux computation
+- After realizability correction to maintain consistency
+- During visualization data collection (rank 0 only)
+
+*Communication Volume:*
+- **Boundary faces**: 35 moments × 2 × (Nx/√P + Ny/√P) × Nz per time step
+- **Corner exchanges**: 35 moments × 4 corners for diagonal neighbors
+
+### Scaling Efficiency
+
+**Strong scaling** (fixed problem size, more processors):
+- **Ideal range**: 4-64 processors for typical problems
+- **Communication overhead**: Becomes significant with >100 processors
+- **Sweet spot**: 10,000-100,000 grid points per processor
+
+**Weak scaling** (proportional problem size increase):
+- **Linear scaling**: Up to 1000+ processors for large problems
+- **Memory bandwidth**: Often the limiting factor on modern HPC systems
 
 ## HPC and Batch Systems
 

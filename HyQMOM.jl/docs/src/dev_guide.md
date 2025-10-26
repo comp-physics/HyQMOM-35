@@ -50,10 +50,11 @@ HyQMOM.jl/
 5. **Visualization/output** (`src/visualization/`)
 
 **Numerical Core:**
-- **Moment operations**: Converting between different moment representations
-- **Realizability**: Ensuring physical validity of moment sets
-- **Flux computation**: Hyperbolic flux calculations with closures
-- **Time integration**: Explicit time stepping schemes
+- **Moment operations**: Converting between raw, central, and standardized moment representations
+- **Realizability**: Ensuring physical validity of moment sets using matrix determinant constraints
+- **HyQMOM closures**: Computing 5th-order moment closures from orthogonal polynomials
+- **Flux computation**: Hyperbolic flux calculations with moment closures
+- **Time integration**: Explicit time stepping schemes with realizability correction
 
 ## Architecture Principles
 
