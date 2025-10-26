@@ -50,8 +50,9 @@ Q_{n+1}(x) = (x - a_n) Q_n(x) - b_n Q_{n-1}(x)
 ```
 
 The recurrence coefficients are:
-- $a_n = \frac{\langle x Q_n^2 \rangle}{\langle Q_n^2 \rangle}$
-- $b_n = \frac{\langle Q_n^2 \rangle}{\langle Q_{n-1}^2 \rangle}$
+```math
+a_n = \frac{\langle x Q_n^2 \rangle}{\langle Q_n^2 \rangle}, \quad b_n = \frac{\langle Q_n^2 \rangle}{\langle Q_{n-1}^2 \rangle}
+```
 
 ### Multivariate Closure
 
@@ -64,9 +65,11 @@ where $\mathcal{U}_i$, $\mathcal{V}_j$, $\mathcal{W}_k$ are orthogonal polynomia
 
 ### Key Properties
 
-1. **Global Hyperbolicity**: All eigenvalues of the flux Jacobian are real
-2. **Moment Realizability**: Solution moments correspond to a valid probability distribution
-3. **Exact for Separable VDFs**: Closures are exact when $f = f_1(u_1)f_2(u_2)f_3(u_3)$
+**Global Hyperbolicity**: All eigenvalues of the flux Jacobian are real
+
+**Moment Realizability**: Solution moments correspond to a valid probability distribution
+
+**Exact for Separable VDFs**: Closures are exact when $f = f_1(u_1)f_2(u_2)f_3(u_3)$
 
 ## Moment Realizability
 
@@ -90,16 +93,21 @@ where $\Delta_2^*$ is a $6 \times 6$ matrix involving all moments up to 4th orde
 
 When non-realizable moments are detected:
 
-1. **Check 2nd-order moments**: Ensure $|\Delta_1| > 0$
-2. **Classify boundary type**: Corner, edge, or face of moment space
-3. **Apply corrections**: Scale or reset moments to boundary values
-4. **Verify 4th-order realizability**: Check $|\Delta_2^*| > 0$
+**Check 2nd-order moments**: Ensure $|\Delta_1| > 0$
+
+**Classify boundary type**: Corner, edge, or face of moment space
+
+**Apply corrections**: Scale or reset moments to boundary values
+
+**Verify 4th-order realizability**: Check $|\Delta_2^*| > 0$
 
 ### Physical Interpretation
 
-- **Interior of moment space**: General non-equilibrium distributions
-- **Boundary of moment space**: Highly non-equilibrium states (e.g., crossing jets)
-- **Corners**: Perfectly correlated velocities, $s_{110} = s_{101} = s_{011} = \pm 1$
+**Interior of moment space**: General non-equilibrium distributions
+
+**Boundary of moment space**: Highly non-equilibrium states (e.g., crossing jets)
+
+**Corners**: Perfectly correlated velocities, $s_{110} = s_{101} = s_{011} = \pm 1$
 
 ## Hyperbolicity and Eigenvalues
 
@@ -115,14 +123,18 @@ where $R_{n+1}$ is defined by the HyQMOM closure parameters.
 ### Eigenvalue Structure
 
 For the 35-moment system, eigenvalues come from:
-1. **1D HyQMOM polynomials**: $Q_2(x)$ and $R_3(x)$ in each direction
-2. **Cross-moment blocks**: Additional eigenvalues from 2D/3D coupling
+
+**1D HyQMOM polynomials**: $Q_2(x)$ and $R_3(x)$ in each direction
+
+**Cross-moment blocks**: Additional eigenvalues from 2D/3D coupling
 
 ### Wave Speeds
 
-- **Low Mach number**: Eigenvalues ≈ roots of $R_3(x)$
-- **High Mach number**: Additional fast waves from cross-moment coupling
-- **Maximum wave speed**: Determines CFL stability condition
+**Low Mach number**: Eigenvalues ≈ roots of $R_3(x)$
+
+**High Mach number**: Additional fast waves from cross-moment coupling
+
+**Maximum wave speed**: Determines CFL stability condition
 
 ## Numerical Implementation
 
@@ -141,11 +153,15 @@ The 35 moments are organized as:
 
 ### Flux Computation
 
-1. **Convert to standardized moments**
-2. **Apply HyQMOM closures** for 5th-order moments
-3. **Check realizability** and correct if needed
-4. **Compute hyperbolic fluxes** using HLL solver
-5. **Update moments** and repeat realizability check
+**Convert to standardized moments**
+
+**Apply HyQMOM closures** for 5th-order moments
+
+**Check realizability** and correct if needed
+
+**Compute hyperbolic fluxes** using HLL solver
+
+**Update moments** and repeat realizability check
 
 ### Collision Operator
 
@@ -159,16 +175,22 @@ where $\mathbf{G}$ are Maxwellian moments and $\tau_c = \text{Kn}/(2\rho\sqrt{\T
 ## Computational Complexity
 
 ### Moment Operations
-- **Standardization**: $O(N_m)$ where $N_m = 35$ is number of moments
-- **Realizability check**: $O(N_m^3)$ for matrix determinants
-- **HyQMOM closure**: $O(N_m)$ polynomial evaluations
+**Standardization**: $O(N_m)$ where $N_m = 35$ is number of moments
+
+**Realizability check**: $O(N_m^3)$ for matrix determinants
+
+**HyQMOM closure**: $O(N_m)$ polynomial evaluations
 
 ### Spatial Discretization
-- **Grid points**: $N_x \times N_y \times N_z$
-- **Total unknowns**: $35 \times N_x \times N_y \times N_z$
-- **Flux computation**: $O(N_m^2)$ per grid point for eigenvalue calculation
+**Grid points**: $N_x \times N_y \times N_z$
+
+**Total unknowns**: $35 \times N_x \times N_y \times N_z$
+
+**Flux computation**: $O(N_m^2)$ per grid point for eigenvalue calculation
 
 ### Parallel Scaling
-- **Domain decomposition**: xy-plane partitioning
-- **Communication**: Halo exchange for neighboring processors
-- **Load balancing**: Equal grid points per processor
+**Domain decomposition**: xy-plane partitioning
+
+**Communication**: Halo exchange for neighboring processors
+
+**Load balancing**: Equal grid points per processor
