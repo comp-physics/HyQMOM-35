@@ -19,7 +19,7 @@ export run_simulation, simulation_runner
 # Export visualization functions
 export plot_final_results, plot_multiple_z_slices, plot_3d_isosurface
 export plot_centerline_profiles, plot_3d_diagnostics
-export interactive_3d_volume, interactive_3d_timeseries, interactive_3d_timeseries_streaming
+export interactive_3d_timeseries_streaming
 export interactive_standardized_scatter, interactive_correlation_field
 
 # Export initial condition utilities
@@ -142,8 +142,6 @@ if GLMAKIE_AVAILABLE
         # Use @eval to delay the loading until runtime
         @eval begin
             import GLMakie
-            include($(joinpath(@__DIR__, "visualization", "interactive_3d_volume.jl")))
-            include($(joinpath(@__DIR__, "visualization", "interactive_3d_timeseries.jl")))
             include($(joinpath(@__DIR__, "visualization", "interactive_3d_timeseries_streaming.jl")))
             include($(joinpath(@__DIR__, "visualization", "interactive_standardized_scatter.jl")))
             include($(joinpath(@__DIR__, "visualization", "interactive_correlation_field.jl")))

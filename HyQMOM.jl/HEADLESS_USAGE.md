@@ -142,13 +142,7 @@ Each `.jld2` file contains:
 ### Interactive 3D Time-Series (Recommended)
 ```julia
 using HyQMOM, JLD2, GLMakie
-@load "snapshots_file.jld2" snapshots grid params params_with_ic
-interactive_3d_timeseries(snapshots, grid, params_with_ic)
-```
-
-### Interactive Single Snapshot
-```julia
-interactive_3d_volume(snapshots[end].M, grid, params_with_ic)
+interactive_3d_timeseries_streaming("snapshots_file.jld2", grid, params_with_ic)
 ```
 
 ### Moment Space Scatter Plot

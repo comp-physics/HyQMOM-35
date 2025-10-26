@@ -254,8 +254,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         C200 = M_snapshot[:, :, :, 3] ./ rho .- U.^2
         C020 = M_snapshot[:, :, :, 7] ./ rho .- V.^2
         C002 = M_snapshot[:, :, :, 17] ./ rho .- W.^2
-        temperature = (C200 .+ C020 .+ C002) ./ 3.0
-        pressure = rho .* temperature
+        # Pressure: P = rho * (1/3 trace of velocity covariance)
+        pressure = rho .* (C200 .+ C020 .+ C002) ./ 3.0
         
         return (rho=rho, U=U, V=V, W=W, pressure=pressure)
     end
