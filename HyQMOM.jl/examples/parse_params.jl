@@ -21,7 +21,7 @@ Usage:
     )
     
     # Option 3: Command-line args override everything
-    # julia example.jl --Np 60 --tmax 0.1 --Ma 1.5
+    # julia example.jl --Nx 60 --Ny 60 --tmax 0.1 --Ma 1.5
 """
 
 """
@@ -91,7 +91,7 @@ end
 Parse command-line arguments and return a dictionary of parameter overrides.
 
 Supported syntax:
-  --Np 60
+  --Nx 60 --Ny 60
   --tmax 0.1
   --Ma 1.5
   --xmin 0.0 --xmax 1.0

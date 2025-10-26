@@ -13,14 +13,14 @@ HyQMOM.jl examples support extensive command-line configuration. All parameters 
 | `--Nx N` | Grid resolution in x direction | 40 | `--Nx 100` |
 | `--Ny N` | Grid resolution in y direction | 40 | `--Ny 100` |
 | `--Nz N` | Grid resolution in z direction | 20 | `--Nz 60` |
-| `--tmax T` | Maximum simulation time | 0.2 | `--tmax 0.5` |
+| `--tmax T` | Maximum simulation time | 0.05 | `--tmax 0.5` |
 | `--CFL C` | CFL number for stability | 0.7 | `--CFL 0.5` |
 
 ### Physics Parameters
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--Ma M` | Mach number (jet velocity / thermal velocity) | 1.0 | `--Ma 1.5` |
+| `--Ma M` | Mach number (jet velocity / thermal velocity) | 0.0 | `--Ma 1.5` |
 | `--Kn K` | Knudsen number (mean free path / characteristic length) | 1.0 | `--Kn 0.5` |
 
 **Physical Regimes:**
@@ -34,7 +34,7 @@ HyQMOM.jl examples support extensive command-line configuration. All parameters 
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--snapshot-interval N` | Save every N steps | 2 | `--snapshot-interval 5` |
+| `--snapshot-interval N` | Save every N steps (0=disabled) | 0 | `--snapshot-interval 5` |
 | `--no-viz true/false` | Skip interactive visualization | false | `--no-viz true` |
 
 ### Getting Help
