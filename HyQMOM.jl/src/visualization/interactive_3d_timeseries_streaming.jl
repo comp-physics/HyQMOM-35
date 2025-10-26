@@ -281,15 +281,30 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         data_max = maximum(data)
         data_absmax = maximum(abs.(data))
         
+        # Get short label for quantity
+        q_label = if q == "U velocity"
+            "U"
+        elseif q == "V velocity"
+            "V"
+        elseif q == "W velocity"
+            "W"
+        elseif q == "Density"
+            "ρ"
+        elseif q == "Pressure"
+            "P"
+        else
+            q
+        end
+        
         if is_velocity
             # For velocities: show both positive and negative levels
             pos_level = iso_frac * data_absmax
-            @sprintf("±%.4f", pos_level)
+            @sprintf("%s = ±%.4f", q_label, pos_level)
         else
             # For other quantities: show single level
             data_range = data_max - data_min
             level = data_min + iso_frac * data_range
-            @sprintf("%.4f", level)
+            @sprintf("%s = %.4f", q_label, level)
         end
     end
     
