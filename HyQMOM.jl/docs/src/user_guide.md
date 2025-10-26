@@ -10,8 +10,9 @@ HyQMOM.jl examples support extensive command-line configuration. All parameters 
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--Np N` | Grid resolution x,y | 40 | `--Np 100` |
-| `--Nz N` | Grid resolution z | 40 | `--Nz 60` |
+| `--Nx N` | Grid resolution in x direction | 40 | `--Nx 100` |
+| `--Ny N` | Grid resolution in y direction | 40 | `--Ny 100` |
+| `--Nz N` | Grid resolution in z direction | 20 | `--Nz 60` |
 | `--tmax T` | Maximum simulation time | 0.2 | `--tmax 0.5` |
 | `--CFL C` | CFL number for stability | 0.7 | `--CFL 0.5` |
 
@@ -48,7 +49,7 @@ julia --project=. examples/run_3d_jets_timeseries.jl --help
 
 1. **Quick test**: Start with low resolution for rapid iteration
    ```bash
-   julia --project=. examples/run_3d_jets_timeseries.jl --Np 20 --tmax 0.01
+   julia --project=. examples/run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --tmax 0.01
    ```
 
 2. **Parameter exploration**: Adjust physics parameters
@@ -58,7 +59,7 @@ julia --project=. examples/run_3d_jets_timeseries.jl --help
 
 3. **Production run**: Scale up resolution and time
    ```bash
-   julia --project=. examples/run_3d_jets_timeseries.jl --Np 80 --tmax 0.5
+   julia --project=. examples/run_3d_jets_timeseries.jl --Nx 80 --Ny 80 --tmax 0.5
    ```
 
 ### Batch/HPC Workflow
@@ -71,7 +72,7 @@ julia --project=. examples/run_3d_jets_timeseries.jl --help
 # On HPC system
 export HYQMOM_SKIP_PLOTTING=true
 mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl \
-  --Np 200 --tmax 1.0 --no-viz true --snapshot-interval 5
+  --Nx 200 --Ny 200 --tmax 1.0 --no-viz true --snapshot-interval 5
 
 # On workstation
 scp cluster:path/to/snapshots_*.jld2 .
@@ -161,7 +162,7 @@ You can define custom initial conditions by modifying the configuration system. 
 **Reduce memory usage:**
 ```bash
 # Lower resolution
---Np 30 --Nz 15
+--Nx 30 --Ny 30 --Nz 15
 
 # Reduce snapshot frequency
 --snapshot-interval 10
@@ -186,7 +187,7 @@ You can define custom initial conditions by modifying the configuration system. 
 --Ma 0.7
 
 # Increase resolution (better resolves gradients)
---Np 60 --Nz 30
+--Nx 60 --Ny 60 --Nz 30
 ```
 
 **Signs of instability:**
@@ -203,9 +204,9 @@ You can define custom initial conditions by modifying the configuration system. 
 
 ```bash
 # Good scaling examples
-mpiexec -n 4 julia ... --Np 80    # 20x20 per rank
-mpiexec -n 8 julia ... --Np 120   # 15x15 per rank
-mpiexec -n 16 julia ... --Np 160  # 10x10 per rank
+mpiexec -n 4 julia ... --Nx 80 --Ny 80    # 40x40 per rank (2x2 decomposition)
+mpiexec -n 16 julia ... --Nx 120 --Ny 120  # 30x30 per rank (4x4 decomposition)
+mpiexec -n 64 julia ... --Nx 160 --Ny 160  # 20x20 per rank (8x8 decomposition)
 ```
 
 ## Environment Variables
@@ -274,14 +275,14 @@ w_velocity = final_state[:, :, :, 4] ./ density
 - Try fewer ranks: `mpiexec -n 2 julia ...`
 
 **Memory problems:**
-- Reduce resolution: `--Np 30`
+- Reduce resolution: `--Nx 30 --Ny 30`
 - Increase snapshot interval: `--snapshot-interval 10`
 - Use more MPI ranks to distribute memory
 
 **Numerical instabilities:**
 - Reduce CFL: `--CFL 0.5`
 - Lower Mach number: `--Ma 0.7`
-- Increase resolution: `--Np 60`
+- Increase resolution: `--Nx 60 --Ny 60`
 
 ### Getting Help
 

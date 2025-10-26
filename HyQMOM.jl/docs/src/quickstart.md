@@ -43,20 +43,21 @@ Try different simulation parameters:
 
 ```bash
 # Quick low-resolution test (faster)
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 20 --tmax 0.01
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --tmax 0.01
 
 # Higher resolution (more detailed)
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 60 --tmax 0.1
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60 --tmax 0.1
 
 # Different physics parameters
 julia --project=. examples/run_3d_jets_timeseries.jl --Ma 1.5 --Kn 0.5
 ```
 
 ### Key Parameters
-- `--Np N`: Grid resolution in x,y directions (default: 40)
-- `--Nz N`: Grid resolution in z direction (default: 40)  
-- `--tmax T`: Maximum simulation time (default: 0.2)
-- `--Ma M`: Mach number (default: 1.0)
+- `--Nx N`: Grid resolution in x direction (default: 40)
+- `--Ny N`: Grid resolution in y direction (default: 40)
+- `--Nz N`: Grid resolution in z direction (default: 20)
+- `--tmax T`: Maximum simulation time (default: 0.05)
+- `--Ma M`: Mach number (default: 0.0)
 - `--Kn K`: Knudsen number (default: 1.0)
 - `--CFL C`: CFL number for stability (default: 0.7)
 
@@ -68,10 +69,10 @@ Scale up with MPI for larger simulations:
 
 ```bash
 # Run with 4 MPI processes
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 100 --Ny 100
 
 # High-resolution production run
-mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120 --Nz 60
+mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 120 --Ny 120 --Nz 60
 ```
 
 The visualization will automatically appear on rank 0, while all ranks participate in the computation.
@@ -124,7 +125,7 @@ ssh -Y user@host
 ### Out of memory
 ```bash
 # Reduce resolution
-julia ... --Np 30 --Nz 15
+julia ... --Nx 30 --Ny 30 --Nz 15
 
 # Increase snapshot interval or disable
 julia ... --snapshot-interval 10
@@ -140,5 +141,5 @@ julia ... --CFL 0.5
 julia ... --Ma 0.7
 
 # Increase resolution
-julia ... --Np 60
+julia ... --Nx 60 --Ny 60
 ```

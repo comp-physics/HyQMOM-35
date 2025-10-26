@@ -54,11 +54,11 @@ The visualization window contains several interactive elements:
 For this tutorial, we'll use a fast, low-resolution simulation:
 
 ```bash
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 30 --tmax 0.05 --snapshot-interval 2
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 30 --Ny 30 --tmax 0.05 --snapshot-interval 2
 ```
 
 **Parameters explained:**
-- `--Np 30`: Use 30×30 grid points (faster computation)
+- `--Nx 30 --Ny 30`: Use 30×30 grid points in xy-plane (faster computation)
 - `--tmax 0.05`: Run for shorter time (faster completion)
 - `--snapshot-interval 2`: Save every 2nd timestep (more animation frames)
 
@@ -145,7 +145,7 @@ When running with MPI, visualization automatically appears on rank 0:
 
 ```bash
 # Run parallel simulation - visualization will appear on rank 0
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 60
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 60 --Ny 60
 ```
 
 **Key points:**
@@ -189,7 +189,7 @@ echo $DISPLAY
 **Slow visualization performance:**
 ```bash
 # Reduce resolution
-julia ... --Np 20
+julia ... --Nx 20 --Ny 20
 
 # Increase snapshot interval (fewer frames)
 julia ... --snapshot-interval 5
@@ -204,7 +204,7 @@ export LIBGL_ALWAYS_SOFTWARE=1
 export LIBGL_ALWAYS_SOFTWARE=1
 
 # Reduce memory usage
-julia ... --Np 30 --snapshot-interval 10
+julia ... --Nx 30 --Ny 30 --snapshot-interval 10
 
 # Check system resources
 htop  # Monitor CPU and memory usage
@@ -229,7 +229,7 @@ htop  # Monitor CPU and memory usage
 
 ### Effective Visualization Workflow
 
-1. **Start small**: Use low resolution (`--Np 20-30`) for initial exploration
+1. **Start small**: Use low resolution (`--Nx 20 --Ny 20` to `--Nx 30 --Ny 30`) for initial exploration
 2. **Iterate parameters**: Adjust physics parameters and observe changes
 3. **Save interesting cases**: Keep `.jld2` files for later analysis
 4. **Document findings**: Take screenshots or notes of interesting phenomena

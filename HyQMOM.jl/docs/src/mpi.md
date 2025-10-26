@@ -19,13 +19,13 @@ HyQMOM.jl uses domain decomposition parallelization optimized for the 35-moment 
 
 ```bash
 # Serial execution (1 process)
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40
 
 # Parallel execution (4 processes)
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 100 --Ny 100
 
 # High-resolution parallel run
-mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120 --Nz 60
+mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 120 --Ny 120 --Nz 60
 ```
 
 ### Automatic Detection
@@ -77,16 +77,16 @@ For optimal performance, choose the number of MPI ranks such that:
 **Good choices:**
 ```bash
 # 1 rank: Serial execution
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40
 
 # 4 ranks: 2×2 decomposition
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 80
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 80 --Ny 80
 
 # 9 ranks: 3×3 decomposition  
-mpiexec -n 9 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120
+mpiexec -n 9 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 120 --Ny 120
 
 # 16 ranks: 4×4 decomposition
-mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl --Np 160
+mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 160 --Ny 160
 ```
 
 **Avoid:**
@@ -96,7 +96,7 @@ mpiexec -n 6 julia ...   # 6 doesn't factor nicely
 mpiexec -n 10 julia ...  # 10 doesn't factor nicely
 
 # Too many ranks for resolution (communication overhead)
-mpiexec -n 16 julia ... --Np 40  # Only 2.5×2.5 per rank
+mpiexec -n 16 julia ... --Nx 40 --Ny 40  # Only 10×10 per rank (too small!)
 ```
 
 ### Scaling Guidelines
@@ -119,10 +119,10 @@ Use more ranks to fit larger problems in available memory:
 
 ```bash
 # High memory usage (single rank)
-julia ... --Np 200  # ~200³ points on 1 rank
+julia ... --Nx 200 --Ny 200 --Nz 200  # 200×200×200 points on 1 rank
 
 # Distributed memory (16 ranks)  
-mpiexec -n 16 julia ... --Np 200  # ~50³ points per rank
+mpiexec -n 16 julia ... --Nx 200 --Ny 200 --Nz 200  # 50×50×200 points per rank
 ```
 
 ## MPI Configuration
@@ -250,7 +250,7 @@ export HYQMOM_SKIP_PLOTTING=true
 export JULIA_NUM_THREADS=1
 
 mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl \
-  --Np 200 --Nz 100 --tmax 1.0 --snapshot-interval 5
+  --Nx 200 --Ny 200 --Nz 100 --tmax 1.0 --snapshot-interval 5
 ```
 
 ### PBS Example
@@ -268,7 +268,7 @@ module load julia openmpi
 export HYQMOM_SKIP_PLOTTING=true
 
 mpiexec -n 16 julia --project=. examples/run_3d_jets_timeseries.jl \
-  --Np 160 --tmax 0.5 --no-viz true
+  --Nx 160 --Ny 160 --tmax 0.5 --no-viz true
 ```
 
 ## Debugging Parallel Runs
@@ -352,7 +352,7 @@ mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl
 
 ```julia
 # Built into examples - check output for timing information
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 80
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 80 --Ny 80
 
 # Look for output like:
 # "Simulation completed in 45.2 seconds"
@@ -373,13 +373,13 @@ watch -n 1 'ps aux | grep julia'
 Test parallel efficiency:
 
 ```bash
-# Weak scaling (constant work per rank)
-mpiexec -n 1 julia ... --Np 40   # 40×40 per rank
-mpiexec -n 4 julia ... --Np 80   # 40×40 per rank  
-mpiexec -n 9 julia ... --Np 120  # 40×40 per rank
+# Weak scaling (constant work per rank - 40×40 each)
+mpiexec -n 1 julia ... --Nx 40 --Ny 40     # 40×40 total (1 rank)
+mpiexec -n 4 julia ... --Nx 80 --Ny 80     # 40×40 per rank (2×2 decomp)
+mpiexec -n 9 julia ... --Nx 120 --Ny 120   # 40×40 per rank (3×3 decomp)
 
-# Strong scaling (constant total work)
-mpiexec -n 1 julia ... --Np 120  # 120×120 total
-mpiexec -n 4 julia ... --Np 120  # 60×60 per rank
-mpiexec -n 9 julia ... --Np 120  # 40×40 per rank
+# Strong scaling (constant total work - 120×120 total)
+mpiexec -n 1 julia ... --Nx 120 --Ny 120   # 120×120 on 1 rank
+mpiexec -n 4 julia ... --Nx 120 --Ny 120   # 60×60 per rank (2×2 decomp)
+mpiexec -n 9 julia ... --Nx 120 --Ny 120   # 40×40 per rank (3×3 decomp)
 ```
