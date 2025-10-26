@@ -157,6 +157,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     end
     
     # Time slider and controls (only show if in :all mode)
+    # Also create an observable for current snapshot index that works in both modes
+    local time_slider
     if snapshot_mode == :all
         time_slider = GLMakie.Slider(fig, range=1:n_snapshots, startvalue=initial_snapshot_idx, width=200)
         btn_play = GLMakie.Button(fig, label=">", fontsize=8)
@@ -179,10 +181,11 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         GLMakie.on(btn_pause.clicks) do _
             is_playing[] = false
         end
-    else
-        # Single snapshot mode - create a dummy slider that won't be displayed
-        time_slider = GLMakie.Slider(fig, range=1:n_snapshots, startvalue=initial_snapshot_idx, width=200)
         
+        # Use time_slider.value as the observable index
+        current_snapshot_observable = time_slider.value
+    else
+        # Single snapshot mode - use a fixed observable at the initial index
         # Show which snapshot we're viewing
         if snapshot_mode == :first
             snap_label_text = "Showing: First snapshot"
@@ -194,6 +197,9 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         controls[2, 1] = GLMakie.Label(fig, snap_label_text, fontsize=10, halign=:center)
         
         is_playing = GLMakie.Observable(false)
+        
+        # Create an observable that stays fixed at the initial snapshot
+        current_snapshot_observable = GLMakie.Observable(initial_snapshot_idx)
     end
     
     # Export button
@@ -202,7 +208,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     
     GLMakie.on(btn_export.clicks) do _
         try
-            idx = time_slider.value[]
+            idx = current_snapshot_observable[]
             snap_key = snap_keys[idx]
             snap = jld_file["snapshots/$snap_key"]
             t = snap["t"]
@@ -256,7 +262,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     
     # Observable for current data (loads from file)
     current_data_obs = GLMakie.@lift begin
-        idx = $(time_slider.value)
+        idx = $(current_snapshot_observable)
         q = $(current_quantity)
         snap_key = snap_keys[idx]
         M = jld_file["snapshots/$snap_key/M"]
@@ -361,7 +367,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         end
         empty!(moment_plots)
         
-        idx = time_slider.value[]
+        idx = current_snapshot_observable[]
         snap_key = snap_keys[idx]
         S_field = jld_file["snapshots/$snap_key/S"]
         
@@ -478,10 +484,12 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     create_isosurfaces!()
     update_moment_space!()
     
-    # Update plots when time slider changes
-    GLMakie.on(time_slider.value) do val
-        create_isosurfaces!()
-        update_moment_space!()
+    # Update plots when snapshot changes (only in :all mode with time slider)
+    if snapshot_mode == :all
+        GLMakie.on(current_snapshot_observable) do val
+            create_isosurfaces!()
+            update_moment_space!()
+        end
     end
     
     # Update plots when quantity changes
@@ -501,17 +509,19 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         update_moment_space!()
     end
     
-    # Animation loop for playback
-    GLMakie.on(is_playing) do playing
-        if playing
-            @async begin
-                while is_playing[] && time_slider.value[] < n_snapshots
-                    sleep(0.1)
-                    if is_playing[]
-                        time_slider.value[] = time_slider.value[] + 1
+    # Animation loop for playback (only in :all mode)
+    if snapshot_mode == :all
+        GLMakie.on(is_playing) do playing
+            if playing
+                @async begin
+                    while is_playing[] && current_snapshot_observable[] < n_snapshots
+                        sleep(0.1)
+                        if is_playing[]
+                            current_snapshot_observable[] = current_snapshot_observable[] + 1
+                        end
                     end
+                    is_playing[] = false
                 end
-                is_playing[] = false
             end
         end
     end
