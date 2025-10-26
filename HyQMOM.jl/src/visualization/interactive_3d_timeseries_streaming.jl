@@ -233,9 +233,34 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     slider_iso1 = GLMakie.Slider(fig, range=0.1:0.05:0.9, startvalue=iso_levels[1], width=200)
     slider_alpha = GLMakie.Slider(fig, range=0.3:0.1:1.0, startvalue=0.6, width=200)
     
+    # Observable for isosurface value display
+    iso_value_text = GLMakie.@lift begin
+        data = $(current_data_obs)
+        q = $(current_quantity)
+        iso_frac = $(slider_iso1.value)
+        
+        is_velocity = (q == "U velocity" || q == "V velocity" || q == "W velocity")
+        data_min = minimum(data)
+        data_max = maximum(data)
+        data_absmax = maximum(abs.(data))
+        
+        if is_velocity
+            # For velocities: show both positive and negative levels
+            pos_level = iso_frac * data_absmax
+            neg_level = -iso_frac * data_absmax
+            @sprintf("±%.4f", pos_level)
+        else
+            # For other quantities: show single level
+            data_range = data_max - data_min
+            level = data_min + iso_frac * data_range
+            @sprintf("%.4f", level)
+        end
+    end
+    
     controls[4, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, "Iso Level", fontsize=9, halign=:left),
-        slider_iso1;
+        slider_iso1,
+        GLMakie.Label(fig, iso_value_text, fontsize=8, halign=:left, color=:gray);
         tellwidth=false
     )
     controls[5, 1] = GLMakie.vgrid!(
