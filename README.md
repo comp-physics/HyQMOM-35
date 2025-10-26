@@ -16,6 +16,17 @@ The production-ready 3D Julia implementation with:
 
 See [HyQMOM.jl/README.md](HyQMOM.jl/README.md) for detailed documentation.
 
+#### 📚 Documentation
+Build and view comprehensive documentation locally:
+```bash
+# Build documentation
+./build_docs.sh        # Linux/macOS
+./build_docs.bat       # Windows
+
+# Serve documentation locally  
+./serve_docs.sh        # Starts server at http://localhost:8000
+```
+
 ### **[3D_MATLAB/](3D_MATLAB/)** - 3D MATLAB Implementation
 Reference 3D MATLAB implementation used for cross-validation:
 - MPI parallelization support
