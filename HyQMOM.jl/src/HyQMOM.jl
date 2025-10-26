@@ -14,7 +14,7 @@ using MPI
 using Printf
 
 # Export main entry points
-export run_simulation, simulation_runner
+export run_simulation, simulation_runner, run_simulation_with_snapshots
 
 # Export visualization functions
 export plot_final_results, plot_multiple_z_slices, plot_3d_isosurface

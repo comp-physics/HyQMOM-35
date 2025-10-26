@@ -669,12 +669,16 @@ end
 """
     run_simulation(; Np=nothing, Nx=20, Ny=20, tmax=0.1, num_workers=1, kwargs...)
 
-High-level wrapper for running simulations with sensible defaults.
+High-level wrapper for running HyQMOM simulations with sensible defaults.
+
+This function provides a convenient interface to the HyQMOM solver with automatic
+MPI initialization, parameter setup, and optional visualization. It handles both
+serial and parallel execution transparently.
 
 # Arguments
 - `Np`: (Legacy) Global grid size for square grid (Np x Np), overrides Nx/Ny if provided
 - `Nx`: Global grid size in x direction, default 20
-- `Ny`: Global grid size in y direction, default 20
+- `Ny`: Global grid size in y direction, default 20  
 - `Nz`: Global grid size in z direction, default 1
 - `tmax`: Maximum simulation time, default 0.1
 - `num_workers`: Number of MPI ranks (must match mpiexec -n), default 1
@@ -683,14 +687,14 @@ High-level wrapper for running simulations with sensible defaults.
 - `enable_plots`: Generate PyPlot visualization after simulation, default false
 - `save_figures`: Save figures to disk (requires enable_plots=true), default false
 - `output_dir`: Directory for saved figures, default "."
-- `Kn`: Knudsen number, default 1.0
-- `Ma`: Mach number, default 0.0
+- `Kn`: Knudsen number (controls collision frequency), default 1.0
+- `Ma`: Mach number (controls jet velocity), default 0.0
 - `flag2D`: 2D flag (1 for 2D, 0 for 3D), default 0
-- `CFL`: CFL number, default 0.5
+- `CFL`: CFL number for numerical stability, default 0.5
 - `homogeneous_z`: Jets at all z levels (true) or only lower half (false), default true
 
 # Returns
-Dictionary with:
+Dictionary with simulation results:
 - `:M`: Final moment field (Nx x Ny x Nz x 35) on rank 0, nothing on other ranks
 - `:final_time`: Actual final time reached
 - `:time_steps`: Number of time steps taken
@@ -698,7 +702,7 @@ Dictionary with:
 - `:Nx`, `:Ny`, `:Nz`: Grid sizes
 - `:tmax`: Requested max time
 
-# Example
+# Examples
 ```julia
 # Single rank with square grid
 results = run_simulation(Nx=20, Ny=20, tmax=0.1)
@@ -712,6 +716,10 @@ results = run_simulation(Nx=60, Ny=40, tmax=0.1, enable_plots=true)
 # Legacy: Use Np for square grids
 results = run_simulation(Np=40, tmax=0.1)
 ```
+
+# See Also
+- [`simulation_runner`](@ref): Lower-level simulation function
+- [`run_simulation_with_snapshots`](@ref): Simulation with time-series output
 """
 function run_simulation(; Np=nothing, Nx=20, Ny=20, Nz=1, tmax=0.1, num_workers=1, verbose=true, save_output=false,
                           enable_plots=false, save_figures=false, output_dir=".",
@@ -839,5 +847,72 @@ function run_simulation(; Np=nothing, Nx=20, Ny=20, Nz=1, tmax=0.1, num_workers=
             :Nz => Nz,
             :tmax => tmax
         )
+    end
+end
+
+"""
+    run_simulation_with_snapshots(params; snapshot_interval=2)
+
+Run simulation with time-series snapshot collection.
+
+This function extends [`simulation_runner`](@ref) to automatically collect and save
+simulation snapshots at regular intervals. Snapshots are streamed to a JLD2 file
+for memory efficiency and can be visualized with [`interactive_3d_timeseries_streaming`](@ref).
+
+# Arguments
+- `params`: Simulation parameters (same as [`simulation_runner`](@ref))
+- `snapshot_interval`: Save snapshots every N time steps (default: 2)
+
+# Returns
+- `filename`: Path to JLD2 snapshot file (rank 0 only)
+- `grid`: Grid structure for visualization (rank 0 only)
+
+On non-zero ranks, returns `(nothing, nothing)`.
+
+# Examples
+```julia
+using HyQMOM, MPI
+
+MPI.Init()
+
+# Set up parameters
+params = (
+    Nx = 40, Ny = 40, Nz = 40,
+    tmax = 0.1, Ma = 1.0, Kn = 1.0,
+    CFL = 0.7, flag2D = 0,
+    # ... other parameters
+)
+
+# Run with snapshot collection
+filename, grid = run_simulation_with_snapshots(params; snapshot_interval=5)
+
+# Visualize results (rank 0 only)
+if MPI.Comm_rank(MPI.COMM_WORLD) == 0 && filename !== nothing
+    interactive_3d_timeseries_streaming(filename, grid, params)
+end
+
+MPI.Finalize()
+```
+
+# See Also
+- [`simulation_runner`](@ref): Core simulation function
+- [`interactive_3d_timeseries_streaming`](@ref): Visualization of snapshot files
+"""
+function run_simulation_with_snapshots(params; snapshot_interval=2)
+    # Add snapshot parameters to the input params
+    params_with_snapshots = merge(params, (snapshot_interval=snapshot_interval,))
+    
+    # Run simulation with snapshot collection
+    result = simulation_runner(params_with_snapshots)
+    
+    # simulation_runner returns different things based on snapshot_interval
+    if haskey(params_with_snapshots, :snapshot_interval) && params_with_snapshots.snapshot_interval > 0
+        # Snapshot mode: returns (filename, grid) or (nothing, nothing)
+        return result
+    else
+        # Standard mode: returns (M_final, final_time, time_steps, grid)
+        # Convert to snapshot-like return format
+        M_final, final_time, time_steps, grid = result
+        return nothing, grid  # No snapshot file created
     end
 end
