@@ -111,7 +111,7 @@ julia run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --Nz 10 --tmax 0.01 --snapshot-i
 
 #### High-Resolution Run
 ```bash
-mpiexec -n 4 julia run_3d_jets_mpi.jl --Nx 80 --Ny 80 --Nz 40 --tmax 0.2
+mpiexec -n 4 julia run_3d_jets_timeseries.jl --Nx 80 --Ny 80 --Nz 40 --tmax 0.2
 ```
 
 #### Custom Domain
@@ -165,7 +165,7 @@ print_params_summary(params, rank=rank)
 - Fewer snapshots: `--snapshot-interval 10`
 
 ### For Production
-- Use MPI: `mpiexec -n 8 julia run_3d_jets_mpi.jl`
+- Use MPI: `mpiexec -n 8 julia run_3d_jets_timeseries.jl`
 - Higher resolution: `--Nx 100 --Ny 100 --Nz 50`
 - Disable snapshots if not needed: `--snapshot-interval 0`
 

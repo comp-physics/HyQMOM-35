@@ -1,0 +1,13 @@
+name = "HyQMOMDocs"
+
+[deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+HyQMOM = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+
+[compat]
+DocStringExtensions = "0.9"
+Documenter = "1"
+Literate = "2"
+julia = "1.9, 1.10, 1.11"
