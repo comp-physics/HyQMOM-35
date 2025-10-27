@@ -443,17 +443,6 @@ julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40 --snapshot-
 - Creates `results.jld2` file with simulation data
 - Can load later for analysis or visualization
 
-### Static Plots
-
-For publication-quality 2D plots:
-
-```bash
-julia --project=. examples/run_3d_crossing_jets.jl --Nx 40 --Ny 40
-```
-
-This creates static PNG/PDF plots instead of interactive visualization.
-
----
 
 ## Troubleshooting
 

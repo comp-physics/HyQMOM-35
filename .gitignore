@@ -11,6 +11,7 @@
 *.asv
 *.m~
 
+# Julia temporary files
 .cursor/
 .cursorrules
 .rubies
@@ -18,4 +19,14 @@ Manifest.toml
 */Manifest.toml
 **/Manifest.toml
 
+# Simulation output files
+snapshots_*.jld2
+snapshot_*.png
+snapshot_*.pdf
+
+# Documentation build
+docs/build/
+docs/Manifest.toml
+
+# SBATCH scripts
 *Ma*.sbatch

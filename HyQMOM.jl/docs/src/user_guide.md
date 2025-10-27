@@ -99,15 +99,17 @@ The primary visualization mode uses GLMakie for real-time 3D rendering:
 - **Isosurface sliders**: Adjust visualization thresholds
 - **Mouse**: Left-drag to rotate, scroll to zoom, right-drag to pan
 
-### Static Plots
+### Alternative: Custom Jet Configurations
 
-For publication-quality figures, use the static plotting examples:
+For different initial conditions, use the custom jet configurations:
 
 ```bash
-julia --project=. examples/run_3d_crossing_jets.jl
+julia --project=. examples/run_3d_custom_jets.jl --config crossing
+julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
+julia --project=. examples/run_3d_custom_jets.jl --config quad-jet
 ```
 
-This generates high-quality matplotlib figures suitable for papers and presentations.
+This provides multiple predefined jet configurations with the same interactive GLMakie viewer.
 
 ### Post-Processing Visualization
 

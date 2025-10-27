@@ -63,7 +63,7 @@ See `examples/README.md` for complete parameter documentation.
 
 ## Examples
 
-### Interactive Visualization (Recommended)
+### Visualization 
 
 **`examples/run_3d_jets_timeseries.jl`** - Interactive 3D time-series viewer
 
@@ -98,15 +98,16 @@ Features:
 
 See `examples/CUSTOM_INITIAL_CONDITIONS.md` for detailed documentation.
 
-### Static Plots
+### Custom Configurations
 
-**`examples/run_3d_crossing_jets.jl`** - Static PyPlot visualization
+**`examples/run_3d_custom_jets.jl`** - Flexible jet configurations
 
 ```bash
-julia --project=. examples/run_3d_crossing_jets.jl
+julia --project=. examples/run_3d_custom_jets.jl --config crossing
+julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
 ```
 
-Good for publications and batch processing.
+Choose from multiple predefined configurations or create your own.
 
 ## Visualization
 
@@ -312,8 +313,8 @@ julia --project=. -e 'using GLMakie'
 # On remote systems, enable X11 forwarding
 ssh -Y user@host
 
-# Or use static plots instead
-julia --project=. examples/run_3d_crossing_jets.jl
+# Or use custom jet configurations
+julia --project=. examples/run_3d_custom_jets.jl --config crossing
 ```
 
 ### MPI errors
