@@ -17,10 +17,7 @@ using Printf
 export run_simulation, simulation_runner, run_simulation_with_snapshots
 
 # Export visualization functions
-export plot_final_results, plot_multiple_z_slices, plot_3d_isosurface
-export plot_centerline_profiles, plot_3d_diagnostics
 export interactive_3d_timeseries_streaming
-export interactive_standardized_scatter, interactive_correlation_field
 
 # Export initial condition utilities
 export CubicRegion, initialize_moment_field, initialize_moment_field_mpi, crossing_jets_ic
@@ -97,36 +94,10 @@ include("initial_conditions.jl")
 # Main simulation
 include("simulation_runner.jl")
 
-# Visualization (requires PyPlot and ColorSchemes) - optional
-# Skip in CI or if PyPlot is not available
+# Visualization (GLMakie only) - optional
+# Skip in CI or if explicitly disabled
 const SKIP_PLOTTING = get(ENV, "HYQMOM_SKIP_PLOTTING", "false") == "true" || 
                       get(ENV, "CI", "false") == "true"
-
-# Check if PyPlot is available before trying to include plotting
-const PYPLOT_AVAILABLE = !SKIP_PLOTTING && 
-    try
-        Base.find_package("PyPlot") !== nothing
-    catch
-        false
-    end
-
-if PYPLOT_AVAILABLE
-    try
-        # Load PyPlot and PyCall as optional dependencies
-        # Use @eval to delay the loading until runtime
-        @eval begin
-            using PyPlot
-            using PyCall
-            include($(joinpath(@__DIR__, "visualization", "plotting.jl")))
-        end
-    catch e
-        if !SKIP_PLOTTING
-            @debug "Failed to load plotting module - PyPlot may not be installed" exception=(e, catch_backtrace())
-        end
-    end
-elseif !SKIP_PLOTTING
-    @debug "PyPlot not available - plotting functions disabled"
-end
 
 # Check if GLMakie is available for interactive 3D visualization
 const GLMAKIE_AVAILABLE = !SKIP_PLOTTING && 
@@ -139,20 +110,17 @@ const GLMAKIE_AVAILABLE = !SKIP_PLOTTING &&
 if GLMAKIE_AVAILABLE
     try
         # Load GLMakie as optional dependency
-        # Use @eval to delay the loading until runtime
         @eval begin
             import GLMakie
             include($(joinpath(@__DIR__, "visualization", "interactive_3d_timeseries_streaming.jl")))
-            include($(joinpath(@__DIR__, "visualization", "interactive_standardized_scatter.jl")))
-            include($(joinpath(@__DIR__, "visualization", "interactive_correlation_field.jl")))
         end
     catch e
         if !SKIP_PLOTTING
-            @debug "Failed to load interactive 3D visualization - GLMakie may not be installed" exception=(e, catch_backtrace())
+            @warn "Failed to load GLMakie visualization module" exception=(e, catch_backtrace())
         end
     end
 elseif !SKIP_PLOTTING
-    @debug "GLMakie not available - interactive 3D visualization disabled"
+    @info "GLMakie not available - visualization disabled. Install with: using Pkg; Pkg.add(\"GLMakie\")"
 end
 
 end # module

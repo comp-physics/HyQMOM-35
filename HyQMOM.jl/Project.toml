@@ -23,17 +23,13 @@ GLMakie = "0.8, 0.9, 0.10"
 JLD2 = "0.4"
 MAT = "0.10"
 MPI = "0.20"
-PyCall = "1"
-PyPlot = "2"
 StaticArrays = "1"
 julia = "1.9, 1.10, 1.11"
 
 [extras]
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
-PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
-PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MAT", "GLMakie", "PyCall", "PyPlot"]
+test = ["Test", "MAT", "GLMakie"]

@@ -23,30 +23,31 @@ mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 120 --Ny 
 
 **Features:**
 - Automatic serial/MPI support (no separate MPI example needed!)
-- Interactive GLMakie 3D viewer
+- Interactive GLMakie 3D viewer with physical + moment space
 - Time-series animation with play/pause
 - Multiple quantities (density, U/V/W velocities)
 - Isosurface visualization with positive/negative values
 - Full parameter control via command-line
 
-### `run_3d_crossing_jets.jl` - Static Plots
-**Static matplotlib/PyPlot visualization (no GLMakie required). Also supports serial and MPI.**
+### `run_3d_custom_jets.jl` - Custom Configurations
+**Flexible jet configurations with interactive 3D visualization. Works in both serial and MPI parallel modes.**
 
 ```bash
-# Serial
-julia --project=. examples/run_3d_crossing_jets.jl
-julia --project=. examples/run_3d_crossing_jets.jl --Nx 60 --Ny 60 --tmax 0.05
+# Use predefined configurations
+julia --project=. examples/run_3d_custom_jets.jl --config crossing
+julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
+julia --project=. examples/run_3d_custom_jets.jl --config quad-jet
 
 # MPI parallel
-mpiexec -n 4 julia --project=. examples/run_3d_crossing_jets.jl --Nx 100 --Ny 100
+mpiexec -n 4 julia --project=. examples/run_3d_custom_jets.jl --config crossing --Nx 100 --Ny 100
 ```
 
 **Features:**
+- Multiple jet configurations (crossing, triple-jet, quad-jet, spiral, etc.)
 - Automatic serial/MPI support
-- Static 2D/3D plots (PyPlot/matplotlib)
-- Multiple slice visualizations
-- Centerline profiles
-- Good for publications/reports
+- Interactive GLMakie 3D viewer with physical + moment space
+- Standardized moments enabled by default
+- Full parameter control via command-line
 
 ## Quick Start
 
@@ -208,7 +209,8 @@ julia ... --Nx 60 --Ny 60 --Nz 30
 
 ### GLMakie Viewer Doesn't Open
 - Check GLMakie is installed: `using Pkg; Pkg.add("GLMakie")`
-- Use static plots instead: `run_3d_crossing_jets.jl`
+- On remote systems, enable X11 forwarding: `ssh -Y user@host`
+- Use headless mode and visualize locally: `--no-viz true`
 - Run on rank 0 only (already handled in MPI examples)
 
 ### Performance Issues
