@@ -857,7 +857,7 @@ Run simulation with time-series snapshot collection.
 
 This function extends [`simulation_runner`](@ref) to automatically collect and save
 simulation snapshots at regular intervals. Snapshots are streamed to a JLD2 file
-for memory efficiency and can be visualized with [`interactive_3d_timeseries_streaming`](@ref).
+for memory efficiency and can be visualized with `interactive_3d_timeseries_streaming`.
 
 # Arguments
 - `params`: Simulation parameters (same as [`simulation_runner`](@ref))
@@ -896,7 +896,7 @@ MPI.Finalize()
 
 # See Also
 - [`simulation_runner`](@ref): Core simulation function
-- [`interactive_3d_timeseries_streaming`](@ref): Visualization of snapshot files
+- `interactive_3d_timeseries_streaming`: Visualization of snapshot files (requires GLMakie)
 """
 function run_simulation_with_snapshots(params; snapshot_interval=2)
     # Add snapshot parameters to the input params
