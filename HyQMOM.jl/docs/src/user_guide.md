@@ -34,7 +34,7 @@ HyQMOM.jl examples support extensive command-line configuration. All parameters 
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--snapshot-interval N` | Save every N steps (0=disabled) | 0 | `--snapshot-interval 5` |
+| `--snapshot-interval N` | Save every N steps (0=disabled). Includes M, S, and C moments | 0 | `--snapshot-interval 5` |
 | `--no-viz true/false` | Skip interactive visualization | false | `--no-viz true` |
 
 ### Getting Help
@@ -151,11 +151,13 @@ julia --project=. examples/run_3d_custom_jets.jl --config spiral
 
 ### Custom Initial Conditions
 
-You can define custom initial conditions by modifying the configuration system. See `examples/CUSTOM_INITIAL_CONDITIONS.md` for detailed instructions on:
+You can define custom initial conditions by modifying the configuration system in `examples/run_3d_custom_jets.jl`:
 
-- Defining new jet configurations
-- Specifying center positions, widths, and velocities
-- Creating complex multi-jet scenarios
+- Edit the `get_jet_configuration()` function to add new configurations
+- Specify center positions, widths, and velocities for each jet
+- Create complex multi-jet scenarios with arbitrary numbers of jets
+
+See `examples/README.md` for parameter details and configuration examples.
 
 ## Performance Optimization
 
@@ -239,8 +241,13 @@ export JULIA_CPU_TARGET="native"
 
 HyQMOM.jl saves simulation data in JLD2 format, which includes:
 
-- **snapshots**: Array of solution states at different times
-- **grid**: Spatial grid information
+- **snapshots**: Array of solution states at different times, each containing:
+  - `M`: Raw moment field (Nx × Ny × Nz × 35)
+  - `S`: Standardized moments (always saved for moment space visualization)
+  - `C`: Central moments (always saved)
+  - `t`: Simulation time
+  - `step`: Time step number
+- **grid**: Spatial grid information (xm, ym, zm, dx, dy, dz)
 - **params**: Simulation parameters
 - **params_with_ic**: Parameters including initial conditions
 

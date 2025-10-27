@@ -8,9 +8,8 @@ Demonstrates how to create custom initial conditions with:
 - Custom velocities in each cube
 - Fully controllable via command-line or code
 
-STANDARDIZED MOMENTS ARE ENABLED BY DEFAULT
+STANDARDIZED MOMENTS ARE ALWAYS SAVED
 - Moment space (S110, S101, S011) is automatically shown in the viewer
-- To disable: add --save-standardized-moments false
 
 Usage:
   # Use predefined configurations (with standardized moments by default)
@@ -28,9 +27,6 @@ Usage:
   
   # Override physics parameters
   julia --project=. examples/run_3d_custom_jets.jl --config quad-jet --Ma 1.5 --tmax 0.3 --snapshot-interval 10
-  
-  # Disable standardized moments if needed
-  julia --project=. examples/run_3d_custom_jets.jl --config crossing --snapshot-interval 5 --save-standardized-moments false
   
   # For headless systems (no X11/display):
   julia --project=. examples/run_3d_custom_jets.jl --config crossing --snapshot-interval 5 --no-viz true
@@ -65,12 +61,6 @@ using HyQMOM
 using MPI
 using Printf
 using JLD2  # For saving snapshots
-
-# Ensure visualization functions are loaded if GLMakie is available
-if GLMAKIE_LOADED && !isdefined(Main, :interactive_standardized_scatter)
-    # Load the interactive scatter plot function directly if not exported
-    include(joinpath(pkgdir(HyQMOM), "src", "visualization", "interactive_standardized_scatter.jl"))
-end
 
 # Load parameter parsing utilities
 include("parse_params.jl")
@@ -412,13 +402,6 @@ if params.snapshot_interval > 0
                 println("physical space in the main viewer.")
                 println("  * Adjust moment threshold slider in controls panel")
                 println("  * Watch moment-space evolution with time slider")
-                println("="^70)
-            else
-                println("\n" * "="^70)
-                println("NOTE: Standardized moments not saved")
-                println("="^70)
-                println("To visualize standardized moments, run with:")
-                println("  --save-standardized-moments true")
                 println("="^70)
             end
         end

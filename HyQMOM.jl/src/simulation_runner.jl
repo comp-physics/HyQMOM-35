@@ -35,8 +35,7 @@ This is the core time-stepping loop that orchestrates all components:
   - `homogeneous_z`: Whether jets exist at all z levels (validation mode)
   - `enable_memory_tracking`: Enable memory tracking (not implemented)
   - `snapshot_interval`: (optional) Save snapshots every N steps. If not provided or 0, no snapshots saved.
-  - `save_standardized_moments`: (optional) If true, compute and save standardized moments (S4) with each snapshot
-  - `save_central_moments`: (optional) If true, compute and save central moments (C4) with each snapshot
+  - Standardized moments (S4) and central moments (C4) are automatically saved with each snapshot
 
 # Returns
 If `snapshot_interval` is provided and > 0:
@@ -100,8 +99,8 @@ function simulation_runner(params)
     # Snapshot saving parameters
     snapshot_interval = get(params, :snapshot_interval, 0)
     save_snapshots = (snapshot_interval > 0)
-    save_standardized = get(params, :save_standardized_moments, false)  # Save S4 with snapshots
-    save_central = get(params, :save_central_moments, false)  # Save C4 with snapshots
+    save_standardized = true  # Always save S4 with snapshots (required for moment space visualization)
+    save_central = true  # Always save C4 with snapshots
     
     # Streaming snapshot file (rank 0 only)
     snapshot_filename = get(params, :snapshot_filename, nothing)

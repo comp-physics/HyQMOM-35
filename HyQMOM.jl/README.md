@@ -146,10 +146,8 @@ using HyQMOM, JLD2, GLMakie
 @load "snapshots_file.jld2" snapshots grid params params_with_ic
 
 # Interactive time-series viewer (streams from file)
+# The middle panel shows standardized moment space (S110, S101, S011) if available
 interactive_3d_timeseries_streaming("snapshots_file.jld2", grid, params_with_ic)
-
-# Standardized moment scatter plot (if S field available)
-interactive_standardized_scatter(snapshots[end], grid)
 ```
 
 ### Headless Systems (HPC/Clusters)

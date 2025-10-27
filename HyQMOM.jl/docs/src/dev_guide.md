@@ -10,33 +10,49 @@ This guide covers the internal architecture of HyQMOM.jl and provides guidance f
 HyQMOM.jl/
 ├── src/                          # Core source code
 │   ├── HyQMOM.jl                # Main module file
-│   ├── main.jl                  # Primary simulation entry point
 │   ├── simulation_runner.jl     # Simulation orchestration
 │   ├── initial_conditions.jl    # Initial condition setups
-│   ├── moments/                 # Moment-based operations
-│   │   ├── moment_operations.jl
-│   │   ├── moment_inversion.jl
+│   ├── autogen/                 # Auto-generated functions (MATLAB conversion)
+│   │   ├── delta2star3D.jl
+│   │   ├── jacobian6.jl
 │   │   └── ...
+│   ├── moments/                 # Moment-based operations
+│   │   ├── InitializeM4_35.jl
+│   │   ├── M2CS4_35.jl
+│   │   ├── Moments5_3D.jl
+│   │   ├── hyqmom_3D.jl
+│   │   └── enforce_univariate.jl
 │   ├── numerics/                # Numerical methods
-│   │   ├── flux_methods.jl
-│   │   ├── time_integration.jl
+│   │   ├── closure_and_eigenvalues.jl
+│   │   ├── flux_HLL.jl
+│   │   ├── collision35.jl
+│   │   ├── apply_flux_update.jl
+│   │   ├── apply_flux_update_3d.jl
 │   │   └── ...
 │   ├── realizability/           # Realizability constraints
-│   │   ├── realizability_checks.jl
+│   │   ├── realizability.jl
+│   │   ├── realizable_2D.jl
+│   │   ├── realizable_3D.jl
 │   │   └── ...
 │   ├── mpi/                     # MPI parallelization
-│   │   ├── domain_decomposition.jl
-│   │   ├── halo_exchange.jl
+│   │   ├── setup_mpi_cartesian_3d.jl
+│   │   ├── halo_exchange_3d.jl
+│   │   ├── compute_halo_fluxes_and_wavespeeds_3d.jl
 │   │   └── ...
 │   ├── utils/                   # Utility functions
+│   │   ├── moment_idx.jl
+│   │   ├── compute_standardized_field.jl
+│   │   ├── diagnostics.jl
 │   │   └── ...
 │   └── visualization/           # Visualization components
-│       ├── interactive_3d_timeseries_streaming.jl
-│       ├── interactive_correlation_field.jl
-│       └── ...
+│       └── interactive_3d_timeseries_streaming.jl
 ├── examples/                    # Example scripts and configurations
+│   ├── run_3d_jets_timeseries.jl
+│   ├── run_3d_custom_jets.jl
+│   └── parse_params.jl
 ├── test/                        # Test suite
 ├── docs/                        # Documentation source
+├── visualize_jld2.jl           # Standalone visualization script
 └── Project.toml                 # Package dependencies
 ```
 
@@ -45,9 +61,9 @@ HyQMOM.jl/
 **Main Simulation Pipeline:**
 1. **Parameter parsing** (`examples/parse_params.jl`)
 2. **Initial conditions** (`src/initial_conditions.jl`)
-3. **Domain decomposition** (`src/mpi/domain_decomposition.jl`)
+3. **Domain decomposition** (`src/mpi/setup_mpi_cartesian_3d.jl`)
 4. **Time stepping loop** (`src/simulation_runner.jl`)
-5. **Visualization/output** (`src/visualization/`)
+5. **Visualization/output** (`src/visualization/interactive_3d_timeseries_streaming.jl`)
 
 **Numerical Core:**
 - **Moment operations**: Converting between raw, central, and standardized moment representations
@@ -433,6 +449,5 @@ Before release:
 ### Documentation Updates
 
 - Update version number in `Project.toml`
-- Update `CHANGELOG.md` with new features and fixes
 - Regenerate documentation with new version
 - Tag release on GitHub

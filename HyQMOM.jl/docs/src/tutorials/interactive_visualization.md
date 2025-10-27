@@ -130,11 +130,9 @@ using HyQMOM, JLD2, GLMakie
 @load "snapshots_file.jld2" snapshots grid params params_with_ic
 
 # Launch interactive viewer
+# Shows physical space (left) and moment space (middle) in a 3-column layout
+# Moment space displays (S110, S101, S011) scatter plot if S field is available
 interactive_3d_timeseries_streaming("snapshots_file.jld2", grid, params_with_ic)
-
-# Or visualize a specific timestep
-final_state = snapshots[end]
-interactive_standardized_scatter(final_state, grid)
 ```
 
 ## Parallel Visualization
