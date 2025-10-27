@@ -21,8 +21,6 @@ Build and view comprehensive documentation locally:
 ```bash
 # Build documentation
 ./build_docs.sh        # Linux/macOS
-./build_docs.bat       # Windows
-
 # Serve documentation locally  
 ./serve_docs.sh        # Starts server at http://localhost:8000
 ```
@@ -219,15 +217,19 @@ Each subdirectory contains detailed README files:
 
 ## HPC Usage
 
-### Slurm Batch Script
+### Slurm Batch Scripts
 
-The repository includes `batch.sh` for Slurm-based HPC systems:
+The repository includes example SLURM batch scripts for HPC systems:
 
 ```bash
-sbatch batch.sh  # Submits Julia job with MPI
+# Base template
+sbatch hyqmom_base.sbatch
+
+# Specific simulation example
+sbatch hyqmom_Ma0p0_Kn1p0_t0p04.sbatch
 ```
 
-Edit `batch.sh` to adjust:
+Edit the `.sbatch` files to adjust:
 - Number of nodes and tasks
 - Grid resolution (`--Nx`, `--Ny`, `--Nz`)
 - Simulation time (`--tmax`)

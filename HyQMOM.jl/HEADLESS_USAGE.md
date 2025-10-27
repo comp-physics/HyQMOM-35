@@ -46,7 +46,7 @@ julia visualize_jld2.jl
 With `--no-viz true`, the simulation will:
 - Run normally (no performance impact)
 - Save `.jld2` files with all snapshots
-- Include standardized moments (S) if enabled (default: ON)
+- Include standardized moments (S) automatically
 - Work with both serial and MPI runs
 - Skip launching the interactive viewer
 - Not load GLMakie at all (faster startup, less memory)
@@ -92,7 +92,6 @@ mpiexec -n 32 julia --project=. examples/run_3d_custom_jets.jl \
   --Kn 0.8 \
   --CFL 0.6 \
   --snapshot-interval 20 \
-  --save-standardized-moments true \
   --no-viz true
 
 # Output: snapshots_crossing_Ma1.2_t0.5_N120.jld2
@@ -131,8 +130,8 @@ Each `.jld2` file contains:
   - `M`: Raw moment field (Nx x Ny x Nz x 35)
   - `t`: Simulation time
   - `step`: Time step number
-  - `S`: Standardized moments (if enabled, default: ON)
-  - `C`: Central moments (if enabled, default: OFF)
+  - `S`: Standardized moments (always saved)
+  - `C`: Central moments (always saved)
 - `grid`: Grid coordinates (xm, ym, zm, dx, dy, dz)
 - `params`: Simulation parameters
 - `params_with_ic`: Parameters including initial conditions
@@ -142,13 +141,9 @@ Each `.jld2` file contains:
 ### Interactive 3D Time-Series (Recommended)
 ```julia
 using HyQMOM, JLD2, GLMakie
+# The viewer shows physical space (left) and moment space (middle panel)
+# Moment space displays (S110, S101, S011) if S field is saved
 interactive_3d_timeseries_streaming("snapshots_file.jld2", grid, params_with_ic)
-```
-
-### Moment Space Scatter Plot
-```julia
-# Requires S field (enabled by default)
-interactive_standardized_scatter(snapshots[end], grid)
 ```
 
 ### Static PyPlot Figures (for publications)

@@ -73,9 +73,7 @@ function get_default_params()
         enable_memory_tracking = false,
         
         # Snapshot control
-        snapshot_interval = 0,  # 0 = disabled
-        save_standardized_moments = true,  # Save S4 field with snapshots (default: ON)
-        save_central_moments = false,  # Save C4 field with snapshots
+        snapshot_interval = 0,  # 0 = disabled (S4 and C4 always saved when snapshots enabled)
         
         # Visualization control
         no_viz = false,  # Disable all visualization (for headless systems/CI)
@@ -200,8 +198,7 @@ function print_help()
       --rhor R              Background density (default: 0.01)
       
       --snapshot-interval N           Save snapshot every N steps (default: 0=disabled)
-      --save-standardized-moments BOOL Save S4 field with snapshots (default: true)
-      --save-central-moments BOOL      Save C4 field with snapshots (default: false)
+                                      Standardized (S4) and central (C4) moments always saved
       
       --no-viz BOOL         Disable all visualization (for headless/CI) (default: false)
       
@@ -323,15 +320,7 @@ function print_params_summary(params; rank=0, comm=nothing)
     if params.snapshot_interval > 0
         println("\nSnapshots:")
         println("  Interval: every $(params.snapshot_interval) step(s)")
-        if params.save_standardized_moments
-            println("  Saving: Raw moments (M) + Standardized moments (S)")
-        end
-        if params.save_central_moments
-            println("  Saving: Raw moments (M) + Central moments (C)")
-        end
-        if !params.save_standardized_moments && !params.save_central_moments
-            println("  Saving: Raw moments (M) only")
-        end
+        println("  Saving: Raw moments (M) + Standardized moments (S) + Central moments (C)")
     else
         println("\nSnapshots: DISABLED")
     end

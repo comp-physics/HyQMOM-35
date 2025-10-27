@@ -22,8 +22,8 @@ Examples:
     julia visualize_jld2.jl                                   # Interactive file selection
     
 Generate snapshot files using:
-    julia examples/run_3d_crossing_jets.jl --save-standardized-moments true
-    julia examples/run_3d_jets_timeseries.jl --save-standardized-moments true
+    julia examples/run_3d_custom_jets.jl --snapshot-interval 5
+    julia examples/run_3d_jets_timeseries.jl --snapshot-interval 5
 """
 
 using Pkg
@@ -87,9 +87,9 @@ function show_help()
         julia visualize_jld2.jl snapshots.jld2 --snapshot 5
     
     GENERATING SNAPSHOT FILES:
-        Run examples with --save-standardized-moments flag:
-        julia examples/run_3d_crossing_jets.jl --save-standardized-moments true
-        julia examples/run_3d_jets_timeseries.jl --save-standardized-moments true
+        Run examples with snapshots enabled:
+        julia examples/run_3d_custom_jets.jl --snapshot-interval 5
+        julia examples/run_3d_jets_timeseries.jl --snapshot-interval 5
     
     REQUIREMENTS:
         * GLMakie package (installed automatically if missing)
@@ -228,7 +228,7 @@ function main()
                 if has_standardized
                     println("  [OK] Standardized moments (S) available")
                 else
-                    println("  [WARNING] No standardized moments - run with --save-standardized-moments true for moment space view")
+                    println("  [WARNING] No standardized moments - this may be from an older simulation")
                 end
             else
                 # Legacy format - convert to streaming by saving
