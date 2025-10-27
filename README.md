@@ -235,7 +235,6 @@ Edit the `.sbatch` files to adjust:
 - Simulation time (`--tmax`)
 - Project account
 
-
 ## License
 
 See [license.md](license.md) for licensing information.
