@@ -108,6 +108,17 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                                 xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
                                 xlabelsize=18, ylabelsize=18, zlabelsize=18)
     
+    # Add coordinate axes to physical space (black, full opacity)
+    x_center = (xm[1] + xm[end]) / 2
+    y_center = (ym[1] + ym[end]) / 2
+    z_center = (zm[1] + zm[end]) / 2
+    GLMakie.lines!(ax_physical, [xm[1], xm[end]], [y_center, y_center], [z_center, z_center], 
+                 color=:black, linewidth=2, alpha=1.0)
+    GLMakie.lines!(ax_physical, [x_center, x_center], [ym[1], ym[end]], [z_center, z_center], 
+                 color=:black, linewidth=2, alpha=1.0)
+    GLMakie.lines!(ax_physical, [x_center, x_center], [y_center, y_center], [zm[1], zm[end]], 
+                 color=:black, linewidth=2, alpha=1.0)
+    
     # Middle: Moment space
     ax_moment = GLMakie.Axis3(fig[1, 2], 
                              xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
@@ -465,20 +476,24 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         else
             moment_range_text[] = "|S| range: N/A"
         end
-        
-        # Draw coordinate axes
-        p1 = GLMakie.lines!(ax_moment, [-1.0, 1.0], [0, 0], [0, 0], 
-                     color=:red, linewidth=2, alpha=0.3)
-        p2 = GLMakie.lines!(ax_moment, [0, 0], [-1.0, 1.0], [0, 0], 
-                     color=:green, linewidth=2, alpha=0.3)
-        p3 = GLMakie.lines!(ax_moment, [0, 0], [0, 0], [-1.0, 1.0], 
-                     color=:blue, linewidth=2, alpha=0.3)
-        push!(moment_plots, p1, p2, p3)
-        
-        # Draw |Delta_1| = 0 realizability boundary surface (transparent)
-        # Delta_1 = 1 + 2*S110*S101*S011 - S110^2 - S101^2 - S011^2 = 0
-        # This is the boundary of the realizable region in moment space
-        
+    end
+    
+    # Draw coordinate axes for moment space ONCE (outside update function)
+    # Fixed black color with full opacity
+    if has_std_moments
+        GLMakie.lines!(ax_moment, [-1.0, 1.0], [0, 0], [0, 0], 
+                     color=:black, linewidth=2, alpha=1.0)
+        GLMakie.lines!(ax_moment, [0, 0], [-1.0, 1.0], [0, 0], 
+                     color=:black, linewidth=2, alpha=1.0)
+        GLMakie.lines!(ax_moment, [0, 0], [0, 0], [-1.0, 1.0], 
+                     color=:black, linewidth=2, alpha=1.0)
+    end
+    
+    # Draw |Delta_1| = 0 realizability boundary surface (transparent)
+    # Delta_1 = 1 + 2*S110*S101*S011 - S110^2 - S101^2 - S011^2 = 0
+    # This is the boundary of the realizable region in moment space
+    # Draw this ONCE outside update function so slider doesn't affect it
+    if has_std_moments
         try
             # Create a grid for the surface
             n_points = 50
@@ -519,21 +534,18 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             S011_grid_pos = clamp.(S011_grid_pos, -1, 1)
             S011_grid_neg = clamp.(S011_grid_neg, -1, 1)
             
-            # Draw both sheets of the boundary surface
-            p_boundary_pos = GLMakie.surface!(ax_moment, 
-                                            S110_grid, S101_grid, S011_grid_pos,
-                                            color=:gray,
-                                            alpha=0.15,  # Very transparent
-                                            transparency=true)
+            # Draw both sheets of the boundary surface with fixed low alpha
+            GLMakie.surface!(ax_moment, 
+                            S110_grid, S101_grid, S011_grid_pos,
+                            color=:gray,
+                            alpha=0.15,  # Fixed low transparency
+                            transparency=true)
             
-            p_boundary_neg = GLMakie.surface!(ax_moment, 
-                                            S110_grid, S101_grid, S011_grid_neg,
-                                            color=:gray,
-                                            alpha=0.15,  # Very transparent
-                                            transparency=true)
-            
-            push!(moment_plots, p_boundary_pos)
-            push!(moment_plots, p_boundary_neg)
+            GLMakie.surface!(ax_moment, 
+                            S110_grid, S101_grid, S011_grid_neg,
+                            color=:gray,
+                            alpha=0.15,  # Fixed low transparency
+                            transparency=true)
         catch e
             @warn "Could not compute realizability boundary" exception=e
         end
