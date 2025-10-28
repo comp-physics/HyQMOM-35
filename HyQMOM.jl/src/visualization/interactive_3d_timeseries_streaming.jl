@@ -393,6 +393,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     # Function to update moment space
     moment_plots = []
     slider_moment_threshold = GLMakie.Slider(fig, range=0.001:0.001:0.5, startvalue=0.01, width=200)
+    moment_range_text = GLMakie.Observable("|S| range: N/A")
     
     function update_moment_space!()
         if !has_std_moments
@@ -431,13 +432,22 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             S011_filtered = S011_flat[mask]
             mag_filtered = corr_mag_flat[mask]
             
+            # Update range display
+            min_mag = minimum(mag_filtered)
+            max_mag = maximum(mag_filtered)
+            moment_range_text[] = @sprintf("|S| range: %.3f - %.3f", min_mag, max_mag)
+            
+            # Low magnitude → light gray, high magnitude → black
             p = GLMakie.scatter!(ax_moment, 
                                S110_filtered, S101_filtered, S011_filtered,
                                color=mag_filtered,
-                               colormap=:viridis,
+                               colormap=[:lightgray, :black],
+                               colorrange=(min_mag, max_mag),
                                markersize=5,
                                alpha=0.6)
             push!(moment_plots, p)
+        else
+            moment_range_text[] = "|S| range: N/A"
         end
         
         # Draw coordinate axes
@@ -513,10 +523,11 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         end
     end
     
-    # Add moment threshold slider
+    # Add moment threshold slider and range display
     controls[8, 1] = GLMakie.vgrid!(
         GLMakie.Label(fig, "Min |S|", fontsize=9, halign=:left),
-        slider_moment_threshold;
+        slider_moment_threshold,
+        GLMakie.Label(fig, moment_range_text, fontsize=8, halign=:left, color=:gray);
         tellwidth=false
     )
     
