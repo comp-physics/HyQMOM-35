@@ -582,6 +582,18 @@ function simulation_runner(params)
             end
         end
         
+        # Report maximum memory usage across all MPI ranks every 10 steps
+        if mod(nn, 10) == 0
+            local_memory_gb = Sys.maxrss() / 1024^3  # RSS (resident set size) in GB
+            max_memory_gb = MPI.Allreduce(local_memory_gb, MPI.MAX, comm)
+            total_memory_gb = MPI.Allreduce(local_memory_gb, MPI.SUM, comm)
+            avg_memory_gb = total_memory_gb / nprocs
+            if rank == 0
+                @printf("  Memory: max = %.2f GB, avg = %.2f GB, total = %.2f GB (%d ranks)\n", 
+                        max_memory_gb, avg_memory_gb, total_memory_gb, nprocs)
+            end
+        end
+        
         # Save snapshot if requested and it's time
         if save_snapshots && (mod(nn, snapshot_interval) == 0 || t >= tmax || nn == nnmax)
             M_interior = M[halo+1:halo+nx, halo+1:halo+ny, :, :]
@@ -620,6 +632,16 @@ function simulation_runner(params)
         if save_snapshots
             println("Streamed $snap_count snapshots total")
         end
+    end
+    
+    # Report final maximum memory usage across all MPI ranks
+    local_memory_gb = Sys.maxrss() / 1024^3  # RSS (resident set size) in GB
+    max_memory_gb = MPI.Allreduce(local_memory_gb, MPI.MAX, comm)
+    total_memory_gb = MPI.Allreduce(local_memory_gb, MPI.SUM, comm)
+    avg_memory_gb = total_memory_gb / nprocs
+    if rank == 0
+        @printf("Final memory: max = %.2f GB, avg = %.2f GB, total = %.2f GB (%d ranks)\n", 
+                max_memory_gb, avg_memory_gb, total_memory_gb, nprocs)
     end
     
     # Create global grid structure
