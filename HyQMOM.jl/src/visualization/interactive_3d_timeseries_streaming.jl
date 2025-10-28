@@ -118,6 +118,20 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                              xticklabelsize=16, yticklabelsize=16, zticklabelsize=16,
                              xlabelsize=18, ylabelsize=18, zlabelsize=18)
     
+    # Colorbar for moment space (below the 3D axis)
+    # Fixed range from 0 to 1 (standardized moments are bounded)
+    # Very light gray (almost white) → black for better contrast
+    moment_cmap = [GLMakie.RGB(0.95, 0.95, 0.95), GLMakie.RGB(0.0, 0.0, 0.0)]
+    cb_moment = GLMakie.Colorbar(fig[2, 2], 
+                                 limits=(0.0, 1.0),
+                                 colormap=moment_cmap,
+                                 label=L"|S|",
+                                 vertical=false,
+                                 flipaxis=false,
+                                 labelsize=16,
+                                 ticklabelsize=12,
+                                 height=20)
+    
     println("="^70)
     
     # Control panel (far right)
@@ -437,12 +451,14 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             max_mag = maximum(mag_filtered)
             moment_range_text[] = @sprintf("|S| range: %.3f - %.3f", min_mag, max_mag)
             
-            # Low magnitude → light gray, high magnitude → black
+            # Low magnitude → very light gray, high magnitude → black
+            # Use fixed colorrange from 0 to 1 for consistency with colorbar
+            moment_scatter_cmap = [GLMakie.RGB(0.95, 0.95, 0.95), GLMakie.RGB(0.0, 0.0, 0.0)]
             p = GLMakie.scatter!(ax_moment, 
                                S110_filtered, S101_filtered, S011_filtered,
                                color=mag_filtered,
-                               colormap=[:lightgray, :black],
-                               colorrange=(min_mag, max_mag),
+                               colormap=moment_scatter_cmap,
+                               colorrange=(0.0, 1.0),
                                markersize=5,
                                alpha=0.6)
             push!(moment_plots, p)
