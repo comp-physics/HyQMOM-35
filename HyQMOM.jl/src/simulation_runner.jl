@@ -394,31 +394,93 @@ function simulation_runner(params)
         # Global reduction for time step
         vmax_local = maximum([abs.(vpxmax); abs.(vpxmin); abs.(vpymax); abs.(vpymin); abs.(vpzmax); abs.(vpzmin)])
         vmax = MPI.Allreduce(vmax_local, max, comm)
+        
+        # Detailed diagnostics on first step
+        if rank == 0 && nn == 1
+            vx_max = maximum(abs.([vpxmax; vpxmin]))
+            vy_max = maximum(abs.([vpymax; vpymin]))
+            vz_max = maximum(abs.([vpzmax; vpzmin]))
+            @printf("\n  ═══ FIRST STEP DIAGNOSTICS ═══\n")
+            @printf("  vmax breakdown:\n")
+            @printf("    vx_max = %.6e\n", vx_max)
+            @printf("    vy_max = %.6e\n", vy_max)
+            @printf("    vz_max = %.6e\n", vz_max)
+            @printf("    vmax (global) = %.6e\n", vmax)
+            @printf("  Grid spacing:\n")
+            @printf("    dx = %.6e, dy = %.6e, dz = %.6e\n", dx, dy, dz)
+            @printf("    min(dx,dy,dz) = %.6e\n", min(dx,dy,dz))
+            @printf("  Time step calculation:\n")
+            @printf("    CFL = %.6f\n", CFL)
+            @printf("    dtmax = %.6e\n", dtmax)
+            @printf("    CFL*min(dx,dy,dz)/vmax = %.6e\n", CFL*min(dx,dy,dz)/vmax)
+            @printf("    dt (final) = %.6e\n", min(CFL*min(dx,dy,dz)/vmax, dtmax))
+            @printf("  Expected physical values (Ma=%.1f):\n", Ma)
+            @printf("    Expected jet velocity ~ %.2f\n", abs(Ma))
+            @printf("    Actual vmax / Expected = %.1fx\n", vmax / abs(Ma))
+            @printf("  ══════════════════════════════\n\n")
+        end
+        
         dt = min(CFL*min(dx,dy,dz)/vmax, dtmax)
         dt = min(dt, tmax-t)
         
         # Debug: print vmax if it's unusually large
-        if rank == 0 && (vmax > 100.0 || isnan(vmax) || isinf(vmax))
+        if rank == 0 && nn == 1 && (vmax > 100.0 || isnan(vmax) || isinf(vmax))
             @printf("  WARNING: vmax = %.6e (unusually large or invalid)\n", vmax)
-            # Find which cell has the problem (only check first z-slice for brevity)
-            for i in 1:nx
-                for j in 1:ny
-                    k = 1
-                    if abs(vpxmax[i,j,k]) > 100.0 || abs(vpxmin[i,j,k]) > 100.0 ||
-                       abs(vpymax[i,j,k]) > 100.0 || abs(vpymin[i,j,k]) > 100.0 ||
-                       abs(vpzmax[i,j,k]) > 100.0 || abs(vpzmin[i,j,k]) > 100.0 ||
-                       isnan(vpxmax[i,j,k]) || isnan(vpxmin[i,j,k]) ||
-                       isnan(vpymax[i,j,k]) || isnan(vpymin[i,j,k]) ||
-                       isnan(vpzmax[i,j,k]) || isnan(vpzmin[i,j,k])
-                        @printf("    Cell (%d,%d,%d): vpxmin=%.2e, vpxmax=%.2e, vpymin=%.2e, vpymax=%.2e, vpzmin=%.2e, vpzmax=%.2e\n",
-                               i, j, k, vpxmin[i,j,k], vpxmax[i,j,k], vpymin[i,j,k], vpymax[i,j,k], vpzmin[i,j,k], vpzmax[i,j,k])
-                        # Print moments at this cell
-                        ih = i + halo
-                        jh = j + halo
-                        @printf("    M[1:5] = [%.6e, %.6e, %.6e, %.6e, %.6e]\n",
-                               M[ih,jh,k,1], M[ih,jh,k,2], M[ih,jh,k,3], M[ih,jh,k,4], M[ih,jh,k,5])
+            @printf("  Searching for problematic cells...\n")
+            
+            # Find the worst offender
+            worst_vmax = 0.0
+            worst_i, worst_j, worst_k = 0, 0, 0
+            worst_dir = ""
+            
+            for k in 1:nz
+                for i in 1:nx
+                    for j in 1:ny
+                        vmax_cell = maximum(abs.([vpxmax[i,j,k], vpxmin[i,j,k], 
+                                                  vpymax[i,j,k], vpymin[i,j,k],
+                                                  vpzmax[i,j,k], vpzmin[i,j,k]]))
+                        if vmax_cell > worst_vmax
+                            worst_vmax = vmax_cell
+                            worst_i, worst_j, worst_k = i, j, k
+                            if abs(vpxmax[i,j,k]) == vmax_cell || abs(vpxmin[i,j,k]) == vmax_cell
+                                worst_dir = "x"
+                            elseif abs(vpymax[i,j,k]) == vmax_cell || abs(vpymin[i,j,k]) == vmax_cell
+                                worst_dir = "y"
+                            else
+                                worst_dir = "z"
+                            end
+                        end
                     end
                 end
+            end
+            
+            if worst_vmax > 100.0
+                @printf("\n  Worst cell: (%d,%d,%d) in %s-direction\n", worst_i, worst_j, worst_k, worst_dir)
+                @printf("    vmax_cell = %.6e\n", worst_vmax)
+                @printf("    vpxmin=%.2e, vpxmax=%.2e\n", vpxmin[worst_i,worst_j,worst_k], vpxmax[worst_i,worst_j,worst_k])
+                @printf("    vpymin=%.2e, vpymax=%.2e\n", vpymin[worst_i,worst_j,worst_k], vpymax[worst_i,worst_j,worst_k])
+                @printf("    vpzmin=%.2e, vpzmax=%.2e\n", vpzmin[worst_i,worst_j,worst_k], vpzmax[worst_i,worst_j,worst_k])
+                
+                # Print moments at this cell
+                ih = worst_i + halo
+                jh = worst_j + halo
+                MOM = M[ih, jh, worst_k, :]
+                @printf("    Moments (first 10): ")
+                for i_m in 1:min(10, length(MOM))
+                    @printf("%.3e ", MOM[i_m])
+                end
+                @printf("\n")
+                
+                # Compute physical quantities
+                rho = MOM[1]
+                u = MOM[2] / rho
+                v = MOM[6] / rho
+                w = MOM[16] / rho
+                vel_mag = sqrt(u^2 + v^2 + w^2)
+                @printf("    Physical: rho=%.3e, u=%.3e, v=%.3e, w=%.3e, |vel|=%.3e\n",
+                       rho, u, v, w, vel_mag)
+                @printf("    Grid location: x=%.3f, y=%.3f, z=%.3f\n",
+                       (worst_i-0.5)*dx, (worst_j-0.5)*dy, (worst_k-0.5)*dz)
             end
         end
         
@@ -773,6 +835,7 @@ function run_simulation(; Np=nothing, Nx=20, Ny=20, Nz=1, tmax=0.1, num_workers=
     dy = 1.0 / Ny
     dz = 1.0 / Nz
     dtmax = CFL * min(dx, dy, dz)
+    # Grid-based cap (standard CFL pre-cap)
     nnmax = ceil(Int, tmax / dtmax) + 100000  # Safety margin
     
     # Initial condition parameters (crossing jets)
