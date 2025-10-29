@@ -136,12 +136,12 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     cb_moment = GLMakie.Colorbar(fig[2, 2], 
                                  limits=(0.0, 1.0),
                                  colormap=moment_cmap,
-                                 label=L"|S|",
+                                 label=L"\Vert (s_{110},s_{101},s_{011}) \Vert_2",
                                  vertical=false,
                                  flipaxis=false,
-                                 labelsize=16,
-                                 ticklabelsize=12,
-                                 height=20)
+                                 labelsize=18,
+                                 ticklabelsize=16,
+                                 height=18)
     
     println("="^70)
     
@@ -158,9 +158,9 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     
     # Quantity buttons
     btn_density = GLMakie.Button(fig, label="rho", fontsize=8)
-    btn_u = GLMakie.Button(fig, label="U", fontsize=8)
-    btn_v = GLMakie.Button(fig, label="V", fontsize=8)
-    btn_w = GLMakie.Button(fig, label="W", fontsize=8)
+    btn_u = GLMakie.Button(fig, label="u", fontsize=8)
+    btn_v = GLMakie.Button(fig, label="v", fontsize=8)
+    btn_w = GLMakie.Button(fig, label="w", fontsize=8)
     btn_pressure = GLMakie.Button(fig, label="P", fontsize=8)
     
     controls[1, 1] = GLMakie.hgrid!(btn_density, btn_u, btn_v, btn_w, btn_pressure; tellwidth=false)
@@ -169,13 +169,13 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         current_quantity[] = "Density"
     end
     GLMakie.on(btn_u.clicks) do _
-        current_quantity[] = "U velocity"
+        current_quantity[] = "u velocity"
     end
     GLMakie.on(btn_v.clicks) do _
-        current_quantity[] = "V velocity"
+        current_quantity[] = "v velocity"
     end
     GLMakie.on(btn_w.clicks) do _
-        current_quantity[] = "W velocity"
+        current_quantity[] = "w velocity"
     end
     GLMakie.on(btn_pressure.clicks) do _
         current_quantity[] = "Pressure"
@@ -261,17 +261,17 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     # Function to compute quantities from M snapshot
     function compute_quantities(M_snapshot)
         rho = M_snapshot[:, :, :, 1]
-        U = M_snapshot[:, :, :, 2] ./ rho
-        V = M_snapshot[:, :, :, 6] ./ rho
-        W = M_snapshot[:, :, :, 16] ./ rho
+        u = M_snapshot[:, :, :, 2] ./ rho
+        v = M_snapshot[:, :, :, 6] ./ rho
+        w = M_snapshot[:, :, :, 16] ./ rho
         
-        C200 = M_snapshot[:, :, :, 3] ./ rho .- U.^2
-        C020 = M_snapshot[:, :, :, 7] ./ rho .- V.^2
-        C002 = M_snapshot[:, :, :, 17] ./ rho .- W.^2
+        C200 = M_snapshot[:, :, :, 3] ./ rho .- u.^2
+        C020 = M_snapshot[:, :, :, 7] ./ rho .- v.^2
+        C002 = M_snapshot[:, :, :, 17] ./ rho .- w.^2
         # Pressure: P = rho * (1/3 trace of velocity covariance)
         pressure = rho .* (C200 .+ C020 .+ C002) ./ 3.0
         
-        return (rho=rho, U=U, V=V, W=W, pressure=pressure)
+        return (rho=rho, u=u, v=v, w=w, pressure=pressure)
     end
     
     # Observable for current data (loads from file)
@@ -284,12 +284,12 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         
         if q == "Density"
             quants.rho
-        elseif q == "U velocity"
-            quants.U
-        elseif q == "V velocity"
-            quants.V
-        elseif q == "W velocity"
-            quants.W
+        elseif q == "u velocity"
+            quants.u
+        elseif q == "v velocity"
+            quants.v
+        elseif q == "w velocity"
+            quants.w
         else # Pressure
             quants.pressure
         end
@@ -301,18 +301,18 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         q = $(current_quantity)
         iso_frac = $(slider_iso1.value)
         
-        is_velocity = (q == "U velocity" || q == "V velocity" || q == "W velocity")
+        is_velocity = (q == "u velocity" || q == "v velocity" || q == "w velocity")
         data_min = minimum(data)
         data_max = maximum(data)
         data_absmax = maximum(abs.(data))
         
         # Get short label for quantity
-        q_label = if q == "U velocity"
-            "U"
-        elseif q == "V velocity"
-            "V"
-        elseif q == "W velocity"
-            "W"
+        q_label = if q == "u velocity"
+            "u"
+        elseif q == "v velocity"
+            "v"
+        elseif q == "w velocity"
+            "w"
         elseif q == "Density"
             "ρ"
         elseif q == "Pressure"
@@ -349,6 +349,10 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     # Storage for plots
     iso_plots = []
     
+    # Create legend layout below physical space plot
+    # Note: We recreate the legend each time by directly placing it in fig[2, 1]
+    current_legend = Ref{Union{Nothing, GLMakie.Legend}}(nothing)
+    
     # Function to create isosurfaces
     function create_isosurfaces!()
         for plot in iso_plots
@@ -359,6 +363,15 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         end
         empty!(iso_plots)
         
+        # Clear existing legend
+        if !isnothing(current_legend[])
+            try
+                delete!(current_legend[])
+            catch
+            end
+            current_legend[] = nothing
+        end
+        
         data = current_data_obs[]
         q = current_quantity[]
         
@@ -367,7 +380,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             return
         end
         
-        is_velocity = (q == "U velocity" || q == "V velocity" || q == "W velocity")
+        is_velocity = (q == "u velocity" || q == "v velocity" || q == "w velocity")
         
         data_min = minimum(data)
         data_max = maximum(data)
@@ -387,16 +400,21 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             neg_level = -slider_iso1.value[] * data_absmax
             
             levels = [pos_level, neg_level]
-            colors = [:blue, :red]
+            # Dark blue for positive velocity, seagreen for negative velocity
+            colors = [GLMakie.RGBf(0.0, 0.0, 0.545), :seagreen]
             alphas = [0.6, 0.6] .* slider_alpha.value[]
         else
             level = data_min + slider_iso1.value[] * data_range
             levels = [level]
-            colors = [:blue]
+            # Darkish blue for density and pressure
+            colors = [GLMakie.RGBf(0.0, 0.0, 0.545)]
             alphas = [0.6] .* slider_alpha.value[]
         end
         
-        for (level, color, alpha) in zip(levels, colors, alphas)
+        # Build legend entries
+        legend_entries = []
+        
+        for (idx, (level, color, alpha)) in enumerate(zip(levels, colors, alphas))
             if abs(level) < 1e-10
                 continue
             end
@@ -407,11 +425,44 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                                     alpha=alpha,
                                     color=color)
                 push!(iso_plots, p)
+                
+                # Format legend entry
+                value_str = @sprintf("%.4f", level)
+                if q == "Density"
+                    entry = (color, L"\rho = %$(value_str)")
+                elseif q == "u velocity"
+                    entry = (color, L"u = %$(value_str)")
+                elseif q == "v velocity"
+                    entry = (color, L"v = %$(value_str)")
+                elseif q == "w velocity"
+                    entry = (color, L"w = %$(value_str)")
+                elseif q == "Pressure"
+                    entry = (color, L"P = %$(value_str)")
+                else
+                    entry = (color, @sprintf("Q = %.4f", level))
+                end
+                push!(legend_entries, entry)
             catch e
                 if abs(level) > 1e-8
                     @warn "Contour failed at level $level" exception=(e,)
                 end
             end
+        end
+        
+        # Update legend with colored markers
+        if !isempty(legend_entries)
+            # Create legend elements using PolyElement for solid color patches
+            legend_elements = [GLMakie.PolyElement(color=c, strokecolor=c, strokewidth=1) for (c, _) in legend_entries]
+            legend_labels = [l for (_, l) in legend_entries]
+            
+            # Create new legend and store reference - place directly in fig[2, 1]
+            current_legend[] = GLMakie.Legend(fig[2, 1], legend_elements, legend_labels,
+                                             orientation=:horizontal, 
+                                             framevisible=false,
+                                             labelsize=14,
+                                             tellwidth=false,
+                                             tellheight=true,
+                                             patchsize=(30, 15))
         end
     end
     
