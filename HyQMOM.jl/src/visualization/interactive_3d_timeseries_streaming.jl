@@ -349,30 +349,31 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     # Storage for plots
     iso_plots = []
     
-    # Create legend layout below physical space plot
-    # Note: We recreate the legend each time by directly placing it in fig[2, 1]
+    # Prevent overlapping updates from sliders
+    is_updating_isosurfaces = Ref(false)
+    
+    # Legend (persistent; we'll recreate it when needed but only once per update)
     current_legend = Ref{Union{Nothing, GLMakie.Legend}}(nothing)
+    legend_layout = GLMakie.GridLayout(fig[2, 1])
     
     # Function to create isosurfaces
     function create_isosurfaces!()
-        for plot in iso_plots
-            try
-                delete!(ax_physical, plot)
-            catch
-            end
+        # Prevent concurrent updates
+        if is_updating_isosurfaces[]
+            return
         end
-        empty!(iso_plots)
+        is_updating_isosurfaces[] = true
         
-        # Clear existing legend
-        if !isnothing(current_legend[])
-            try
-                delete!(current_legend[])
-            catch
+        try
+            for plot in iso_plots
+                try
+                    delete!(ax_physical, plot)
+                catch
+                end
             end
-            current_legend[] = nothing
-        end
+            empty!(iso_plots)
         
-        data = current_data_obs[]
+            data = current_data_obs[]
         q = current_quantity[]
         
         if any(isnan.(data)) || any(isinf.(data))
@@ -449,20 +450,26 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             end
         end
         
-        # Update legend with colored markers
-        if !isempty(legend_entries)
-            # Create legend elements using PolyElement for solid color patches
-            legend_elements = [GLMakie.PolyElement(color=c, strokecolor=c, strokewidth=1) for (c, _) in legend_entries]
-            legend_labels = [l for (_, l) in legend_entries]
+            # Update legend - delete old one and create new one atomically
+            if !isnothing(current_legend[])
+                delete!(current_legend[])
+            end
             
-            # Create new legend and store reference - place directly in fig[2, 1]
-            current_legend[] = GLMakie.Legend(fig[2, 1], legend_elements, legend_labels,
-                                             orientation=:horizontal, 
-                                             framevisible=false,
-                                             labelsize=14,
-                                             tellwidth=false,
-                                             tellheight=true,
-                                             patchsize=(30, 15))
+            if !isempty(legend_entries)
+                legend_elements = [GLMakie.PolyElement(color=c, strokecolor=c, strokewidth=1) for (c, _) in legend_entries]
+                legend_labels = [l for (_, l) in legend_entries]
+                current_legend[] = GLMakie.Legend(legend_layout[1, 1], legend_elements, legend_labels,
+                                                 orientation=:horizontal,
+                                                 framevisible=false,
+                                                 labelsize=14,
+                                                 tellwidth=false,
+                                                 tellheight=true,
+                                                 patchsize=(30, 15))
+            else
+                current_legend[] = nothing
+            end
+        finally
+            is_updating_isosurfaces[] = false
         end
     end
     
@@ -627,10 +634,14 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         create_isosurfaces!()
     end
     
-    # Update plots when sliders change
+    # Update plots when sliders change (with error handling to prevent hanging)
     for slider in [slider_iso1, slider_alpha]
         GLMakie.on(slider.value) do val
-            create_isosurfaces!()
+            try
+                create_isosurfaces!()
+            catch e
+                @warn "Isosurface update failed" exception=(e, catch_backtrace())
+            end
         end
     end
     
