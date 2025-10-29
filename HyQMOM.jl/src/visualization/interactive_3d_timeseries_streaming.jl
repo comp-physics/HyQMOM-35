@@ -121,7 +121,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     
     # Middle: Moment space
     ax_moment = GLMakie.Axis3(fig[1, 2], 
-                             xlabel=L"S_{110}", ylabel=L"S_{101}", zlabel=L"S_{011}",
+                             xlabel=L"s_{110}", ylabel=L"s_{101}", zlabel=L"s_{011}",
                              aspect=:data,
                              azimuth=0.3pi,
                              elevation=pi/8,
