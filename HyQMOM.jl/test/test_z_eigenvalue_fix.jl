@@ -14,38 +14,15 @@ using HyQMOM
 @testset "Z-eigenvalue bug regression test" begin
     
     @testset "WV Jacobian uses correct moment ordering" begin
-        # Create moments that would trigger the bug
-        # Use more realistic moments from Maxwell-Boltzmann distribution
+        # Create fully realizable moments using InitializeM4_35
+        # This ensures ALL mixed moments are properly computed
         
-        M = zeros(35)
         rho = 1.0
         u, v, w = 40.0, 40.0, -40.0
         T = 1.0
         
-        M[1] = rho
-        M[2] = rho * u
-        M[6] = rho * v  
-        M[16] = rho * w
-        
-        # Second moments: <v_i^2> = u_i^2 + T
-        M[3] = rho * (u^2 + T)      # M200
-        M[10] = rho * (v^2 + T)     # M020
-        M[20] = rho * (w^2 + T)     # M002
-        
-        # Third moments: <v_i^3> = u_i^3 + 3*u_i*T
-        M[4] = rho * (u^3 + 3*u*T)  # M300
-        M[13] = rho * (v^3 + 3*v*T) # M030
-        M[23] = rho * (w^3 + 3*w*T) # M003
-        
-        # Fourth moments: <v_i^4> = u_i^4 + 6*u_i^2*T + 3*T^2
-        M[5] = rho * (u^4 + 6*u^2*T + 3*T^2)   # M400
-        M[15] = rho * (v^4 + 6*v^2*T + 3*T^2)  # M040
-        M[25] = rho * (w^4 + 6*w^2*T + 3*T^2)  # M004
-        
-        # Mixed moments: <v_i*v_j> = u_i*u_j (uncorrelated)
-        M[7] = rho * u * v      # M110
-        M[17] = rho * u * w     # M101
-        M[26] = rho * v * w     # M011
+        # Use InitializeM4_35 to get complete, realizable moment set
+        M = HyQMOM.InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
         
         flag2D = 0
         Ma = 70.0
@@ -71,28 +48,12 @@ using HyQMOM
         # For symmetric initial conditions, all three directions 
         # should produce similar eigenvalue magnitudes
         
-        M = zeros(35)
         rho = 1.0
         u, v, w = 40.0, 40.0, -40.0
         T = 1.0
         
-        M[1] = rho
-        M[2], M[6], M[16] = rho*u, rho*v, rho*w
-        
-        # Second moments
-        M[3] = rho * (u^2 + T)
-        M[10] = rho * (v^2 + T)
-        M[20] = rho * (w^2 + T)
-        
-        # Fourth moments (minimal)
-        M[5] = rho * (u^4 + 6*u^2*T + 3*T^2)
-        M[15] = rho * (v^4 + 6*v^2*T + 3*T^2)
-        M[25] = rho * (w^4 + 6*w^2*T + 3*T^2)
-        
-        # Mixed moments
-        M[7] = rho * u * v      # M110
-        M[17] = rho * u * w     # M101
-        M[26] = rho * v * w     # M011
+        # Use InitializeM4_35 for complete, realizable moments
+        M = HyQMOM.InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
         
         flag2D = 0
         Ma = 70.0
@@ -126,21 +87,14 @@ using HyQMOM
     @testset "High Ma remains stable" begin
         # Test that fix works even at very high Mach numbers
         
-        M = zeros(35)
         Ma = 150.0
+        rho = 1.0
         u = Ma / sqrt(3.0)
+        v, w = u, -u
         T = 1.0
         
-        M[1] = 1.0
-        M[2], M[6], M[16] = u, u, -u
-        
-        M[3] = u^2 + T
-        M[10] = u^2 + T
-        M[20] = u^2 + T
-        
-        M[5] = (u^2 + T)^2
-        M[15] = (u^2 + T)^2
-        M[25] = (u^2 + T)^2
+        # Use InitializeM4_35 for complete, realizable moments
+        M = HyQMOM.InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
         
         flag2D = 0
         
