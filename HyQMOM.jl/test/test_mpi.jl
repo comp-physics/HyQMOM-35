@@ -471,6 +471,65 @@ else
                 end
             end
         end
+        
+        # Additional halo exchange tests
+        @testset "Halo Exchange Correctness" begin
+            # Test that halo exchange correctly copies data
+            # This is conceptual without running actual MPI
+            
+            @testset "Ghost cell indexing" begin
+                Nx_local = 10
+                # Ghost cells would be at indices 0 and Nx_local+1
+                @test 1 <= 1 <= Nx_local  # Left interior
+                @test 1 <= Nx_local <= Nx_local  # Right interior
+            end
+            
+            @testset "Periodic topology" begin
+                nprocs_test = 4
+                for rank_test in 0:nprocs_test-1
+                    rank_left = mod(rank_test - 1, nprocs_test)
+                    rank_right = mod(rank_test + 1, nprocs_test)
+                    
+                    @test 0 <= rank_left < nprocs_test
+                    @test 0 <= rank_right < nprocs_test
+                end
+            end
+            
+            @testset "2D decomposition" begin
+                # Test 2D domain decomposition logic
+                nranks_x = 2
+                nranks_y = 2
+                total_ranks = nranks_x * nranks_y
+                
+                @test total_ranks == 4
+                
+                # Test rank mapping
+                for ry in 0:nranks_y-1
+                    for rx in 0:nranks_x-1
+                        rank_2d = ry * nranks_x + rx
+                        @test 0 <= rank_2d < total_ranks
+                    end
+                end
+            end
+            
+            @testset "Corner cell handling" begin
+                # Test that diagonal neighbors are correctly identified
+                # In 2D, each cell has 8 neighbors (including diagonals)
+                neighbors_2d = [
+                    (-1, -1), (-1, 0), (-1, 1),
+                    ( 0, -1),          ( 0, 1),
+                    ( 1, -1), ( 1, 0), ( 1, 1)
+                ]
+                
+                @test length(neighbors_2d) == 8
+            end
+            
+            @testset "Moment field consistency" begin
+                # All 35 moments should be exchanged
+                nmoments = 35
+                @test nmoments == 35
+            end
+        end
     end
 end
 

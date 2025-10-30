@@ -29,8 +29,21 @@ const TOL = 1e-10
         include("test_realizability.jl")
         include("test_closures.jl")
         include("test_numerical_schemes.jl")
+        
+        # Regression and bug fix tests
         include("test_z_eigenvalue_fix.jl")
+        
+        # Golden file comparison tests
         include("test_golden_files.jl")
+        
+        # Additional comprehensive unit tests
+        include("test_timestep.jl")
+        include("test_realizability_bounds.jl")
+        include("test_conservation.jl")
+        include("test_boundary_conditions.jl")
+        include("test_eigenvalue_ordering.jl")
+        include("test_initial_conditions_properties.jl")
+        include("test_numerical_accuracy.jl")
     end
     
     # Integration tests (Julia vs MATLAB golden files)
