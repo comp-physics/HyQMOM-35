@@ -29,6 +29,7 @@ const TOL = 1e-10
         include("test_realizability.jl")
         include("test_closures.jl")
         include("test_numerical_schemes.jl")
+        include("test_z_eigenvalue_fix.jl")
         include("test_golden_files.jl")
     end
     
