@@ -34,3 +34,4 @@ docs/Manifest.toml
 *_Ma*.sbatch
 slurm-*.out
 HyQMOM.jl/slurm/hyqmom_N*.out
+HyQMOM.jl/slurm/submitted-jobs/

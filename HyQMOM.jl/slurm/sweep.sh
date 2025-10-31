@@ -94,6 +94,10 @@ submit_combo() {
   echo "  Grid: ${n}³, Ma=${ma}, Kn=${kn}, tmax=${tmax}, snapshot_interval=${snapshot_interval}"
   if [[ "$DRY_RUN" != "1" ]]; then
     sbatch "$out"
+    # Move submitted job to archive directory
+    mkdir -p slurm/submitted-jobs
+    mv "$out" slurm/submitted-jobs/
+    echo "  → Archived to slurm/submitted-jobs/"
   fi
 }
 
