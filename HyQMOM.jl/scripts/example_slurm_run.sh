@@ -36,7 +36,7 @@ module load julia/1.11
 module load openmpi/4.1.5
 
 # Use SAME depot as setup
-export JULIA_DEPOT_PATH="/scratch/$USER/.julia"
+export JULIA_DEPOT_PATH="$HOME/scratch/.julia"
 
 # Disable plotting and precompilation
 export HYQMOM_SKIP_PLOTTING=true

@@ -4,7 +4,7 @@
 #SBATCH -p cpu-gnr
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=1:00:00
+#SBATCH --time=3:00:00
 #SBATCH --mem=16GB
 
 # ==============================================================================
@@ -29,7 +29,7 @@ module load julia/1.11
 module load openmpi/4.1.5
 
 # Use exec-capable depot (CRITICAL - not HOME if it's noexec!)
-export JULIA_DEPOT_PATH="/scratch/$USER/.julia"
+export JULIA_DEPOT_PATH="$HOME/scratch/.julia"
 mkdir -p $JULIA_DEPOT_PATH
 
 echo "Julia depot: $JULIA_DEPOT_PATH"
