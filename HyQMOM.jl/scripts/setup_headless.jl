@@ -9,10 +9,29 @@ Usage:
 
 using Pkg
 
+# Disable auto-precompile to avoid stale cache errors during package removal
+ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
+
 println("="^70)
 println("HyQMOM Headless Setup")
 println("="^70)
 println("Removing packages incompatible with headless systems...")
+println()
+
+# Clear any existing precompiled cache to avoid KeyError
+println("Clearing precompiled cache...")
+try
+    depot_path = first(DEPOT_PATH)
+    compiled_dir = joinpath(depot_path, "compiled", "v$(VERSION.major).$(VERSION.minor)")
+    if isdir(compiled_dir)
+        rm(compiled_dir, recursive=true, force=true)
+        println("  ✓ Cache cleared")
+    else
+        println("  ⊘ No cache to clear")
+    end
+catch e
+    println("  ⊘ Cache clear failed: $(typeof(e))")
+end
 println()
 
 # Packages to remove for headless compatibility:
