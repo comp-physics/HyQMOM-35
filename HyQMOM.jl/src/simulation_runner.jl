@@ -1,6 +1,6 @@
 using LinearAlgebra: norm
-using JLD2
 using Printf
+using JLD2  # Always needed for snapshot saving
 
 """
     simulation_runner(params)
@@ -281,7 +281,7 @@ function simulation_runner(params)
             )
         end
         
-        jld_file = jldopen(snapshot_filename, "w")
+        jld_file = JLD2.jldopen(snapshot_filename, "w")
         jld_file["meta/params"] = params
         jld_file["meta/snapshot_interval"] = snapshot_interval
         # Don't write n_snapshots yet - will write final count at end

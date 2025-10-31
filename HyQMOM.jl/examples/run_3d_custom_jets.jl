@@ -41,26 +41,15 @@ const VIZ_DISABLED = "--no-viz" in ARGS &&
     idx < length(ARGS) &&
     lowercase(ARGS[idx + 1]) in ["true", "t", "yes", "y", "1"]
 
-# Load GLMakie first to enable visualization support in HyQMOM
-const GLMAKIE_LOADED = if VIZ_DISABLED
-    false
-else
-    try
-        import GLMakie
-        true
-    catch e
-        @warn """
-        GLMakie is not installed. Visualization will not be available.
-        To install: julia --project=. -e 'using Pkg; Pkg.add("GLMakie")'
-        """
-        false
-    end
+# Set environment variable for HyQMOM module to skip plotting deps
+if VIZ_DISABLED
+    ENV["HYQMOM_SKIP_PLOTTING"] = "true"
 end
 
 using HyQMOM
 using MPI
 using Printf
-using JLD2  # For saving snapshots
+using JLD2  # Always needed for snapshot saving/loading
 
 # Load parameter parsing utilities
 include("parse_params.jl")
@@ -356,7 +345,9 @@ if params.snapshot_interval > 0
         println("="^70)
         
         # Launch interactive viewer (unless disabled)
-        if !params.no_viz && GLMAKIE_LOADED
+        # Check if the visualization function is actually available in HyQMOM
+        viz_available = !params.no_viz && isdefined(HyQMOM, :interactive_3d_timeseries_streaming)
+        if viz_available
             println("\nLaunching Interactive Time-Series Viewer (Streaming)...")
             println("\nViewer Controls:")
             println("  * Time slider: Step through snapshots (loaded on-demand)")
@@ -390,8 +381,7 @@ if params.snapshot_interval > 0
         end
         
         # Check for standardized moments
-        using JLD2
-        jldopen(snapshot_filename, "r") do f
+        JLD2.jldopen(snapshot_filename, "r") do f
             snap_keys = sort!(collect(keys(f["snapshots"])))
             first_snap = f["snapshots/$(snap_keys[1])"]
             if haskey(first_snap, "S")

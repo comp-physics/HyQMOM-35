@@ -99,28 +99,37 @@ include("simulation_runner.jl")
 const SKIP_PLOTTING = get(ENV, "HYQMOM_SKIP_PLOTTING", "false") == "true" || 
                       get(ENV, "CI", "false") == "true"
 
-# Check if GLMakie is available for interactive 3D visualization
-const GLMAKIE_AVAILABLE = !SKIP_PLOTTING && 
+# Check if visualization dependencies are available
+const VIZ_AVAILABLE = !SKIP_PLOTTING && 
     try
-        Base.find_package("GLMakie") !== nothing
+        # Check for visualization-specific packages (NOT JLD2 - that's always needed)
+        Base.find_package("GLMakie") !== nothing &&
+        Base.find_package("FileIO") !== nothing &&
+        Base.find_package("ColorSchemes") !== nothing &&
+        Base.find_package("LaTeXStrings") !== nothing
     catch
         false
     end
 
-if GLMAKIE_AVAILABLE
+if VIZ_AVAILABLE
     try
-        # Load GLMakie as optional dependency
+        # Load visualization dependencies as optional
         @eval begin
             import GLMakie
+            import FileIO
+            import ColorSchemes
+            import LaTeXStrings
+            import Dates
+            import JLD2  # JLD2 is also needed for viz file loading
             include($(joinpath(@__DIR__, "visualization", "interactive_3d_timeseries_streaming.jl")))
         end
     catch e
         if !SKIP_PLOTTING
-            @warn "Failed to load GLMakie visualization module" exception=(e, catch_backtrace())
+            @warn "Failed to load visualization module" exception=(e, catch_backtrace())
         end
     end
 elseif !SKIP_PLOTTING
-    @info "GLMakie not available - visualization disabled. Install with: using Pkg; Pkg.add(\"GLMakie\")"
+    @info "Visualization packages not available - visualization disabled. Install with: using Pkg; Pkg.add([\"GLMakie\", \"FileIO\", \"ColorSchemes\", \"LaTeXStrings\"])"
 end
 
 end # module

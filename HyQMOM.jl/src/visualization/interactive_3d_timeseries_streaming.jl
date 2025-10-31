@@ -3,14 +3,15 @@ Interactive 3D Time-Series Visualization with Streaming File Support
 
 This viewer lazily loads snapshots from a JLD2 file on-demand as the user navigates,
 rather than loading all snapshots into memory at once.
+
+Note: This file is only loaded when visualization dependencies are available.
+All required packages (GLMakie, FileIO, JLD2, LaTeXStrings, Dates, ColorSchemes)
+are imported in the parent HyQMOM module.
 """
 
-import GLMakie
+# Re-use imports from parent module (already imported conditionally)
 using Printf
-using LaTeXStrings
-using Dates
-using FileIO
-using JLD2
+using ..LaTeXStrings  # Make @L_str macro available
 
 # Import moment computation functions
 import ..get_standardized_moment
@@ -51,7 +52,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     println("="^70)
     
     # Open file and read metadata
-    jld_file = jldopen(filename, "r")
+    jld_file = JLD2.jldopen(filename, "r")
     n_snapshots = jld_file["meta/n_snapshots"]
     snap_keys = sort!(collect(keys(jld_file["snapshots"])))
     
