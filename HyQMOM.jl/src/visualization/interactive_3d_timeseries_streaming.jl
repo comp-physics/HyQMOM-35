@@ -5,8 +5,8 @@ This viewer lazily loads snapshots from a JLD2 file on-demand as the user naviga
 rather than loading all snapshots into memory at once.
 
 Note: This file is only loaded when visualization dependencies are available.
-All required packages (GLMakie, FileIO, JLD2, LaTeXStrings, Dates, ColorSchemes)
-are imported in the parent HyQMOM module.
+All required visualization packages (GLMakie, FileIO, LaTeXStrings, Dates, ColorSchemes) are imported in the parent HyQMOM module.
+JLD2 is always available as a core dependency.
 """
 
 # Re-use imports from parent module (already imported conditionally)
