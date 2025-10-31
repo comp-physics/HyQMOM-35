@@ -54,15 +54,35 @@ function eigenvalues6z_hyperbolic_3D(M::Vector{Float64}, flag2D::Int, Ma::Float6
     J6 = jacobian6(m000, m100, m200, m300, m400, m001, m101, m201, m301, m002, m102, m202, m003, m103, m004)
     lam6a = eigvals(J6)
     lam6ar = sort(real.(lam6a))
-    v6min = lam6ar[1]
-    v6max = lam6ar[6]
+    v6min_wu = lam6ar[1]
+    v6max_wu = lam6ar[6]
+    v6min = v6min_wu
+    v6max = v6max_wu
     
     # WV moments (z-y plane)
-    J6 = jacobian6(m000, m010, m020, m030, m040, m001, m011, m012, m013, m002, m021, m022, m003, m013, m004)
+    # Correct mapping from MATLAB: z is first direction, y is second
+    J6 = jacobian6(m000, m001, m002, m003, m004,
+                   m010, m011, m012, m013,
+                   m020, m021, m022,
+                   m030, m031, m040)
     lam6b = eigvals(J6)
     lam6br = sort(real.(lam6b))
-    v6min = min(v6min, lam6br[1])
-    v6max = max(v6max, lam6br[6])
+    v6min_wv = lam6br[1]
+    v6max_wv = lam6br[6]
+    v6min = min(v6min, v6min_wv)
+    v6max = max(v6max, v6max_wv)
+    
+    # Debug: Check for pathological eigenvalues
+    if abs(v6max) > 1000.0 || abs(v6min) > 1000.0
+        println("WARNING in eigenvalues6z_hyperbolic_3D:")
+        println("  WU (z-x): min=$(v6min_wu), max=$(v6max_wu)")
+        println("  WV (z-y): min=$(v6min_wv), max=$(v6max_wv)")
+        println("  Physical vel: w=$(m001/m000)")
+        println("  m013 = $(m013), m031 = $(m031)")
+        println("  Ratio m031/m013 = $(m031/m013)")
+        println("  WV Jacobian using m031 (14th arg) = $(m031)")
+        println("  Will attempt correction...")
+    end
     
     # Check for complex eigenvalues in z direction and correct
     if maximum(abs.(imag.(lam6a))) > 1000*eps() || maximum(abs.(imag.(lam6b))) > 1000*eps()
@@ -249,8 +269,12 @@ function eigenvalues6z_hyperbolic_3D(M::Vector{Float64}, flag2D::Int, Ma::Float6
         v6min = lam6ar[1]
         v6max = lam6ar[6]
         
-        # WV moments
-        J6 = jacobian6(m000, m010, m020, m030, m040, m001, m011, m012, m013, m002, m021, m022, m003, m013, m004)
+        # WV moments (z-y plane)
+        # Correct mapping from MATLAB: z is first direction, y is second
+        J6 = jacobian6(m000, m001, m002, m003, m004,
+                       m010, m011, m012, m013,
+                       m020, m021, m022,
+                       m030, m031, m040)
         lam6b = eigvals(J6)
         lam6br = sort(real.(lam6b))
         v6min = min(v6min, lam6br[1])
