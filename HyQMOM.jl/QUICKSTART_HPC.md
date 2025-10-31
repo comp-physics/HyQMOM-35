@@ -114,6 +114,18 @@ julia --project=. scripts/setup_headless.jl
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
+### Accidentally ran setup_headless on desktop?
+Restore your Project.toml from git:
+```bash
+git checkout HEAD -- Project.toml
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+```
+
+Or use the interactive restore script:
+```bash
+bash scripts/restore_project_toml.sh
+```
+
 ### "undefined symbol: ompi_instance_count"
 MAT/HDF5 still present (pulls OpenMPI_jll). Fix:
 ```bash

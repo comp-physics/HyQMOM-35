@@ -122,6 +122,27 @@ Don't pass values to flag arguments. Use:
 --no-viz true     # ✗ Wrong
 ```
 
+### Accidentally ran setup_headless on desktop / need to restore Project.toml?
+
+**Option 1: Restore from git (fastest)**
+```bash
+cd HyQMOM.jl
+git checkout HEAD -- Project.toml
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+```
+
+**Option 2: Interactive restore**
+```bash
+cd HyQMOM.jl
+bash scripts/restore_project_toml.sh
+```
+
+**Option 3: Manual package addition**
+```bash
+cd HyQMOM.jl
+julia --project=. scripts/restore_desktop.jl
+```
+
 ## Output Files
 
 After a successful run:
