@@ -18,22 +18,6 @@ println("="^70)
 println("Removing packages incompatible with headless systems...")
 println()
 
-# Clear any existing precompiled cache to avoid KeyError
-println("Clearing precompiled cache...")
-try
-    depot_path = first(DEPOT_PATH)
-    compiled_dir = joinpath(depot_path, "compiled", "v$(VERSION.major).$(VERSION.minor)")
-    if isdir(compiled_dir)
-        rm(compiled_dir, recursive=true, force=true)
-        println("  ✓ Cache cleared")
-    else
-        println("  ⊘ No cache to clear")
-    end
-catch e
-    println("  ⊘ Cache clear failed: $(typeof(e))")
-end
-println()
-
 # Packages to remove for headless compatibility:
 # - GLMakie, FileIO, ColorSchemes, LaTeXStrings: require OpenGL/X11
 # - MAT: pulls HDF5_jll with MPIExt → OpenMPI_jll conflicts with system MPI
@@ -46,6 +30,7 @@ remove_packages = [
     "HDF5"  # If present as explicit dep
 ]
 
+println("Removing packages...")
 for pkg in remove_packages
     try
         Pkg.rm(pkg; mode=PKGMODE_PROJECT)
@@ -53,6 +38,23 @@ for pkg in remove_packages
     catch e
         println("  ⊘ Skipped: $pkg (not in dependencies)")
     end
+end
+println()
+
+# Clear precompiled cache AFTER removing packages
+# This avoids stale references to removed packages
+println("Clearing precompiled cache...")
+try
+    depot_path = first(DEPOT_PATH)
+    compiled_dir = joinpath(depot_path, "compiled", "v$(VERSION.major).$(VERSION.minor)")
+    if isdir(compiled_dir)
+        rm(compiled_dir, recursive=true, force=true)
+        println("  ✓ Cache cleared")
+    else
+        println("  ⊘ No cache to clear")
+    end
+catch e
+    println("  ⊘ Cache clear failed: $(typeof(e))")
 end
 
 # Note: We do NOT call Pkg.resolve() here because it can trigger precompilation
