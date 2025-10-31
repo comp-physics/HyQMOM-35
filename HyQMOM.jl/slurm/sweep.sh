@@ -64,12 +64,18 @@ submit_combo() {
 
   # Generate the job file by editing the template:
   # - replace the job name
+  # - replace the output file name
   # - replace the CLI flags --Nx, --Ny, --Nz (all set to n), --Ma, --Kn, --tmax, --snapshot-interval
   awk -v n="$n" -v ma="$ma" -v kn="$kn" -v tmax="$tmax" -v snapshot_interval="$snapshot_interval" -v job="$job" '
     {
       # Update job name line
       if ($0 ~ /^#SBATCH[[:space:]]+-J[[:space:]]+/) {
         print "#SBATCH -J " job
+        next
+      }
+      # Update output file line
+      if ($0 ~ /^#SBATCH[[:space:]]+-o[[:space:]]+/) {
+        print "#SBATCH -o slurm/" job "-%j.out"
         next
       }
       # Replace numeric args in the run line(s)
