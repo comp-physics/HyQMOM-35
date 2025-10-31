@@ -50,31 +50,64 @@ echo "Julia version: $(julia --version)"
 echo "MPI module: $(module list 2>&1 | grep -i mpi)"
 echo ""
 
-# Step 0: Clear precompiled cache BEFORE doing anything
+# Step 1: Remove visualization packages (direct TOML edit, no Pkg manager)
 echo ""
-printf '=%.0s' {1..70}; echo ""
-echo "STEP 0: Clearing precompiled cache..."
-printf '=%.0s' {1..70}; echo ""
-JULIA_VERSION=$(julia --version | grep -oP '\d+\.\d+' | head -1)
-CACHE_DIR="$JULIA_DEPOT_PATH/compiled/v$JULIA_VERSION"
-if [ -d "$CACHE_DIR" ]; then
-    rm -rf "$CACHE_DIR"
-    echo "✓ Cache cleared: $CACHE_DIR"
-else
-    echo "⊘ No cache to clear"
-fi
-echo ""
-
-# Step 1: Remove visualization packages (headless incompatible)
 printf '=%.0s' {1..70}; echo ""
 echo "STEP 1: Removing visualization packages..."
 printf '=%.0s' {1..70}; echo ""
-julia --project=. scripts/setup_headless.jl
+
+# Edit Project.toml directly to avoid triggering Pkg precompilation
+julia --project=. -e '
+using TOML
+project_file = "Project.toml"
+project = TOML.parsefile(project_file)
+
+# Packages to remove for headless compatibility
+remove_pkgs = ["GLMakie", "FileIO", "ColorSchemes", "LaTeXStrings", "MAT", "HDF5"]
+
+if haskey(project, "deps")
+    removed_any = false
+    for pkg in remove_pkgs
+        if haskey(project["deps"], pkg)
+            delete!(project["deps"], pkg)
+            println("  ✓ Removed: $pkg")
+            removed_any = true
+        else
+            println("  ⊘ Skipped: $pkg (not in dependencies)")
+        end
+    end
+    
+    # Write back to file
+    open(project_file, "w") do io
+        TOML.print(io, project)
+    end
+    println()
+    if removed_any
+        println("✓ Project.toml updated")
+    else
+        println("✓ No packages needed removal")
+    end
+else
+    println(stderr, "ERROR: No deps section in Project.toml")
+    exit(1)
+end
+'
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to remove visualization packages!"
     exit 1
 fi
+
+# Clear entire compiled cache after package removal
+echo ""
+echo "Clearing compiled cache..."
+if [ -d "$JULIA_DEPOT_PATH/compiled" ]; then
+    rm -rf "$JULIA_DEPOT_PATH/compiled"
+    echo "✓ Entire cache cleared"
+else
+    echo "⊘ No cache to clear"
+fi
+echo ""
 
 # Step 2: Verify visualization packages were removed
 printf '=%.0s' {1..70}; echo ""
