@@ -80,13 +80,27 @@ for P in "${PKGS[@]}"; do
   fi
 done
 
-# Debug: show any lingering compat entries for these packages
+# Remove from [targets] test array
 echo ""
-echo "Checking for lingering compat entries..."
-LINGERING=$(awk '/^\[compat\]/{flag=1;next} /^\[/{flag=0} flag {print}' Project.toml | grep -E '^[[:space:]]*(\"?(GLMakie|FileIO|ColorSchemes|LaTeXStrings|MAT|HDF5)\"?[[:space:]]*=)' || true)
-if [ -n "$LINGERING" ]; then
-  echo "⚠ WARNING: Found lingering compat entries:"
-  echo "$LINGERING"
+echo "Cleaning [targets] section..."
+for P in "${PKGS[@]}"; do
+  if grep -q "\"${P}\"" Project.toml; then
+    # Remove package from test array, handling commas properly
+    sed -i.tmp "s/,\s*\"${P}\"//g; s/\"${P}\",\s*//g; s/\"${P}\"//g" Project.toml
+    rm -f Project.toml.tmp
+    echo "  ✓ Removed from [targets]: $P"
+  fi
+done
+
+# Debug: show any lingering entries
+echo ""
+echo "Checking for lingering entries in all sections..."
+LINGERING=$(grep -E '^(GLMakie|FileIO|ColorSchemes|LaTeXStrings|MAT|HDF5)[[:space:]]*=' Project.toml || true)
+LINGERING_ARRAY=$(grep -E '"(GLMakie|FileIO|ColorSchemes|LaTeXStrings|MAT|HDF5)"' Project.toml || true)
+if [ -n "$LINGERING" ] || [ -n "$LINGERING_ARRAY" ]; then
+  echo "⚠ WARNING: Found lingering entries:"
+  [ -n "$LINGERING" ] && echo "$LINGERING"
+  [ -n "$LINGERING_ARRAY" ] && echo "$LINGERING_ARRAY"
 else
   echo "  ✓ No lingering entries"
 fi
