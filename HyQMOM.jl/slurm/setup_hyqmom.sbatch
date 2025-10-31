@@ -48,9 +48,10 @@ echo "MPI module: $(module list 2>&1 | grep -i mpi)"
 echo ""
 
 # Step 1: Remove visualization packages (headless incompatible)
-echo "="^70
+echo ""
+printf '=%.0s' {1..70}; echo ""
 echo "STEP 1: Removing visualization packages..."
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 julia --project=. scripts/setup_headless.jl
 
 if [ $? -ne 0 ]; then
@@ -60,9 +61,9 @@ fi
 
 # Step 2: Verify visualization packages were removed
 echo ""
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 echo "STEP 2: Verifying headless setup..."
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 julia --project=. -e '
 using Pkg
 deps = keys(Pkg.project().dependencies)
@@ -84,9 +85,9 @@ fi
 
 # Step 3: Install remaining packages (including JLD2)
 echo ""
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 echo "STEP 3: Installing core packages..."
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 if [ $? -ne 0 ]; then
@@ -96,9 +97,9 @@ fi
 
 # Step 4: Configure MPI
 echo ""
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 echo "STEP 4: Configuring MPI..."
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 julia --project=. scripts/setup_mpi.jl
 
 if [ $? -ne 0 ]; then
@@ -108,9 +109,9 @@ fi
 
 # Step 5: Test
 echo ""
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 echo "STEP 5: Testing HyQMOM..."
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 julia --project=. -e 'using HyQMOM; println("✓ HyQMOM loaded successfully!")'
 
 if [ $? -ne 0 ]; then
@@ -120,13 +121,13 @@ fi
 
 # Summary
 echo ""
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 echo "✓ SETUP COMPLETE!"
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 echo "Julia depot: $JULIA_DEPOT_PATH"
 echo "GLMakie: REMOVED (headless)"
 echo "JLD2: INSTALLED (snapshots)"
 echo "MPI: CONFIGURED (system)"
 echo ""
 echo "Next: Submit simulation jobs using slurm/hyqmom_base.sbatch"
-echo "="^70
+printf '=%.0s' {1..70}; echo ""

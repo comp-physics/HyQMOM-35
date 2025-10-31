@@ -90,7 +90,7 @@ srun --mpi=pmix julia --project=. examples/run_3d_custom_jets.jl --Nx 80 --Ny 80
 EXIT_CODE=$?
 
 echo ""
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 if [ $EXIT_CODE -eq 0 ]; then
     echo "✓ SIMULATION COMPLETE!"
     echo ""
@@ -104,5 +104,5 @@ else
     echo "✗ SIMULATION FAILED (exit code: $EXIT_CODE)"
     echo "Check output above for errors"
 fi
-echo "="^70
+printf '=%.0s' {1..70}; echo ""
 echo "Job ended: $(date)"
