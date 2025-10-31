@@ -8,6 +8,15 @@
 
 set -euo pipefail
 
+# Check we're in the correct directory
+if [ ! -f "Project.toml" ]; then
+    echo "ERROR: Must run from HyQMOM.jl directory (Project.toml not found)" >&2
+    echo "Usage:" >&2
+    echo "  cd HyQMOM.jl" >&2
+    echo "  bash slurm/sweep.sh" >&2
+    exit 1
+fi
+
 # === Edit these lists ===
 # Grid resolution (cubic grids: N used for Nx, Ny, Nz)
 N_LIST=(80)

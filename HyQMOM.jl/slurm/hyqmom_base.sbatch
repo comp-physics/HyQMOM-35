@@ -21,6 +21,15 @@
 #SBATCH --constraint=graniterapids
 #SBATCH --qos=embers
 
+# Ensure we're in HyQMOM.jl directory (check FIRST before doing anything)
+if [ ! -f "Project.toml" ]; then
+    echo "ERROR: Project.toml not found! Must run from HyQMOM.jl directory:" >&2
+    echo "Usage:" >&2
+    echo "  cd HyQMOM.jl" >&2
+    echo "  sbatch slurm/hyqmom_base.sbatch" >&2
+    exit 1
+fi
+
 module load julia/1.11
 module load openmpi/4.1.5
 
@@ -35,18 +44,9 @@ export OMP_NUM_THREADS=1
 export OMPI_MCA_btl=^openib
 export UCX_WARN_UNUSED_ENV_VARS=n
 
-
 echo "Julia depot: $JULIA_DEPOT_PATH"
 echo "HYQMOM_SKIP_PLOTTING: $HYQMOM_SKIP_PLOTTING"
 echo ""
-
-# Ensure we're in HyQMOM.jl directory (script should be run from there)
-if [ ! -f "Project.toml" ]; then
-    echo "ERROR: Project.toml not found! Must run from HyQMOM.jl directory:"
-    echo "  cd HyQMOM.jl"
-    echo "  sbatch slurm/hyqmom_base.sbatch"
-    exit 1
-fi
 
 # Check MPI configuration
 if [ ! -f "LocalPreferences.toml" ]; then

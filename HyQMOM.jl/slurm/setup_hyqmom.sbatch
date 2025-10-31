@@ -20,6 +20,15 @@
 #   4. Check output: cat slurm-<jobid>.out
 # ==============================================================================
 
+# Ensure we're in HyQMOM.jl directory (check FIRST before doing anything)
+if [ ! -f "Project.toml" ]; then
+    echo "ERROR: Project.toml not found! Must run from HyQMOM.jl directory:" >&2
+    echo "Usage:" >&2
+    echo "  cd HyQMOM.jl" >&2
+    echo "  sbatch slurm/setup_hyqmom.sbatch" >&2
+    exit 1
+fi
+
 echo "Starting HyQMOM setup for headless HPC..."
 echo "Hostname: $(hostname)"
 echo "Date: $(date)"
@@ -37,14 +46,6 @@ echo "Julia depot: $JULIA_DEPOT_PATH"
 echo "Julia version: $(julia --version)"
 echo "MPI module: $(module list 2>&1 | grep -i mpi)"
 echo ""
-
-# Ensure we're in HyQMOM.jl directory (script should be run from there)
-if [ ! -f "Project.toml" ]; then
-    echo "ERROR: Project.toml not found! Must run from HyQMOM.jl directory:"
-    echo "  cd HyQMOM.jl"
-    echo "  sbatch slurm/setup_hyqmom.sbatch"
-    exit 1
-fi
 
 # Step 1: Remove visualization packages (headless incompatible)
 echo "="^70
