@@ -9,10 +9,8 @@
 set -euo pipefail
 
 # === Edit these lists ===
-# Grid resolution (will be used as Nx, Ny, Nz - cubic grids)
-NX_LIST=(80)
-NY_LIST=(80)
-NZ_LIST=(80)
+# Grid resolution (cubic grids: N used for Nx, Ny, Nz)
+N_LIST=(80)
 
 # Physical parameters
 MA_LIST=(0.0)
@@ -41,20 +39,21 @@ sanitize_float() {
 
 # Create a modified copy and submit
 submit_combo() {
-  local nx="$1" ny="$2" nz="$3" ma="$4" kn="$5" tmax="$6"
+  local n="$1" ma="$2" kn="$3" tmax="$4"
   local J_MA J_KN J_TMAX
   J_MA="$(sanitize_float "$ma")"
   J_KN="$(sanitize_float "$kn")"
   J_TMAX="$(sanitize_float "$tmax")"
 
-  # Job name matches output file naming: Nx{nx}_Ny{ny}_Nz{nz}_Ma{ma}_Kn{kn}_t{tmax}
-  local job="hyqmom_Nx${nx}_Ny${ny}_Nz${nz}_Ma${J_MA}_Kn${J_KN}_t${J_TMAX}"
+  # Job name matches output file naming: N{n}_Ma{ma}_Kn{kn}_t{tmax}
+  # (Output files use Nx/Ny/Nz but all equal to N for cubic grids)
+  local job="hyqmom_N${n}_Ma${J_MA}_Kn${J_KN}_t${J_TMAX}"
   local out="slurm/${job}.sbatch"
 
   # Generate the job file by editing the template:
   # - replace the job name
-  # - replace the CLI flags --Nx, --Ny, --Nz, --Ma, --Kn, --tmax
-  awk -v nx="$nx" -v ny="$ny" -v nz="$nz" -v ma="$ma" -v kn="$kn" -v tmax="$tmax" -v job="$job" '
+  # - replace the CLI flags --Nx, --Ny, --Nz (all set to n), --Ma, --Kn, --tmax
+  awk -v n="$n" -v ma="$ma" -v kn="$kn" -v tmax="$tmax" -v job="$job" '
     {
       # Update job name line
       if ($0 ~ /^#SBATCH[[:space:]]+-J[[:space:]]+/) {
@@ -62,9 +61,9 @@ submit_combo() {
         next
       }
       # Replace numeric args in the run line(s)
-      gsub(/--Nx[[:space:]]+[0-9]+/,       "--Nx " nx)
-      gsub(/--Ny[[:space:]]+[0-9]+/,       "--Ny " ny)
-      gsub(/--Nz[[:space:]]+[0-9]+/,       "--Nz " nz)
+      gsub(/--Nx[[:space:]]+[0-9]+/,       "--Nx " n)
+      gsub(/--Ny[[:space:]]+[0-9]+/,       "--Ny " n)
+      gsub(/--Nz[[:space:]]+[0-9]+/,       "--Nz " n)
       gsub(/--Ma[[:space:]]+[0-9.eE+-]+/,  "--Ma " ma)
       gsub(/--Kn[[:space:]]+[0-9.eE+-]+/,  "--Kn " kn)
       gsub(/--tmax[[:space:]]+[0-9.eE+-]+/, "--tmax " tmax)
@@ -73,7 +72,7 @@ submit_combo() {
   ' "$BASE" > "$out"
 
   echo "Prepared ${out}"
-  echo "  Grid: ${nx}×${ny}×${nz}, Ma=${ma}, Kn=${kn}, tmax=${tmax}"
+  echo "  Grid: ${n}³, Ma=${ma}, Kn=${kn}, tmax=${tmax}"
   if [[ "$DRY_RUN" != "1" ]]; then
     sbatch "$out"
   fi
@@ -86,27 +85,21 @@ if [[ ! -f "$BASE" ]]; then
 fi
 
 if [[ "$MODE" == "zip" ]]; then
-  if (( ${#NX_LIST[@]} != ${#NY_LIST[@]} || ${#NX_LIST[@]} != ${#NZ_LIST[@]} || 
-        ${#NX_LIST[@]} != ${#MA_LIST[@]} || ${#NX_LIST[@]} != ${#KN_LIST[@]} || 
-        ${#NX_LIST[@]} != ${#TMAX_LIST[@]} )); then
-    echo "zip mode requires equal-length NX_LIST, NY_LIST, NZ_LIST, MA_LIST, KN_LIST, TMAX_LIST." >&2
+  if (( ${#N_LIST[@]} != ${#MA_LIST[@]} || ${#N_LIST[@]} != ${#KN_LIST[@]} || 
+        ${#N_LIST[@]} != ${#TMAX_LIST[@]} )); then
+    echo "zip mode requires equal-length N_LIST, MA_LIST, KN_LIST, TMAX_LIST." >&2
     exit 1
   fi
-  for i in "${!MA_LIST[@]}"; do
-    submit_combo "${NX_LIST[$i]}" "${NY_LIST[$i]}" "${NZ_LIST[$i]}" \
-                 "${MA_LIST[$i]}" "${KN_LIST[$i]}" "${TMAX_LIST[$i]}"
+  for i in "${!N_LIST[@]}"; do
+    submit_combo "${N_LIST[$i]}" "${MA_LIST[$i]}" "${KN_LIST[$i]}" "${TMAX_LIST[$i]}"
   done
 else
   # Cartesian product
-  for nx in "${NX_LIST[@]}"; do
-    for ny in "${NY_LIST[@]}"; do
-      for nz in "${NZ_LIST[@]}"; do
-        for ma in "${MA_LIST[@]}"; do
-          for kn in "${KN_LIST[@]}"; do
-            for tmax in "${TMAX_LIST[@]}"; do
-              submit_combo "$nx" "$ny" "$nz" "$ma" "$kn" "$tmax"
-            done
-          done
+  for n in "${N_LIST[@]}"; do
+    for ma in "${MA_LIST[@]}"; do
+      for kn in "${KN_LIST[@]}"; do
+        for tmax in "${TMAX_LIST[@]}"; do
+          submit_combo "$n" "$ma" "$kn" "$tmax"
         done
       done
     done

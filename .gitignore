@@ -30,6 +30,6 @@ docs/build/
 docs/Manifest.toml
 
 # Slurm job files (sweep-generated)
-*Nx*.sbatch
-*Ma*.sbatch
+*_N[0-9]*.sbatch
+*_Ma*.sbatch
 slurm-*.out
