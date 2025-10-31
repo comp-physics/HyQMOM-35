@@ -58,10 +58,34 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 2: Install remaining packages (including JLD2)
+# Step 2: Verify visualization packages were removed
 echo ""
 echo "="^70
-echo "STEP 2: Installing core packages..."
+echo "STEP 2: Verifying headless setup..."
+echo "="^70
+julia --project=. -e '
+using Pkg
+deps = keys(Pkg.project().dependencies)
+bad_packages = ["GLMakie", "FileIO", "ColorSchemes", "LaTeXStrings", "MAT", "HDF5"]
+found = filter(p -> p in deps, bad_packages)
+if !isempty(found)
+    println(stderr, "ERROR: Visualization packages still present in Project.toml!")
+    println(stderr, "Found: ", join(found, ", "))
+    println(stderr, "This will cause precompilation issues on headless HPC.")
+    println(stderr, "Run scripts/setup_headless.jl manually to fix.")
+    exit(1)
+end
+println("✓ No headless-incompatible packages found")
+'
+
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+# Step 3: Install remaining packages (including JLD2)
+echo ""
+echo "="^70
+echo "STEP 3: Installing core packages..."
 echo "="^70
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
@@ -70,10 +94,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 3: Configure MPI
+# Step 4: Configure MPI
 echo ""
 echo "="^70
-echo "STEP 3: Configuring MPI..."
+echo "STEP 4: Configuring MPI..."
 echo "="^70
 julia --project=. scripts/setup_mpi.jl
 
@@ -82,10 +106,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 4: Test
+# Step 5: Test
 echo ""
 echo "="^70
-echo "STEP 4: Testing HyQMOM..."
+echo "STEP 5: Testing HyQMOM..."
 echo "="^70
 julia --project=. -e 'using HyQMOM; println("✓ HyQMOM loaded successfully!")'
 

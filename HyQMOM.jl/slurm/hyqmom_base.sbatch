@@ -48,6 +48,30 @@ echo "Julia depot: $JULIA_DEPOT_PATH"
 echo "HYQMOM_SKIP_PLOTTING: $HYQMOM_SKIP_PLOTTING"
 echo ""
 
+# Verify no visualization packages (headless HPC check)
+julia --project=. -e '
+using Pkg
+deps = keys(Pkg.project().dependencies)
+bad_packages = ["GLMakie", "FileIO", "ColorSchemes", "LaTeXStrings", "MAT", "HDF5"]
+found = filter(p -> p in deps, bad_packages)
+if !isempty(found)
+    println(stderr, "")
+    println(stderr, "="^70)
+    println(stderr, "ERROR: Visualization packages found in Project.toml!")
+    println(stderr, "="^70)
+    println(stderr, "Found: ", join(found, ", "))
+    println(stderr, "")
+    println(stderr, "These packages will fail to precompile on headless HPC.")
+    println(stderr, "Run the setup script to remove them:")
+    println(stderr, "  sbatch slurm/setup_hyqmom.sbatch")
+    println(stderr, "="^70)
+    exit(1)
+end
+' || exit 1
+
+echo "✓ Headless environment verified"
+echo ""
+
 # Check MPI configuration
 if [ ! -f "LocalPreferences.toml" ]; then
     echo "WARNING: LocalPreferences.toml not found!"
