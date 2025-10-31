@@ -11,34 +11,43 @@ cd HyQMOM-35
 git checkout better-hpc
 cd HyQMOM.jl
 
-# 2. Load modules
-module load julia/1.11
-module load openmpi/4.1.5  # or your MPI version
+# 2. Edit slurm/setup_hyqmom.sbatch for your cluster
+#    - Update #SBATCH directives (account, partition, etc.)
+#    - Update module names if needed
+#    - Update JULIA_DEPOT_PATH if needed
 
-# 3. Set Julia depot to exec-capable filesystem
-export JULIA_DEPOT_PATH="$HOME/scratch/.julia"  # or /scratch/$USER/.julia
-mkdir -p $JULIA_DEPOT_PATH
+# 3. Submit setup job
+sbatch slurm/setup_hyqmom.sbatch
 
-# 4. Remove headless-incompatible packages
-julia --project=. scripts/setup_headless.jl
-
-# 5. Install packages
-julia --project=. -e 'using Pkg; Pkg.instantiate()'
-
-# 6. Configure MPI
-julia --project=. scripts/setup_mpi.jl
-
-# 7. Test
-julia --project=. -e 'using HyQMOM; println("✓ Ready!")'
+# 4. Wait for completion and check output
+squeue -u $USER
+cat slurm-<jobid>.out  # Check for "✓ SETUP COMPLETE!"
 ```
 
-**What this does:**
+**What the setup script does:**
 - ✅ Removes GLMakie, FileIO, ColorSchemes, LaTeXStrings (OpenGL/X11)
 - ✅ Removes MAT, HDF5 (cause MPI JLL conflicts)
 - ✅ Keeps JLD2 (snapshot I/O)
 - ✅ Adds MPIPreferences and configures system MPI
+- ✅ Tests that HyQMOM loads successfully
 
 **Result:** Your `Project.toml` will have only core deps (no visualization).
+
+### Manual Setup (if Slurm unavailable)
+
+If you need to set up without Slurm:
+
+```bash
+cd HyQMOM.jl
+module load julia/1.11 openmpi/4.1.5
+export JULIA_DEPOT_PATH="$HOME/scratch/.julia"
+mkdir -p $JULIA_DEPOT_PATH
+
+julia --project=. scripts/setup_headless.jl
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --project=. scripts/setup_mpi.jl
+julia --project=. -e 'using HyQMOM; println("✓ Ready!")'
+```
 
 ## Running Simulations
 
