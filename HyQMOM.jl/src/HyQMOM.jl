@@ -12,6 +12,7 @@ using LinearAlgebra
 using StaticArrays
 using MPI
 using Printf
+using JLD2  # Always needed for snapshot I/O
 
 # Export main entry points
 export run_simulation, simulation_runner, run_simulation_with_snapshots
@@ -118,9 +119,8 @@ if VIZ_AVAILABLE
             import GLMakie
             import FileIO
             import ColorSchemes
-            import LaTeXStrings
+            using LaTeXStrings  # 'using' to make @L_str macro available
             import Dates
-            import JLD2  # JLD2 is also needed for viz file loading
             include($(joinpath(@__DIR__, "visualization", "interactive_3d_timeseries_streaming.jl")))
         end
     catch e

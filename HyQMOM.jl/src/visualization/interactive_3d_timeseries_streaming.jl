@@ -11,7 +11,6 @@ are imported in the parent HyQMOM module.
 
 # Re-use imports from parent module (already imported conditionally)
 using Printf
-using ..LaTeXStrings  # Make @L_str macro available
 
 # Import moment computation functions
 import ..get_standardized_moment
