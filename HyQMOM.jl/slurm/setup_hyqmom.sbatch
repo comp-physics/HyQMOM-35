@@ -112,9 +112,40 @@ else
   exit 1
 fi
 
-# Step 3: Install remaining packages (including JLD2)
+# Step 3: Clean slate - wipe Julia depot for fresh rebuild
+echo "Wiping Julia depot for clean rebuild..."
+if [ -d "$JULIA_DEPOT_PATH" ]; then
+  # Backup registries if they exist (saves re-download time)
+  if [ -d "$JULIA_DEPOT_PATH/registries" ]; then
+    mv "$JULIA_DEPOT_PATH/registries" "$JULIA_DEPOT_PATH/../registries.bak" 2>/dev/null || true
+  fi
+  
+  # Remove entire depot (nuclear option for depot corruption)
+  rm -rf "$JULIA_DEPOT_PATH"
+  mkdir -p "$JULIA_DEPOT_PATH"
+  
+  # Restore registries
+  if [ -d "$JULIA_DEPOT_PATH/../registries.bak" ]; then
+    mv "$JULIA_DEPOT_PATH/../registries.bak" "$JULIA_DEPOT_PATH/registries"
+    echo "✓ Julia depot wiped (registries preserved)"
+  else
+    echo "✓ Julia depot wiped (will re-download registries)"
+  fi
+else
+  echo "⊘ No depot to wipe"
+fi
+echo ""
+
+# Delete Manifest.toml for clean rebuild
+if [ -f "Manifest.toml" ]; then
+  rm -f Manifest.toml
+  echo "✓ Removed Manifest.toml"
+fi
+echo ""
+
+# Step 4: Install remaining packages (including JLD2)
 printf '=%.0s' {1..70}; echo ""
-echo "STEP 3: Installing core packages..."
+echo "STEP 4: Installing core packages..."
 printf '=%.0s' {1..70}; echo ""
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
@@ -123,9 +154,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 4: Configure MPI
+# Step 5: Configure MPI
 printf '=%.0s' {1..70}; echo ""
-echo "STEP 4: Configuring MPI..."
+echo "STEP 5: Configuring MPI..."
 printf '=%.0s' {1..70}; echo ""
 julia --project=. scripts/setup_mpi.jl
 
@@ -134,9 +165,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 5: Test
+# Step 6: Test
 printf '=%.0s' {1..70}; echo ""
-echo "STEP 5: Testing HyQMOM..."
+echo "STEP 6: Testing HyQMOM..."
 printf '=%.0s' {1..70}; echo ""
 julia --project=. -e 'using HyQMOM; println("✓ HyQMOM loaded successfully!")'
 
