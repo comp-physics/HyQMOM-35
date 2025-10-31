@@ -63,18 +63,18 @@ cp -f Project.toml Project.toml.bak 2>/dev/null || true
 PKGS=("GLMakie" "FileIO" "ColorSchemes" "LaTeXStrings" "MAT" "HDF5")
 
 for P in "${PKGS[@]}"; do
-  # Remove from [deps] (handles with or without quotes)
-  if awk '/^\[deps\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^[[:space:]]*\"?'$P'\"?[[:space:]]*=" {found=1} END{exit !found}' Project.toml; then
-    sed -i.tmp '/^\[deps\]/,/^\[/{/^[[:space:]]*"?'$P'"?[[:space:]]*=/d}' Project.toml
+  # Remove from [deps] 
+  if grep -q "^${P}[[:space:]]*=" Project.toml; then
+    sed -i.tmp "/^${P}[[:space:]]*=/d" Project.toml
     rm -f Project.toml.tmp
     echo "  ✓ Removed from [deps]: $P"
   else
     echo "  ⊘ Skipped [deps]: $P (not found)"
   fi
 
-  # Remove from [compat] (handles with or without quotes)
-  if awk '/^\[compat\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^[[:space:]]*\"?'$P'\"?[[:space:]]*=" {found=1} END{exit !found}' Project.toml; then
-    sed -i.tmp '/^\[compat\]/,/^\[/{/^[[:space:]]*"?'$P'"?[[:space:]]*=/d}' Project.toml
+  # Remove from [compat] - simple line-based removal
+  if grep -q "^${P}[[:space:]]*=" Project.toml; then
+    sed -i.tmp "/^${P}[[:space:]]*=/d" Project.toml
     rm -f Project.toml.tmp
     echo "  ✓ Removed from [compat]: $P"
   fi
