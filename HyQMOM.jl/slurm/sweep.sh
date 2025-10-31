@@ -26,6 +26,9 @@ MA_LIST=(0.0)
 KN_LIST=(1.0 0.1 0.01 0.001)
 TMAX_LIST=(0.04)
 
+# Snapshot interval (0 = no snapshots)
+SNAPSHOT_INTERVAL_LIST=(50)
+
 # Sweep mode:
 #   cross -> cartesian product of all lists
 #   zip   -> pairwise (i-th of each list together); lists must be equal length
@@ -48,7 +51,7 @@ sanitize_float() {
 
 # Create a modified copy and submit
 submit_combo() {
-  local n="$1" ma="$2" kn="$3" tmax="$4"
+  local n="$1" ma="$2" kn="$3" tmax="$4" snapshot_interval="$5"
   local J_MA J_KN J_TMAX
   J_MA="$(sanitize_float "$ma")"
   J_KN="$(sanitize_float "$kn")"
@@ -61,8 +64,8 @@ submit_combo() {
 
   # Generate the job file by editing the template:
   # - replace the job name
-  # - replace the CLI flags --Nx, --Ny, --Nz (all set to n), --Ma, --Kn, --tmax
-  awk -v n="$n" -v ma="$ma" -v kn="$kn" -v tmax="$tmax" -v job="$job" '
+  # - replace the CLI flags --Nx, --Ny, --Nz (all set to n), --Ma, --Kn, --tmax, --snapshot-interval
+  awk -v n="$n" -v ma="$ma" -v kn="$kn" -v tmax="$tmax" -v snapshot_interval="$snapshot_interval" -v job="$job" '
     {
       # Update job name line
       if ($0 ~ /^#SBATCH[[:space:]]+-J[[:space:]]+/) {
@@ -70,18 +73,19 @@ submit_combo() {
         next
       }
       # Replace numeric args in the run line(s)
-      gsub(/--Nx[[:space:]]+[0-9]+/,       "--Nx " n)
-      gsub(/--Ny[[:space:]]+[0-9]+/,       "--Ny " n)
-      gsub(/--Nz[[:space:]]+[0-9]+/,       "--Nz " n)
-      gsub(/--Ma[[:space:]]+[0-9.eE+-]+/,  "--Ma " ma)
-      gsub(/--Kn[[:space:]]+[0-9.eE+-]+/,  "--Kn " kn)
-      gsub(/--tmax[[:space:]]+[0-9.eE+-]+/, "--tmax " tmax)
+      gsub(/--Nx[[:space:]]+[0-9]+/,                "--Nx " n)
+      gsub(/--Ny[[:space:]]+[0-9]+/,                "--Ny " n)
+      gsub(/--Nz[[:space:]]+[0-9]+/,                "--Nz " n)
+      gsub(/--Ma[[:space:]]+[0-9.eE+-]+/,           "--Ma " ma)
+      gsub(/--Kn[[:space:]]+[0-9.eE+-]+/,           "--Kn " kn)
+      gsub(/--tmax[[:space:]]+[0-9.eE+-]+/,         "--tmax " tmax)
+      gsub(/--snapshot-interval[[:space:]]+[0-9]+/, "--snapshot-interval " snapshot_interval)
       print
     }
   ' "$BASE" > "$out"
 
   echo "Prepared ${out}"
-  echo "  Grid: ${n}³, Ma=${ma}, Kn=${kn}, tmax=${tmax}"
+  echo "  Grid: ${n}³, Ma=${ma}, Kn=${kn}, tmax=${tmax}, snapshot_interval=${snapshot_interval}"
   if [[ "$DRY_RUN" != "1" ]]; then
     sbatch "$out"
   fi
@@ -95,12 +99,12 @@ fi
 
 if [[ "$MODE" == "zip" ]]; then
   if (( ${#N_LIST[@]} != ${#MA_LIST[@]} || ${#N_LIST[@]} != ${#KN_LIST[@]} || 
-        ${#N_LIST[@]} != ${#TMAX_LIST[@]} )); then
-    echo "zip mode requires equal-length N_LIST, MA_LIST, KN_LIST, TMAX_LIST." >&2
+        ${#N_LIST[@]} != ${#TMAX_LIST[@]} || ${#N_LIST[@]} != ${#SNAPSHOT_INTERVAL_LIST[@]} )); then
+    echo "zip mode requires equal-length N_LIST, MA_LIST, KN_LIST, TMAX_LIST, SNAPSHOT_INTERVAL_LIST." >&2
     exit 1
   fi
   for i in "${!N_LIST[@]}"; do
-    submit_combo "${N_LIST[$i]}" "${MA_LIST[$i]}" "${KN_LIST[$i]}" "${TMAX_LIST[$i]}"
+    submit_combo "${N_LIST[$i]}" "${MA_LIST[$i]}" "${KN_LIST[$i]}" "${TMAX_LIST[$i]}" "${SNAPSHOT_INTERVAL_LIST[$i]}"
   done
 else
   # Cartesian product
@@ -108,7 +112,9 @@ else
     for ma in "${MA_LIST[@]}"; do
       for kn in "${KN_LIST[@]}"; do
         for tmax in "${TMAX_LIST[@]}"; do
-          submit_combo "$n" "$ma" "$kn" "$tmax"
+          for snapshot_interval in "${SNAPSHOT_INTERVAL_LIST[@]}"; do
+            submit_combo "$n" "$ma" "$kn" "$tmax" "$snapshot_interval"
+          done
         done
       done
     done
