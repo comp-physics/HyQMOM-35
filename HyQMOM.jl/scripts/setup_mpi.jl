@@ -11,27 +11,32 @@ using Pkg
 println("="^70)
 println("MPI Configuration")
 println("="^70)
+println()
 
 # Add MPIPreferences if not already present
 if !haskey(Pkg.project().dependencies, "MPIPreferences")
-    println("Adding MPIPreferences...")
+    println("Adding MPIPreferences to Project.toml...")
     Pkg.add("MPIPreferences")
+    println("  ✓ MPIPreferences added")
     println()
 end
 
-using MPIPreferences
-
+# Now use it to configure MPI
 println("Configuring MPI.jl to use system binary...")
+using MPIPreferences
 MPIPreferences.use_system_binary()
 
 println()
+println("="^70)
 println("✓ MPI configured for system binary")
+println("="^70)
 println()
-println("LocalPreferences.toml:")
+println("LocalPreferences.toml contents:")
 if isfile("LocalPreferences.toml")
     println(read("LocalPreferences.toml", String))
 else
-    println("  (file not created - may indicate an error)")
+    println("  ERROR: LocalPreferences.toml not created!")
+    println("  Make sure MPI module is loaded before running this script.")
 end
 println("="^70)
 
