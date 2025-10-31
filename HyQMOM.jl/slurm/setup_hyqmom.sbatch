@@ -63,23 +63,33 @@ cp -f Project.toml Project.toml.bak 2>/dev/null || true
 PKGS=("GLMakie" "FileIO" "ColorSchemes" "LaTeXStrings" "MAT" "HDF5")
 
 for P in "${PKGS[@]}"; do
-  # Check if package exists in [deps] section
-  if awk '/^\[deps\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^'"$P"'[[:space:]]*=" {found=1} END{exit !found}' Project.toml; then
-    # Delete the line for $P inside [deps] section
-    sed -i.tmp "/^\[deps\]/,/^\[/ { /^${P}[[:space:]]*=/ d }" Project.toml
+  # Remove from [deps] (handles with or without quotes)
+  if awk '/^\[deps\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^[[:space:]]*\"?'$P'\"?[[:space:]]*=" {found=1} END{exit !found}' Project.toml; then
+    sed -i.tmp '/^\[deps\]/,/^\[/{/^[[:space:]]*"?'$P'"?[[:space:]]*=/d}' Project.toml
     rm -f Project.toml.tmp
     echo "  ✓ Removed from [deps]: $P"
   else
     echo "  ⊘ Skipped [deps]: $P (not found)"
   fi
-  
-  # Also remove from [compat] section if present
-  if awk '/^\[compat\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^'"$P"'[[:space:]]*=" {found=1} END{exit !found}' Project.toml; then
-    sed -i.tmp "/^\[compat\]/,/^\[/ { /^${P}[[:space:]]*=/ d }" Project.toml
+
+  # Remove from [compat] (handles with or without quotes)
+  if awk '/^\[compat\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^[[:space:]]*\"?'$P'\"?[[:space:]]*=" {found=1} END{exit !found}' Project.toml; then
+    sed -i.tmp '/^\[compat\]/,/^\[/{/^[[:space:]]*"?'$P'"?[[:space:]]*=/d}' Project.toml
     rm -f Project.toml.tmp
     echo "  ✓ Removed from [compat]: $P"
   fi
 done
+
+# Debug: show any lingering compat entries for these packages
+echo ""
+echo "Checking for lingering compat entries..."
+LINGERING=$(awk '/^\[compat\]/{flag=1;next} /^\[/{flag=0} flag {print}' Project.toml | grep -E '^[[:space:]]*(\"?(GLMakie|FileIO|ColorSchemes|LaTeXStrings|MAT|HDF5)\"?[[:space:]]*=)' || true)
+if [ -n "$LINGERING" ]; then
+  echo "⚠ WARNING: Found lingering compat entries:"
+  echo "$LINGERING"
+else
+  echo "  ✓ No lingering entries"
+fi
 
 # Verify nothing remains in [deps]
 if awk '/^\[deps\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^(GLMakie|FileIO|ColorSchemes|LaTeXStrings|MAT|HDF5)[[:space:]]*=" {exit 1}' Project.toml; then
