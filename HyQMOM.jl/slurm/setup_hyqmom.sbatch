@@ -59,7 +59,7 @@ printf '=%.0s' {1..70}; echo ""
 # Backup Project.toml
 cp -f Project.toml Project.toml.bak 2>/dev/null || true
 
-# Packages to remove from [deps] section
+# Packages to remove from [deps] and [compat] sections
 PKGS=("GLMakie" "FileIO" "ColorSchemes" "LaTeXStrings" "MAT" "HDF5")
 
 for P in "${PKGS[@]}"; do
@@ -68,9 +68,16 @@ for P in "${PKGS[@]}"; do
     # Delete the line for $P inside [deps] section
     sed -i.tmp "/^\[deps\]/,/^\[/ { /^${P}[[:space:]]*=/ d }" Project.toml
     rm -f Project.toml.tmp
-    echo "  ✓ Removed: $P"
+    echo "  ✓ Removed from [deps]: $P"
   else
-    echo "  ⊘ Skipped: $P (not in dependencies)"
+    echo "  ⊘ Skipped [deps]: $P (not found)"
+  fi
+  
+  # Also remove from [compat] section if present
+  if awk '/^\[compat\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^'"$P"'[[:space:]]*=" {found=1} END{exit !found}' Project.toml; then
+    sed -i.tmp "/^\[compat\]/,/^\[/ { /^${P}[[:space:]]*=/ d }" Project.toml
+    rm -f Project.toml.tmp
+    echo "  ✓ Removed from [compat]: $P"
   fi
 done
 
