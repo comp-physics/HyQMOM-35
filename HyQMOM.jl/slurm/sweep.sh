@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # submit_sweep.sh
 # Generate & submit Slurm jobs sweeping Ma, Kn, tmax.
+#
+# Usage (run from HyQMOM.jl directory):
+#   cd HyQMOM.jl
+#   bash slurm/sweep.sh
 
 set -euo pipefail
 
@@ -19,8 +23,8 @@ TMAX_LIST=(0.04)
 #   zip   -> pairwise (i-th of each list together); lists must be equal length
 MODE="cross"
 
-# Base Slurm script
-BASE="hyqmom_base.sbatch"
+# Base Slurm script (in same directory as this sweep script)
+BASE="slurm/hyqmom_base.sbatch"
 
 # Optional: set DRY_RUN=1 to preview without submitting
 DRY_RUN="${DRY_RUN:-0}"

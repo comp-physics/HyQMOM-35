@@ -59,13 +59,14 @@ srun --nodes=1 --ntasks=8 --mpi=pmix \
 
 ### Production Run (Slurm)
 
-Edit `scripts/example_slurm_run.sh`:
+Edit `slurm/hyqmom_base.sbatch`:
 - Update `#SBATCH` directives for your cluster
 - Set simulation parameters (grid size, Ma, Kn, etc.)
 
 Submit:
 ```bash
-sbatch scripts/example_slurm_run.sh
+cd HyQMOM.jl
+sbatch slurm/hyqmom_base.sbatch
 ```
 
 ## Minimal Environment Variables
@@ -190,7 +191,7 @@ After running `setup_headless.jl`, your **local** `Project.toml` will show:
 
 ## Support
 
-- Full guide: `HyQMOM.jl/README_HPC.md` (if exists, else see repo README)
+- Full guide: `HyQMOM.jl/docs/src/mpi.md` and repo README
 - Issues: https://github.com/comp-physics/HyQMOM-35/issues
-- Example scripts: `HyQMOM.jl/scripts/example_slurm_*.sh`
+- Slurm scripts: `HyQMOM.jl/slurm/`
 

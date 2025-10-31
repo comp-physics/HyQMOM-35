@@ -15,8 +15,9 @@
 #
 # Usage:
 #   1. Edit #SBATCH directives above for your cluster
-#   2. sbatch scripts/example_slurm_setup.sh
-#   3. Check output: cat slurm-<jobid>.out
+#   2. cd HyQMOM.jl
+#   3. sbatch slurm/setup_hyqmom.sbatch
+#   4. Check output: cat slurm-<jobid>.out
 # ==============================================================================
 
 echo "Starting HyQMOM setup for headless HPC..."
@@ -37,7 +38,13 @@ echo "Julia version: $(julia --version)"
 echo "MPI module: $(module list 2>&1 | grep -i mpi)"
 echo ""
 
-cd HyQMOM.jl
+# Ensure we're in HyQMOM.jl directory (script should be run from there)
+if [ ! -f "Project.toml" ]; then
+    echo "ERROR: Project.toml not found! Must run from HyQMOM.jl directory:"
+    echo "  cd HyQMOM.jl"
+    echo "  sbatch slurm/setup_hyqmom.sbatch"
+    exit 1
+fi
 
 # Step 1: Remove visualization packages (headless incompatible)
 echo "="^70
@@ -96,5 +103,5 @@ echo "GLMakie: REMOVED (headless)"
 echo "JLD2: INSTALLED (snapshots)"
 echo "MPI: CONFIGURED (system)"
 echo ""
-echo "Next: Submit simulation jobs using scripts/example_slurm_run.sh"
+echo "Next: Submit simulation jobs using slurm/hyqmom_base.sbatch"
 echo "="^70

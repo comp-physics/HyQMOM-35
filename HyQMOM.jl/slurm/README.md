@@ -1,0 +1,121 @@
+# Slurm Scripts for HyQMOM
+
+This directory contains Slurm batch scripts for running HyQMOM on HPC clusters.
+
+## One-Time Setup
+
+**Important:** All scripts should be run from the `HyQMOM.jl` directory (not from `slurm/`).
+
+```bash
+cd HyQMOM.jl
+sbatch slurm/setup_hyqmom.sbatch
+```
+
+This script:
+1. Removes headless-incompatible packages (GLMakie, MAT, HDF5, etc.)
+2. Installs core packages and JLD2 for snapshot I/O
+3. Configures MPI.jl to use system MPI
+4. Tests that HyQMOM loads successfully
+
+**Before running:** Edit the `#SBATCH` directives in `setup_hyqmom.sbatch` for your cluster (account, partition, time limit, etc.).
+
+## Running Simulations
+
+### Single Job
+
+```bash
+cd HyQMOM.jl
+sbatch slurm/hyqmom_base.sbatch
+```
+
+Edit `hyqmom_base.sbatch` to customize:
+- Slurm resources (`#SBATCH` directives)
+- Simulation parameters (`--Nx`, `--Ma`, `--Kn`, `--tmax`, etc.)
+- Julia depot path
+- MPI module
+
+### Parameter Sweep
+
+Generate and submit multiple jobs with different parameters:
+
+```bash
+cd HyQMOM.jl
+bash slurm/sweep.sh
+```
+
+Edit `sweep.sh` to configure:
+- `MA_LIST`, `KN_LIST`, `TMAX_LIST` - parameter values to sweep
+- `MODE` - `"cross"` for Cartesian product or `"zip"` for pairwise
+- `BASE` - template script (usually `slurm/hyqmom_base.sbatch`)
+
+The script will generate job files like `hyqmom_Ma0p0_Kn1p0_t0p04.sbatch` and submit them.
+
+## Available Scripts
+
+| Script | Purpose | Run From |
+|--------|---------|----------|
+| `setup_hyqmom.sbatch` | One-time HPC setup | `HyQMOM.jl/` |
+| `hyqmom_base.sbatch` | Main simulation template | `HyQMOM.jl/` |
+| `hyqmom_Ma*_Kn*_t*.sbatch` | Example job with specific parameters | `HyQMOM.jl/` |
+| `sweep.sh` | Generate parameter sweep jobs | `HyQMOM.jl/` |
+
+## Key Environment Variables
+
+All scripts should set:
+
+```bash
+# Required
+export JULIA_DEPOT_PATH="$HOME/scratch/.julia"  # exec-capable filesystem
+export HYQMOM_SKIP_PLOTTING=true                # disable visualization
+
+# Recommended
+export JULIA_PKG_PRECOMPILE_AUTO=0              # no auto-precompile
+export JULIA_NUM_THREADS=1                      # single-threaded Julia
+export OMP_NUM_THREADS=1                        # no OpenMP
+export OMPI_MCA_btl=^openib                     # silence InfiniBand warnings
+export UCX_WARN_UNUSED_ENV_VARS=n               # silence UCX warnings
+```
+
+## Common Issues
+
+### "Project.toml not found"
+You ran the script from the wrong directory. Always run from `HyQMOM.jl/`:
+```bash
+cd HyQMOM.jl
+sbatch slurm/setup_hyqmom.sbatch
+```
+
+### "LocalPreferences.toml not found"
+You need to run the setup script first:
+```bash
+cd HyQMOM.jl
+sbatch slurm/setup_hyqmom.sbatch
+# Wait for it to complete
+sbatch slurm/hyqmom_base.sbatch
+```
+
+### "Unknown argument: true"
+Don't pass values to flag arguments. Use:
+```bash
+--no-viz          # ✓ Correct
+--no-viz true     # ✗ Wrong
+```
+
+## Output Files
+
+After a successful run:
+- `slurm-<jobid>.out` - Slurm output log
+- `snapshots_*.jld2` - Simulation snapshots (if `--snapshot-interval > 0`)
+
+Copy snapshots to your local machine to visualize:
+```bash
+scp user@cluster:/path/to/HyQMOM.jl/snapshots_*.jld2 .
+julia --project=. visualize_jld2.jl snapshots_*.jld2
+```
+
+## Further Documentation
+
+- Quick start: `HyQMOM.jl/QUICKSTART_HPC.md`
+- MPI setup details: `HyQMOM.jl/docs/src/mpi.md`
+- Main README: `HyQMOM.jl/README.md`
+

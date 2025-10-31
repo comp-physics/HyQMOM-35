@@ -28,12 +28,18 @@ echo "Julia depot: $JULIA_DEPOT_PATH"
 echo "HYQMOM_SKIP_PLOTTING: $HYQMOM_SKIP_PLOTTING"
 echo ""
 
-cd HyQMOM.jl
+# Ensure we're in HyQMOM.jl directory (script should be run from there)
+if [ ! -f "Project.toml" ]; then
+    echo "ERROR: Project.toml not found! Must run from HyQMOM.jl directory:"
+    echo "  cd HyQMOM.jl"
+    echo "  sbatch slurm/hyqmom_base.sbatch"
+    exit 1
+fi
 
 # Check MPI configuration
 if [ ! -f "LocalPreferences.toml" ]; then
     echo "WARNING: LocalPreferences.toml not found!"
-    echo "Run setup script first: sbatch scripts/example_slurm_setup.sh"
+    echo "Run setup script first: sbatch slurm/setup_hyqmom.sbatch"
     exit 1
 fi
 
@@ -44,7 +50,7 @@ echo ""
 
 
 # Run simulation with MPI
-srun --mpi=pmix julia --project=. examples/run_3d_custom_jets.jl --Nx 80 --Ny 80 --Nz 80 --tmax 0.0025 --Ma 70.0 --Kn 10.0 --snapshot-interval 50 --no-viz true
+srun --mpi=pmix julia --project=. examples/run_3d_custom_jets.jl --Nx 80 --Ny 80 --Nz 80 --tmax 0.0025 --Ma 70.0 --Kn 10.0 --snapshot-interval 50 --no-viz
 EXIT_CODE=$?
 
 echo ""
