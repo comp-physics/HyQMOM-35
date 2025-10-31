@@ -55,9 +55,9 @@ for pkg in remove_packages
     end
 end
 
-# Resolve manifest after removals
-println("\nResolving dependencies...")
-Pkg.resolve()
+# Note: We do NOT call Pkg.resolve() here because it can trigger precompilation
+# with stale caches, causing "Dates not found" errors. The next Pkg.instantiate()
+# will handle dependency resolution correctly.
 
 println()
 println("="^70)
