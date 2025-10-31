@@ -42,6 +42,9 @@ module load openmpi/4.1.5
 export JULIA_DEPOT_PATH="$HOME/scratch/.julia"
 mkdir -p $JULIA_DEPOT_PATH
 
+# Disable auto-precompile to avoid stale cache errors
+export JULIA_PKG_PRECOMPILE_AUTO=0
+
 echo "Julia depot: $JULIA_DEPOT_PATH"
 echo "Julia version: $(julia --version)"
 echo "MPI module: $(module list 2>&1 | grep -i mpi)"
