@@ -50,8 +50,22 @@ echo "Julia version: $(julia --version)"
 echo "MPI module: $(module list 2>&1 | grep -i mpi)"
 echo ""
 
-# Step 1: Remove visualization packages (headless incompatible)
+# Step 0: Clear precompiled cache BEFORE doing anything
 echo ""
+printf '=%.0s' {1..70}; echo ""
+echo "STEP 0: Clearing precompiled cache..."
+printf '=%.0s' {1..70}; echo ""
+JULIA_VERSION=$(julia --version | grep -oP '\d+\.\d+' | head -1)
+CACHE_DIR="$JULIA_DEPOT_PATH/compiled/v$JULIA_VERSION"
+if [ -d "$CACHE_DIR" ]; then
+    rm -rf "$CACHE_DIR"
+    echo "✓ Cache cleared: $CACHE_DIR"
+else
+    echo "⊘ No cache to clear"
+fi
+echo ""
+
+# Step 1: Remove visualization packages (headless incompatible)
 printf '=%.0s' {1..70}; echo ""
 echo "STEP 1: Removing visualization packages..."
 printf '=%.0s' {1..70}; echo ""
@@ -63,7 +77,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # Step 2: Verify visualization packages were removed
-echo ""
 printf '=%.0s' {1..70}; echo ""
 echo "STEP 2: Verifying headless setup..."
 printf '=%.0s' {1..70}; echo ""
@@ -87,7 +100,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # Step 3: Install remaining packages (including JLD2)
-echo ""
 printf '=%.0s' {1..70}; echo ""
 echo "STEP 3: Installing core packages..."
 printf '=%.0s' {1..70}; echo ""
@@ -99,7 +111,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # Step 4: Configure MPI
-echo ""
 printf '=%.0s' {1..70}; echo ""
 echo "STEP 4: Configuring MPI..."
 printf '=%.0s' {1..70}; echo ""
@@ -111,7 +122,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # Step 5: Test
-echo ""
 printf '=%.0s' {1..70}; echo ""
 echo "STEP 5: Testing HyQMOM..."
 printf '=%.0s' {1..70}; echo ""

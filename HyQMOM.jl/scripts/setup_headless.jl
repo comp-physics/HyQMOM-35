@@ -39,27 +39,10 @@ for pkg in remove_packages
         println("  ⊘ Skipped: $pkg (not in dependencies)")
     end
 end
-println()
 
-# Clear precompiled cache AFTER removing packages
-# This avoids stale references to removed packages
-println("Clearing precompiled cache...")
-try
-    depot_path = first(DEPOT_PATH)
-    compiled_dir = joinpath(depot_path, "compiled", "v$(VERSION.major).$(VERSION.minor)")
-    if isdir(compiled_dir)
-        rm(compiled_dir, recursive=true, force=true)
-        println("  ✓ Cache cleared")
-    else
-        println("  ⊘ No cache to clear")
-    end
-catch e
-    println("  ⊘ Cache clear failed: $(typeof(e))")
-end
-
-# Note: We do NOT call Pkg.resolve() here because it can trigger precompilation
-# with stale caches, causing "Dates not found" errors. The next Pkg.instantiate()
-# will handle dependency resolution correctly.
+# Note: Cache is cleared by the calling script BEFORE this runs
+# We do NOT call Pkg.resolve() here - it would trigger precompilation
+# The next Pkg.instantiate() will handle dependency resolution correctly
 
 println()
 println("="^70)
