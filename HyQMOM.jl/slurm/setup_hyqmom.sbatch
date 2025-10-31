@@ -50,86 +50,66 @@ echo "Julia version: $(julia --version)"
 echo "MPI module: $(module list 2>&1 | grep -i mpi)"
 echo ""
 
-# Step 1: Remove visualization packages (direct TOML edit, no Pkg manager)
+# Step 1: Remove visualization packages (pure shell, no Julia at all)
 echo ""
 printf '=%.0s' {1..70}; echo ""
 echo "STEP 1: Removing visualization packages..."
 printf '=%.0s' {1..70}; echo ""
 
-# Edit Project.toml directly to avoid triggering Pkg precompilation
-julia --project=. -e '
-using TOML
-project_file = "Project.toml"
-project = TOML.parsefile(project_file)
+# Backup Project.toml
+cp -f Project.toml Project.toml.bak 2>/dev/null || true
 
-# Packages to remove for headless compatibility
-remove_pkgs = ["GLMakie", "FileIO", "ColorSchemes", "LaTeXStrings", "MAT", "HDF5"]
+# Packages to remove from [deps] section
+PKGS=("GLMakie" "FileIO" "ColorSchemes" "LaTeXStrings" "MAT" "HDF5")
 
-if haskey(project, "deps")
-    removed_any = false
-    for pkg in remove_pkgs
-        if haskey(project["deps"], pkg)
-            delete!(project["deps"], pkg)
-            println("  ✓ Removed: $pkg")
-            removed_any = true
-        else
-            println("  ⊘ Skipped: $pkg (not in dependencies)")
-        end
-    end
-    
-    # Write back to file
-    open(project_file, "w") do io
-        TOML.print(io, project)
-    end
-    println()
-    if removed_any
-        println("✓ Project.toml updated")
-    else
-        println("✓ No packages needed removal")
-    end
+for P in "${PKGS[@]}"; do
+  # Check if package exists in [deps] section
+  if awk '/^\[deps\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^'"$P"'[[:space:]]*=" {found=1} END{exit !found}' Project.toml; then
+    # Delete the line for $P inside [deps] section
+    sed -i.tmp "/^\[deps\]/,/^\[/ { /^${P}[[:space:]]*=/ d }" Project.toml
+    rm -f Project.toml.tmp
+    echo "  ✓ Removed: $P"
+  else
+    echo "  ⊘ Skipped: $P (not in dependencies)"
+  fi
+done
+
+# Verify nothing remains in [deps]
+if awk '/^\[deps\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^(GLMakie|FileIO|ColorSchemes|LaTeXStrings|MAT|HDF5)[[:space:]]*=" {exit 1}' Project.toml; then
+  echo ""
+  echo "✓ Project.toml updated"
 else
-    println(stderr, "ERROR: No deps section in Project.toml")
-    exit(1)
-end
-'
-
-if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to remove visualization packages!"
-    exit 1
+  echo ""
+  echo "ERROR: Some headless-incompatible packages still present in [deps]" >&2
+  echo "Hint: compare Project.toml and Project.toml.bak" >&2
+  exit 1
 fi
 
 # Clear entire compiled cache after package removal
 echo ""
 echo "Clearing compiled cache..."
 if [ -d "$JULIA_DEPOT_PATH/compiled" ]; then
-    rm -rf "$JULIA_DEPOT_PATH/compiled"
-    echo "✓ Entire cache cleared"
+  rm -rf "$JULIA_DEPOT_PATH/compiled"
+  echo "✓ Entire cache cleared"
 else
-    echo "⊘ No cache to clear"
+  echo "⊘ No cache to clear"
 fi
 echo ""
 
-# Step 2: Verify visualization packages were removed
+# Step 2: Verify visualization packages were removed (pure shell, no Julia)
 printf '=%.0s' {1..70}; echo ""
 echo "STEP 2: Verifying headless setup..."
 printf '=%.0s' {1..70}; echo ""
-julia --project=. -e '
-using Pkg
-deps = keys(Pkg.project().dependencies)
-bad_packages = ["GLMakie", "FileIO", "ColorSchemes", "LaTeXStrings", "MAT", "HDF5"]
-found = filter(p -> p in deps, bad_packages)
-if !isempty(found)
-    println(stderr, "ERROR: Visualization packages still present in Project.toml!")
-    println(stderr, "Found: ", join(found, ", "))
-    println(stderr, "This will cause precompilation issues on headless HPC.")
-    println(stderr, "Run scripts/setup_headless.jl manually to fix.")
-    exit(1)
-end
-println("✓ No headless-incompatible packages found")
-'
 
-if [ $? -ne 0 ]; then
-    exit 1
+# Check Project.toml [deps] section for bad packages
+if awk '/^\[deps\]/{flag=1;next} /^\[/{flag=0} flag && $0 ~ "^(GLMakie|FileIO|ColorSchemes|LaTeXStrings|MAT|HDF5)[[:space:]]*=" {exit 1}' Project.toml; then
+  echo "✓ No headless-incompatible packages found in Project.toml"
+  echo ""
+else
+  echo "ERROR: Headless-incompatible packages still in Project.toml [deps]!" >&2
+  echo "Check Project.toml manually and compare with Project.toml.bak" >&2
+  echo ""
+  exit 1
 fi
 
 # Step 3: Install remaining packages (including JLD2)
