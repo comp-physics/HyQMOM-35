@@ -29,14 +29,33 @@ Generate snapshot files using:
 using Pkg
 Pkg.activate(@__DIR__)
 
-# Check if GLMakie is installed
-try
-    using GLMakie
-catch e
-    println("ERROR: GLMakie not installed. Installing now...")
-    Pkg.add("GLMakie")
-    using GLMakie
+# Verify visualization dependencies are available
+deps = keys(Pkg.project().dependencies)
+required = ["GLMakie", "FileIO"]
+missing_deps = filter(p -> !(p in deps), required)
+if !isempty(missing_deps)
+    println(stderr, "")
+    println(stderr, "="^70)
+    println(stderr, "ERROR: Required visualization packages not found in Project.toml!")
+    println(stderr, "="^70)
+    println(stderr, "Missing: ", join(missing_deps, ", "))
+    println(stderr, "")
+    println(stderr, "This script requires a full desktop installation with visualization.")
+    println(stderr, "You are likely on an HPC cluster that ran setup_headless.jl.")
+    println(stderr, "")
+    println(stderr, "To visualize results:")
+    println(stderr, "  1. Copy .jld2 files to your local machine:")
+    println(stderr, "     scp user@cluster:/path/to/snapshots*.jld2 .")
+    println(stderr, "  2. Run this script on your local machine (with full deps)")
+    println(stderr, "")
+    println(stderr, "If on a desktop, install the missing packages:")
+    println(stderr, "     julia --project=. -e 'using Pkg; Pkg.add([\"$(join(missing_deps, "\", \""))\"])'")
+    println(stderr, "="^70)
+    exit(1)
 end
+
+# Now safe to load
+using GLMakie
 
 using HyQMOM, JLD2
 using Printf

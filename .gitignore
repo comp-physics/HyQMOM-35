@@ -18,6 +18,7 @@
 Manifest.toml
 */Manifest.toml
 **/Manifest.toml
+LocalPreferences.toml
 
 # Simulation output files
 snapshots_*.jld2
@@ -28,5 +29,7 @@ snapshot_*.pdf
 docs/build/
 docs/Manifest.toml
 
-# SBATCH scripts
-*Ma*.sbatch
+# Slurm job files (sweep-generated)
+*_N[0-9]*.sbatch
+*_Ma*.sbatch
+slurm-*.out
