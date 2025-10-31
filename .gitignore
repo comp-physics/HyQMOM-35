@@ -29,6 +29,7 @@ snapshot_*.pdf
 docs/build/
 docs/Manifest.toml
 
-# Slurm job files
+# Slurm job files (sweep-generated)
+*Nx*.sbatch
 *Ma*.sbatch
 slurm-*.out

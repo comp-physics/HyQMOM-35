@@ -1,5 +1,17 @@
 #!/bin/bash
-#SBATCH -J hyqmom
+# ==============================================================================
+# HyQMOM Base Template for Parameter Sweeps
+# ==============================================================================
+# This is a TEMPLATE file used by slurm/sweep.sh to generate actual job scripts.
+# 
+# To submit a single job, edit the parameters below and run:
+#   cd HyQMOM.jl
+#   sbatch slurm/hyqmom_base.sbatch
+#
+# To submit parameter sweeps, use slurm/sweep.sh instead (recommended).
+# ==============================================================================
+
+#SBATCH -J hyqmom_TEMPLATE
 #SBATCH -A gts-sbryngelson3
 #SBATCH -p cpu-gnr
 #SBATCH -N 8                       # number of nodes
