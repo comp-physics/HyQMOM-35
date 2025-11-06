@@ -12,6 +12,7 @@
 # ==============================================================================
 
 #SBATCH -J hyqmom_TEMPLATE
+#SBATCH -o slurm/hyqmom_TEMPLATE-%j.out
 #SBATCH -A gts-sbryngelson3
 #SBATCH -p cpu-gnr
 #SBATCH -N 8                       # number of nodes

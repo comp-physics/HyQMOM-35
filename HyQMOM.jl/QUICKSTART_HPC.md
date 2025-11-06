@@ -8,7 +8,6 @@ Ultra-condensed guide for running HyQMOM on headless HPC clusters.
 # 1. Clone and checkout
 git clone https://github.com/comp-physics/HyQMOM-35.git
 cd HyQMOM-35
-git checkout better-hpc
 cd HyQMOM.jl
 
 # 2. Edit slurm/setup_hyqmom.sbatch for your cluster
