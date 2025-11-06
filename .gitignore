@@ -33,3 +33,7 @@ docs/Manifest.toml
 *_N[0-9]*.sbatch
 *_Ma*.sbatch
 slurm-*.out
+
+viz/
+viz-bak/
+snapshots/
