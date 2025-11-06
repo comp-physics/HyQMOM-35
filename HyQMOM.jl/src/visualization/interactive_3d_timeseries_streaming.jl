@@ -254,6 +254,64 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         end
     end
     
+    # Velocity extrema button and display
+    velocity_extrema_text = GLMakie.Observable("Max |v|: N/A")
+    btn_velocity_extrema = GLMakie.Button(fig, label="Show Velocity Extrema", fontsize=8)
+    
+    GLMakie.on(btn_velocity_extrema.clicks) do _
+        try
+            idx = current_snapshot_observable[]
+            snap_key = snap_keys[idx]
+            M = jld_file["snapshots/$snap_key/M"]
+            quants = compute_quantities(M)
+            
+            # Compute velocity norm |v| = sqrt(u^2 + v^2 + w^2)
+            velocity_norm = sqrt.(quants.u.^2 .+ quants.v.^2 .+ quants.w.^2)
+            
+            # For signed velocities, we'll use the sign of the dominant component
+            # to determine if it's "positive" or "negative" velocity
+            # Create signed velocity magnitude
+            u_abs = abs.(quants.u)
+            v_abs = abs.(quants.v)
+            w_abs = abs.(quants.w)
+            
+            # Determine which component dominates
+            u_dominant = (u_abs .>= v_abs) .& (u_abs .>= w_abs)
+            v_dominant = (v_abs .> u_abs) .& (v_abs .>= w_abs)
+            w_dominant = (w_abs .> u_abs) .& (w_abs .> v_abs)
+            
+            # Apply sign based on dominant component
+            signed_velocity_norm = copy(velocity_norm)
+            signed_velocity_norm[u_dominant] .*= sign.(quants.u[u_dominant])
+            signed_velocity_norm[v_dominant] .*= sign.(quants.v[v_dominant])
+            signed_velocity_norm[w_dominant] .*= sign.(quants.w[w_dominant])
+            
+            # Find max positive and min negative (most negative)
+            max_positive = maximum(signed_velocity_norm)
+            min_negative = minimum(signed_velocity_norm)
+            
+            velocity_extrema_text[] = @sprintf("Max +|v|: %.4f, Max -|v|: %.4f", 
+                                               max_positive, abs(min_negative))
+            
+            println("\n" * "="^70)
+            println("VELOCITY EXTREMA (norm of u,v,w)")
+            println("="^70)
+            println(@sprintf("  Maximum positive velocity: %.6f", max_positive))
+            println(@sprintf("  Maximum negative velocity: %.6f (magnitude: %.6f)", 
+                            min_negative, abs(min_negative)))
+            println("="^70)
+        catch e
+            @error "Velocity extrema computation failed" exception=(e, catch_backtrace())
+            velocity_extrema_text[] = "Error computing extrema"
+        end
+    end
+    
+    controls[6, 1] = GLMakie.vgrid!(
+        btn_velocity_extrema,
+        GLMakie.Label(fig, velocity_extrema_text, fontsize=8, halign=:center, color=:gray);
+        tellwidth=false
+    )
+    
     # Isosurface controls
     slider_iso1 = GLMakie.Slider(fig, range=0.1:0.05:0.9, startvalue=iso_levels[1], width=200)
     slider_alpha = GLMakie.Slider(fig, range=0.3:0.1:1.0, startvalue=0.6, width=200)
@@ -682,6 +740,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         println("  * Time slider steps through snapshots (loaded on-demand)")
         println("  * Click > Play to animate")
         println("  * Click quantity buttons to switch")
+        println("  * Show Velocity Extrema button displays max ±|v|")
         println("  * Iso level/alpha sliders adjust appearance")
         println("  * Min |S| slider filters moment space")
     else
@@ -700,6 +759,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         println("  * Right: Controls")
         println("\nControls:")
         println("  * Click quantity buttons to switch")
+        println("  * Show Velocity Extrema button displays max ±|v|")
         println("  * Iso level/alpha sliders adjust appearance")
         println("  * Min |S| slider filters moment space")
     end
