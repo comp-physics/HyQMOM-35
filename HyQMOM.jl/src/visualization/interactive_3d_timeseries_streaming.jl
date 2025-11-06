@@ -46,6 +46,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     println("Features:")
     println("  * Snapshots loaded on-demand (low memory usage)")
     println("  * TRUE 3D isosurface contours")
+    println("  * Visualize: rho, u, v, w, P, |v| (velocity magnitude)")
     println("  * Velocity isosurfaces: Blue=positive, Red=negative")
     println("  * Time slider to navigate through evolution")
     println("="^70)
@@ -162,8 +163,13 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     btn_v = GLMakie.Button(fig, label="v", fontsize=8)
     btn_w = GLMakie.Button(fig, label="w", fontsize=8)
     btn_pressure = GLMakie.Button(fig, label="P", fontsize=8)
+    btn_velocity_norm = GLMakie.Button(fig, label="|v|", fontsize=8)
     
-    controls[1, 1] = GLMakie.hgrid!(btn_density, btn_u, btn_v, btn_w, btn_pressure; tellwidth=false)
+    controls[1, 1] = GLMakie.vgrid!(
+        GLMakie.hgrid!(btn_density, btn_u, btn_v; tellwidth=false),
+        GLMakie.hgrid!(btn_w, btn_pressure, btn_velocity_norm; tellwidth=false);
+        tellwidth=false
+    )
     
     GLMakie.on(btn_density.clicks) do _
         current_quantity[] = "Density"
@@ -179,6 +185,9 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     end
     GLMakie.on(btn_pressure.clicks) do _
         current_quantity[] = "Pressure"
+    end
+    GLMakie.on(btn_velocity_norm.clicks) do _
+        current_quantity[] = "Velocity magnitude"
     end
     
     # Time slider and controls (only show if in :all mode)
@@ -254,63 +263,6 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         end
     end
     
-    # Velocity extrema button and display
-    velocity_extrema_text = GLMakie.Observable("Max |v|: N/A")
-    btn_velocity_extrema = GLMakie.Button(fig, label="Show Velocity Extrema", fontsize=8)
-    
-    GLMakie.on(btn_velocity_extrema.clicks) do _
-        try
-            idx = current_snapshot_observable[]
-            snap_key = snap_keys[idx]
-            M = jld_file["snapshots/$snap_key/M"]
-            quants = compute_quantities(M)
-            
-            # Compute velocity norm |v| = sqrt(u^2 + v^2 + w^2)
-            velocity_norm = sqrt.(quants.u.^2 .+ quants.v.^2 .+ quants.w.^2)
-            
-            # For signed velocities, we'll use the sign of the dominant component
-            # to determine if it's "positive" or "negative" velocity
-            # Create signed velocity magnitude
-            u_abs = abs.(quants.u)
-            v_abs = abs.(quants.v)
-            w_abs = abs.(quants.w)
-            
-            # Determine which component dominates
-            u_dominant = (u_abs .>= v_abs) .& (u_abs .>= w_abs)
-            v_dominant = (v_abs .> u_abs) .& (v_abs .>= w_abs)
-            w_dominant = (w_abs .> u_abs) .& (w_abs .> v_abs)
-            
-            # Apply sign based on dominant component
-            signed_velocity_norm = copy(velocity_norm)
-            signed_velocity_norm[u_dominant] .*= sign.(quants.u[u_dominant])
-            signed_velocity_norm[v_dominant] .*= sign.(quants.v[v_dominant])
-            signed_velocity_norm[w_dominant] .*= sign.(quants.w[w_dominant])
-            
-            # Find max positive and min negative (most negative)
-            max_positive = maximum(signed_velocity_norm)
-            min_negative = minimum(signed_velocity_norm)
-            
-            velocity_extrema_text[] = @sprintf("Max +|v|: %.4f, Max -|v|: %.4f", 
-                                               max_positive, abs(min_negative))
-            
-            println("\n" * "="^70)
-            println("VELOCITY EXTREMA (norm of u,v,w)")
-            println("="^70)
-            println(@sprintf("  Maximum positive velocity: %.6f", max_positive))
-            println(@sprintf("  Maximum negative velocity: %.6f (magnitude: %.6f)", 
-                            min_negative, abs(min_negative)))
-            println("="^70)
-        catch e
-            @error "Velocity extrema computation failed" exception=(e, catch_backtrace())
-            velocity_extrema_text[] = "Error computing extrema"
-        end
-    end
-    
-    controls[6, 1] = GLMakie.vgrid!(
-        btn_velocity_extrema,
-        GLMakie.Label(fig, velocity_extrema_text, fontsize=8, halign=:center, color=:gray);
-        tellwidth=false
-    )
     
     # Isosurface controls
     slider_iso1 = GLMakie.Slider(fig, range=0.1:0.05:0.9, startvalue=iso_levels[1], width=200)
@@ -329,7 +281,10 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         # Pressure: P = rho * (1/3 trace of velocity covariance)
         pressure = rho .* (C200 .+ C020 .+ C002) ./ 3.0
         
-        return (rho=rho, u=u, v=v, w=w, pressure=pressure)
+        # Velocity magnitude
+        velocity_mag = sqrt.(u.^2 .+ v.^2 .+ w.^2)
+        
+        return (rho=rho, u=u, v=v, w=w, pressure=pressure, velocity_mag=velocity_mag)
     end
     
     # Observable for current data (loads from file)
@@ -348,6 +303,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             quants.v
         elseif q == "w velocity"
             quants.w
+        elseif q == "Velocity magnitude"
+            quants.velocity_mag
         else # Pressure
             quants.pressure
         end
@@ -375,6 +332,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             "ρ"
         elseif q == "Pressure"
             "P"
+        elseif q == "Velocity magnitude"
+            "|v|"
         else
             q
         end
@@ -497,6 +456,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                     entry = (color, L"w = %$(value_str)")
                 elseif q == "Pressure"
                     entry = (color, L"P = %$(value_str)")
+                elseif q == "Velocity magnitude"
+                    entry = (color, L"|v| = %$(value_str)")
                 else
                     entry = (color, @sprintf("Q = %.4f", level))
                 end
@@ -739,8 +700,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         println("\nControls:")
         println("  * Time slider steps through snapshots (loaded on-demand)")
         println("  * Click > Play to animate")
-        println("  * Click quantity buttons to switch")
-        println("  * Show Velocity Extrema button displays max ±|v|")
+        println("  * Click quantity buttons to switch (rho, u, v, w, P, |v|)")
         println("  * Iso level/alpha sliders adjust appearance")
         println("  * Min |S| slider filters moment space")
     else
@@ -758,8 +718,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         println("  * Middle: Moment space (S_1_1_0, S_1_0_1, S_0_1_1)")
         println("  * Right: Controls")
         println("\nControls:")
-        println("  * Click quantity buttons to switch")
-        println("  * Show Velocity Extrema button displays max ±|v|")
+        println("  * Click quantity buttons to switch (rho, u, v, w, P, |v|)")
         println("  * Iso level/alpha sliders adjust appearance")
         println("  * Min |S| slider filters moment space")
     end
