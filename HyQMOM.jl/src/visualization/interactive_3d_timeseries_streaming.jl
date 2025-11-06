@@ -281,8 +281,24 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         # Pressure: P = rho * (1/3 trace of velocity covariance)
         pressure = rho .* (C200 .+ C020 .+ C002) ./ 3.0
         
-        # Velocity magnitude
-        velocity_mag = sqrt.(u.^2 .+ v.^2 .+ w.^2)
+        # Signed velocity magnitude based on dominant component
+        # First compute the actual magnitude
+        velocity_norm = sqrt.(u.^2 .+ v.^2 .+ w.^2)
+        
+        # Determine which component dominates at each point
+        u_abs = abs.(u)
+        v_abs = abs.(v)
+        w_abs = abs.(w)
+        
+        u_dominant = (u_abs .>= v_abs) .& (u_abs .>= w_abs)
+        v_dominant = (v_abs .> u_abs) .& (v_abs .>= w_abs)
+        w_dominant = (w_abs .> u_abs) .& (w_abs .> v_abs)
+        
+        # Apply sign based on dominant component
+        velocity_mag = copy(velocity_norm)
+        velocity_mag[u_dominant] .*= sign.(u[u_dominant])
+        velocity_mag[v_dominant] .*= sign.(v[v_dominant])
+        velocity_mag[w_dominant] .*= sign.(w[w_dominant])
         
         return (rho=rho, u=u, v=v, w=w, pressure=pressure, velocity_mag=velocity_mag)
     end
@@ -316,7 +332,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         q = $(current_quantity)
         iso_frac = $(slider_iso1.value)
         
-        is_velocity = (q == "u velocity" || q == "v velocity" || q == "w velocity")
+        is_velocity = (q == "u velocity" || q == "v velocity" || q == "w velocity" || q == "Velocity magnitude")
         data_min = minimum(data)
         data_max = maximum(data)
         data_absmax = maximum(abs.(data))
@@ -398,7 +414,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             return
         end
         
-        is_velocity = (q == "u velocity" || q == "v velocity" || q == "w velocity")
+        is_velocity = (q == "u velocity" || q == "v velocity" || q == "w velocity" || q == "Velocity magnitude")
         
         data_min = minimum(data)
         data_max = maximum(data)
@@ -457,7 +473,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
                 elseif q == "Pressure"
                     entry = (color, L"P = %$(value_str)")
                 elseif q == "Velocity magnitude"
-                    entry = (color, L"|v| = %$(value_str)")
+                    entry = (color, L"\Vert \mathbf{u} \Vert = %$(value_str)")
                 else
                     entry = (color, @sprintf("Q = %.4f", level))
                 end
