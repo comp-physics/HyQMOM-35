@@ -177,6 +177,12 @@ function initialize_moment_field_mpi(decomp, grid_params, background::CubicRegio
     # Background moments
     Mr_bg = region_to_moments(background, r110, r101, r011)
     
+    # Calculate grid spacing for overlap detection
+    dx = Nx > 1 ? abs(xm[2] - xm[1]) : 0.0
+    dy = Ny > 1 ? abs(ym[2] - ym[1]) : 0.0
+    dz = Nz > 1 ? abs(zm[2] - zm[1]) : 0.0
+    cell_size = (dx, dy, dz)
+    
     # Fill local subdomain
     for kk in 1:nz
         gk = k0k1[1] + kk - 1  # global k index
@@ -194,8 +200,10 @@ function initialize_moment_field_mpi(decomp, grid_params, background::CubicRegio
                 Mr = Mr_bg
                 
                 # Check each region (later regions overwrite earlier ones)
+                # Use cell overlap detection for robustness with narrow jets
+                cell_center = (x_coord, y_coord, z_coord)
                 for region in regions
-                    if point_in_cube((x_coord, y_coord, z_coord), region)
+                    if cell_overlaps_cube(cell_center, cell_size, region)
                         Mr = region_to_moments(region, r110, r101, r011)
                     end
                 end
@@ -233,6 +241,11 @@ end
     point_in_cube(point::NTuple{3,Float64}, cube::CubicRegion)
 
 Check if a point (x, y, z) is inside a cubic region.
+
+Note: This checks if the **point** (typically a grid cell center) is inside
+the cube. For narrow jets on coarse grids, jets may be missed if their width
+is smaller than the grid spacing. To avoid this, ensure jet width >= grid spacing
+or use cell_overlaps_cube() for more robust overlap detection.
 """
 function point_in_cube(point::NTuple{3,Float64}, cube::CubicRegion)
     x, y, z = point
@@ -250,23 +263,89 @@ function point_in_cube(point::NTuple{3,Float64}, cube::CubicRegion)
 end
 
 """
-    place_cubic_region!(M, region::CubicRegion, xm, ym, zm, r110, r101, r011)
+    cell_overlaps_cube(cell_center::NTuple{3,Float64}, cell_size::NTuple{3,Float64}, cube::CubicRegion)
+
+Check if a grid cell (defined by center and size) overlaps with a cubic region.
+
+More robust than point_in_cube() for detecting when narrow jets intersect coarse grid cells.
+A cell and cube overlap if they intersect in all three dimensions.
+
+# Arguments
+- `cell_center`: (x, y, z) coordinates of cell center
+- `cell_size`: (dx, dy, dz) cell dimensions
+- `cube`: CubicRegion to check overlap with
+
+# Returns
+- `true` if cell and cube overlap in all three dimensions
+"""
+function cell_overlaps_cube(cell_center::NTuple{3,Float64}, cell_size::NTuple{3,Float64}, cube::CubicRegion)
+    x, y, z = cell_center
+    dx, dy, dz = cell_size
+    cx, cy, cz = cube.center
+    wx, wy, wz = cube.width
+    
+    # Handle infinite width (background always overlaps)
+    if isinf(wx) || isinf(wy) || isinf(wz)
+        return true
+    end
+    
+    # Check overlap in each dimension independently
+    # Two 1D intervals [a, b] and [c, d] overlap if: max(a,c) < min(b,d)
+    # Cell interval: [center - size/2, center + size/2]
+    # Cube interval: [center - width/2, center + width/2]
+    
+    x_overlap = (max(x - dx/2, cx - wx/2) < min(x + dx/2, cx + wx/2))
+    y_overlap = (max(y - dy/2, cy - wy/2) < min(y + dy/2, cy + wy/2))
+    z_overlap = (max(z - dz/2, cz - wz/2) < min(z + dz/2, cz + wz/2))
+    
+    return x_overlap && y_overlap && z_overlap
+end
+
+"""
+    place_cubic_region!(M, region::CubicRegion, xm, ym, zm, r110, r101, r011; use_overlap=true)
 
 Place a cubic region into an existing moment field (modifies M in-place).
+
+# Arguments
+- `M`: Moment field array (Nx, Ny, Nz, Nmom)
+- `region`: CubicRegion to place
+- `xm`, `ym`, `zm`: Grid cell centers
+- `r110`, `r101`, `r011`: Correlation coefficients
+- `use_overlap`: If true, use cell overlap detection (more robust). If false, use point-in-cube (legacy)
 """
-function place_cubic_region!(M, region::CubicRegion, xm, ym, zm, r110, r101, r011)
+function place_cubic_region!(M, region::CubicRegion, xm, ym, zm, r110, r101, r011; use_overlap=true)
     Nx = length(xm)
     Ny = length(ym)
     Nz = length(zm)
     
     Mr = region_to_moments(region, r110, r101, r011)
     
-    for k in 1:Nz
-        for j in 1:Ny
-            for i in 1:Nx
-                point = (xm[i], ym[j], zm[k])
-                if point_in_cube(point, region)
-                    M[i, j, k, :] = Mr
+    if use_overlap
+        # Calculate grid spacing (assume uniform spacing)
+        dx = Nx > 1 ? abs(xm[2] - xm[1]) : 0.0
+        dy = Ny > 1 ? abs(ym[2] - ym[1]) : 0.0
+        dz = Nz > 1 ? abs(zm[2] - zm[1]) : 0.0
+        
+        for k in 1:Nz
+            for j in 1:Ny
+                for i in 1:Nx
+                    cell_center = (xm[i], ym[j], zm[k])
+                    cell_size = (dx, dy, dz)
+                    if cell_overlaps_cube(cell_center, cell_size, region)
+                        M[i, j, k, :] = Mr
+                    end
+                end
+            end
+        end
+    else
+        # Legacy: point-in-cube check (may miss narrow jets on coarse grids)
+        for k in 1:Nz
+            for j in 1:Ny
+                for i in 1:Nx
+                    point = (xm[i], ym[j], zm[k])
+                    if point_in_cube(point, region)
+                        M[i, j, k, :] = Mr
+                    end
                 end
             end
         end

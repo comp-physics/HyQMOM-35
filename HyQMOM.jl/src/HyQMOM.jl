@@ -14,6 +14,11 @@ using MPI
 using Printf
 using JLD2  # Always needed for snapshot I/O
 
+# Global runtime switches
+# Controls whether positivity safeguards (clamps/corrections) are applied.
+# Set at runtime from params in `simulation_runner` (defaults to true).
+const POSITIVITY_ENABLED = Ref(true)
+
 # Export main entry points
 export run_simulation, simulation_runner, run_simulation_with_snapshots
 

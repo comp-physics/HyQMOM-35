@@ -82,8 +82,20 @@ function get_jet_configuration(config_name::String, params)
     rhor = params.rhor      # Background density
     T = params.T
     
-    # Jet size (10% of domain)
-    jet_width = 0.1 * Lx
+    # Jet size and offset controls (CLI-overridable):
+    # - jet_size: fraction of domain length in x for cube width (default 0.1)
+    # - offset_mult: multiplier applied to jet_width for initial offset (default 0.6)
+    jet_size = try
+        params.jet_size
+    catch
+        0.1
+    end
+    offset_mult = try
+        params.offset_mult
+    catch
+        0.6
+    end
+    jet_width = jet_size * Lx
     
     # Background (uniform, low density, at rest)
     background = CubicRegion(
@@ -97,7 +109,7 @@ function get_jet_configuration(config_name::String, params)
     if config_name == "crossing"
         # Classic 3D crossing jets (moving diagonally through 3D space)
         Uc = Ma / sqrt(3.0)  # Velocity component in each direction for diagonal motion
-        offset = jet_width * 0.6
+        offset = jet_width * offset_mult
         
         jets = [
             CubicRegion(
@@ -119,7 +131,7 @@ function get_jet_configuration(config_name::String, params)
     elseif config_name == "crossing2D"
         # 2D-like crossing jets (moving diagonally in x-y plane at fixed z)
         Uc = Ma / sqrt(2.0)
-        offset = jet_width * 0.6
+        offset = jet_width * offset_mult
         
         jets = [
             CubicRegion(

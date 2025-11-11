@@ -28,9 +28,13 @@ Launch an interactive 3D viewer that streams snapshots from a JLD2 file.
 # Keyword Arguments
 - `n_streamlines::Int=8`: Number of streamline seeds
 - `vector_step::Int=4`: Subsampling for vector field
-- `iso_levels::Vector{Float64}=[0.3, 0.5, 0.7]`: Isosurface levels
+- `iso_levels::Vector{Float64}=[0.3, 0.5, 0.7]`: (Deprecated) Isosurface levels now determined dynamically from data
 - `snapshot_mode::Symbol=:all`: Display mode (:all, :first, :last, :specific)
 - `snapshot_number::Union{Int,Nothing}=nothing`: Specific snapshot number if mode is :specific
+
+# Notes
+- For density (ρ), pressure (P), and velocity magnitude (|v|), the slider range is dynamically set to [min(data), max(data)]
+- For velocity components (u, v, w), the slider range is [0, 1] representing fraction of max(|velocity|)
 """
 function interactive_3d_timeseries_streaming(filename, grid, params;
                                              n_streamlines=8,
@@ -265,7 +269,9 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     
     
     # Isosurface controls
-    slider_iso1 = GLMakie.Slider(fig, range=0.1:0.05:0.9, startvalue=iso_levels[1], width=200)
+    # Make slider range dynamic - will be updated based on actual data min/max
+    slider_iso1_range = GLMakie.Observable(0.0:0.01:1.0)  # Initial range, will be updated
+    slider_iso1 = GLMakie.Slider(fig, range=slider_iso1_range, startvalue=0.5, width=200)
     slider_alpha = GLMakie.Slider(fig, range=0.3:0.1:1.0, startvalue=0.6, width=200)
     
     # Function to compute quantities from M snapshot
@@ -275,9 +281,9 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         v = M_snapshot[:, :, :, 6] ./ rho
         w = M_snapshot[:, :, :, 16] ./ rho
         
-        C200 = M_snapshot[:, :, :, 3] ./ rho .- u.^2
-        C020 = M_snapshot[:, :, :, 7] ./ rho .- v.^2
-        C002 = M_snapshot[:, :, :, 17] ./ rho .- w.^2
+        C200 = M_snapshot[:, :, :, 3] ./ rho .- u.^2   # M200
+        C020 = M_snapshot[:, :, :, 10] ./ rho .- v.^2  # M020 (was 7, now 10)
+        C002 = M_snapshot[:, :, :, 20] ./ rho .- w.^2  # M002 (was 17, now 20)
         # Pressure: P = rho * (1/3 trace of velocity covariance)
         pressure = rho .* (C200 .+ C020 .+ C002) ./ 3.0
         
@@ -314,7 +320,7 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
     iso_value_text = GLMakie.@lift begin
         data = $(current_data_obs)
         q = $(current_quantity)
-        iso_frac = $(slider_iso1.value)
+        iso_val = $(slider_iso1.value)
         
         is_velocity = (q == "u velocity" || q == "v velocity" || q == "w velocity")
         data_min = minimum(data)
@@ -339,14 +345,12 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
         end
         
         if is_velocity
-            # For velocities: show both positive and negative levels
-            pos_level = iso_frac * data_absmax
+            # For velocities: slider is fraction, show both positive and negative levels
+            pos_level = iso_val * data_absmax
             @sprintf("%s = ±%.4f", q_label, pos_level)
         else
-            # For other quantities: show single level
-            data_range = data_max - data_min
-            level = data_min + iso_frac * data_range
-            @sprintf("%s = %.4f", q_label, level)
+            # For other quantities: slider value is the actual level
+            @sprintf("%s = %.4f", q_label, iso_val)
         end
     end
     
@@ -409,11 +413,38 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             return
         end
         
+        # Update slider range dynamically based on current data
+        if is_velocity
+            # For velocities, use fraction of absmax (0 to 1)
+            step_size = 0.01  # 1% steps
+            new_range = 0.0:step_size:1.0
+            if slider_iso1_range[] != new_range
+                slider_iso1_range[] = new_range
+                # Keep slider value in valid range
+                if slider_iso1.value[] > 1.0
+                    slider_iso1.value[] = 0.5
+                end
+            end
+        else
+            # For density, pressure, velocity magnitude: use actual data range
+            step_size = max((data_max - data_min) / 100.0, 1e-6)  # 100 steps
+            new_range = data_min:step_size:data_max
+            if slider_iso1_range[] != new_range
+                slider_iso1_range[] = new_range
+                # Set slider to middle of range if current value is out of bounds
+                current_val = slider_iso1.value[]
+                if current_val < data_min || current_val > data_max
+                    slider_iso1.value[] = data_min + 0.5 * data_range
+                end
+            end
+        end
+        
         x_lims = (xm[1], xm[end])
         y_lims = (ym[1], ym[end])
         z_lims = (zm[1], zm[end])
         
         if is_velocity
+            # For velocities, slider still controls fraction (0-1)
             pos_level = slider_iso1.value[] * data_absmax
             neg_level = -slider_iso1.value[] * data_absmax
             
@@ -422,7 +453,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             colors = [GLMakie.RGBf(0.0, 0.0, 0.545), :seagreen]
             alphas = [0.6, 0.6] .* slider_alpha.value[]
         else
-            level = data_min + slider_iso1.value[] * data_range
+            # For density/pressure/velocity magnitude, use slider value directly
+            level = slider_iso1.value[]
             levels = [level]
             # Darkish blue for density and pressure
             colors = [GLMakie.RGBf(0.0, 0.0, 0.545)]
