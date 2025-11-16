@@ -253,8 +253,8 @@ function interactive_3d_timeseries_streaming(filename, grid, params;
             timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMMSS")
             quantity_short = replace(current_quantity[], " " => "_")
             
-            filename_out = @sprintf("snapshot_%s_Nx%d_Ny%d_Nz%d_Kn%.2f_t%.4f_%s.png",
-                               quantity_short, Nx, Ny, Nz, params.Kn, t, timestamp)
+            filename_out = @sprintf("snapshot_%s_Nx%d_Ny%d_Nz%d_Ma%.2f_Kn%.2f_t%.4f_%s.png",
+                               quantity_short, Nx, Ny, Nz, params.Ma, params.Kn, t, timestamp)
             
             println("\nExporting current view to: $filename_out")
             
