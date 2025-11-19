@@ -23,8 +23,16 @@ M = [M000,M100,M200,M300,M400,M010,M110,M210,M310,M020,M120,M220,M030,M130,M040,
 function eigenvalues6z_hyperbolic_3D(M::Vector{Float64}, flag2D::Int, Ma::Float64)
     Mr = copy(M)
     
+    # CRITICAL SAFEGUARD: Check for negative density (unphysical)
+    if POSITIVITY_ENABLED[] && M[1] <= 0.0
+        println("  Negative/zero density detected in eigenvalues6z!")
+        println("  m000 = $(M[1])")
+        println("  Clamping to minimum positive value...")
+        Mr[1] = max(M[1], 1e-14)
+    end
+    
     # Extract moments needed for WU and WV planes
-    m000 = M[1]
+    m000 = Mr[1]
     m100 = M[2]
     m200 = M[3]
     m300 = M[4]
@@ -49,6 +57,51 @@ function eigenvalues6z_hyperbolic_3D(M::Vector{Float64}, flag2D::Int, Ma::Float6
     m012 = M[32]
     m013 = M[34]
     m022 = M[35]
+    
+    # SAFEGUARD: Check for negative variance before Jacobian computation
+    # Compute quick estimate of variance from second moments
+    if POSITIVITY_ENABLED[] && m000 > 1e-15
+        var_x_est = m200/m000 - (m100/m000)^2
+        var_y_est = m020/m000 - (m010/m000)^2
+        var_z_est = m002/m000 - (m001/m000)^2
+        
+        if var_x_est < 0.0 || var_y_est < 0.0 || var_z_est < 0.0
+            println("⚠️  WARNING: Negative variance detected before z-eigenvalue calculation")
+            println("  var_x=$(var_x_est), var_y=$(var_y_est), var_z=$(var_z_est)")
+            println("  This indicates moment realizability violation from advection")
+            println("  Will attempt realizability correction...")
+            
+            # Apply full realizability correction
+            _, _, _, Mr = Flux_closure35_and_realizable_3D(M, flag2D, Ma)
+            
+            # Update moments for eigenvalue calculation
+            m000 = Mr[1]
+            m100 = Mr[2]
+            m200 = Mr[3]
+            m300 = Mr[4]
+            m400 = Mr[5]
+            m010 = Mr[6]
+            m020 = Mr[10]
+            m030 = Mr[13]
+            m040 = Mr[15]
+            m001 = Mr[16]
+            m101 = Mr[17]
+            m201 = Mr[18]
+            m301 = Mr[19]
+            m002 = Mr[20]
+            m102 = Mr[21]
+            m202 = Mr[22]
+            m003 = Mr[23]
+            m103 = Mr[24]
+            m004 = Mr[25]
+            m011 = Mr[26]
+            m021 = Mr[29]
+            m031 = Mr[31]
+            m012 = Mr[32]
+            m013 = Mr[34]
+            m022 = Mr[35]
+        end
+    end
     
     # WU moments (z-x plane)
     J6 = jacobian6(m000, m100, m200, m300, m400, m001, m101, m201, m301, m002, m102, m202, m003, m103, m004)
@@ -81,6 +134,33 @@ function eigenvalues6z_hyperbolic_3D(M::Vector{Float64}, flag2D::Int, Ma::Float6
         println("  m013 = $(m013), m031 = $(m031)")
         println("  Ratio m031/m013 = $(m031/m013)")
         println("  WV Jacobian using m031 (14th arg) = $(m031)")
+        
+        # Detailed diagnostics for WV plane (z-y) which seems problematic
+        println("\n  Full WV moment set:")
+        println("    m000=$(m000), m001=$(m001), m002=$(m002), m003=$(m003), m004=$(m004)")
+        println("    m010=$(m010), m011=$(m011), m012=$(m012), m013=$(m013)")
+        println("    m020=$(m020), m021=$(m021), m022=$(m022)")
+        println("    m030=$(m030), m031=$(m031), m040=$(m040)")
+        
+        # Check for NaN/Inf in Jacobian inputs
+        wv_moments = [m000, m001, m002, m003, m004, m010, m011, m012, m013, m020, m021, m022, m030, m031, m040]
+        if any(!isfinite, wv_moments)
+            println("  ⚠️  NON-FINITE MOMENTS IN WV PLANE!")
+            for (i, val) in enumerate(wv_moments)
+                if !isfinite(val)
+                    println("    moment[$i] = $val")
+                end
+            end
+        end
+        
+        # Check central moments
+        C4, _ = M2CS4_35(M)
+        C002 = C4[20]
+        C020 = C4[10]
+        C011 = C4[26]
+        println("\n  Central moments: C002=$(C002), C020=$(C020), C011=$(C011)")
+        println("  Temperature check: C002/m000=$(C002/m000), C020/m000=$(C020/m000)")
+        
         println("  Will attempt correction...")
     end
     

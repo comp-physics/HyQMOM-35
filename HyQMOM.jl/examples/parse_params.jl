@@ -71,6 +71,7 @@ function get_default_params()
         homogeneous_z = false,
         debug_output = false,
         enable_memory_tracking = false,
+        positivity = true,
         
         # Snapshot control
         snapshot_interval = 0,  # 0 = disabled (S4 and C4 always saved when snapshots enabled)
@@ -141,14 +142,7 @@ end
 Attempt to parse a string as Int, Float64, or Bool, otherwise return as String.
 """
 function try_parse_value(str)
-    # Try Bool first
-    if lowercase(str) in ["true", "t", "yes", "y", "1"]
-        return true
-    elseif lowercase(str) in ["false", "f", "no", "n", "0"]
-        return false
-    end
-    
-    # Try Int
+    # Try Int first (so that "1" is parsed as 1, not Bool)
     try
         return parse(Int, str)
     catch
@@ -158,6 +152,13 @@ function try_parse_value(str)
     try
         return parse(Float64, str)
     catch
+    end
+    
+    # Try Bool (true/false textual forms)
+    if lowercase(str) in ["true", "t", "yes", "y"]
+        return true
+    elseif lowercase(str) in ["false", "f", "no", "n"]
+        return false
     end
     
     # Return as string
@@ -207,6 +208,7 @@ function print_help()
       
       --homogeneous-z BOOL  Use z-homogeneous mode (default: false)
       --debug-output BOOL   Enable debug output (default: false)
+      --positivity BOOL     Enable positivity safeguards (default: true)
       
       -h, --help            Show this help message
     
@@ -316,6 +318,7 @@ function print_params_summary(params; rank=0, comm=nothing)
     println("  Nmom: $(params.Nmom)")
     println("  flag2D: $(params.flag2D) (0=3D, 1=2D)")
     println("  homogeneous_z: $(params.homogeneous_z)")
+    println("  positivity: $(get(params, :positivity, true))")
     
     if params.snapshot_interval > 0
         println("\nSnapshots:")

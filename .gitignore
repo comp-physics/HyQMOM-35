@@ -38,3 +38,8 @@ viz-bak/
 snapshots/
 HyQMOM.jl/slurm/hyqmom_N*.out
 HyQMOM.jl/slurm/submitted-jobs/
+
+viz_*.jld2
+move.sh
+for-rodney/
+nohup.out

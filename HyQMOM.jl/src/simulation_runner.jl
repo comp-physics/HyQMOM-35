@@ -83,6 +83,13 @@ function simulation_runner(params)
     nnmax = params.nnmax
     dtmax = params.dtmax
     
+    # Positivity safeguards (default true, can be overridden by params)
+    try
+        POSITIVITY_ENABLED[] = get(params, :positivity, true)
+    catch
+        POSITIVITY_ENABLED[] = true
+    end
+    
     # IC parameters
     rhol = params.rhol
     rhor = params.rhor
@@ -412,15 +419,17 @@ function simulation_runner(params)
             @printf("  Time step calculation:\n")
             @printf("    CFL = %.6f\n", CFL)
             @printf("    dtmax = %.6e\n", dtmax)
+            @printf("    Kn = %.6e\n", Kn)
             @printf("    CFL*min(dx,dy,dz)/vmax = %.6e\n", CFL*min(dx,dy,dz)/vmax)
-            @printf("    dt (final) = %.6e\n", min(CFL*min(dx,dy,dz)/vmax, dtmax))
+            @printf("    dt (final) = %.6e\n", min(CFL*min(dx,dy,dz)/vmax, min(dtmax, Kn)))
             @printf("  Expected physical values (Ma=%.1f):\n", Ma)
             @printf("    Expected jet velocity ~ %.2f\n", abs(Ma))
             @printf("    Actual vmax / Expected = %.1fx\n", vmax / abs(Ma))
             @printf("  ══════════════════════════════\n\n")
         end
         
-        dt = min(CFL*min(dx,dy,dz)/vmax, dtmax)
+        # Apply Kn cap to time step (matches MATLAB behavior: dtmax = Kn)
+        dt = min(CFL*min(dx,dy,dz)/vmax, min(dtmax, Kn))
         dt = min(dt, tmax-t)
         
         # Debug: print vmax if it's unusually large

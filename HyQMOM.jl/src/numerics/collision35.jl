@@ -27,6 +27,11 @@ function collision35(M, dt, Kn)
     C002 = M[20]/rho - wmean^2
     Theta = (C200 + C020 + C002) / 3
     
+    # Safeguard: ensure Theta is positive (numerical errors can make it slightly negative)
+    if POSITIVITY_ENABLED[]
+        Theta = max(Theta, 1e-14)
+    end
+    
     # Collision time scale
     tc = Kn / (rho * sqrt(Theta) * 2)
     

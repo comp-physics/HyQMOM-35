@@ -60,6 +60,27 @@ using GLMakie
 using HyQMOM, JLD2
 using Printf
 
+# Explicitly import visualization function - with error handling
+try
+    using HyQMOM: interactive_3d_timeseries_streaming
+catch e
+    println(stderr, "")
+    println(stderr, "="^70)
+    println(stderr, "ERROR: Visualization function not available in HyQMOM module!")
+    println(stderr, "="^70)
+    println(stderr, "The HyQMOM module was likely compiled without visualization support.")
+    println(stderr, "")
+    println(stderr, "To fix this:")
+    println(stderr, "  1. Ensure visualization packages are installed:")
+    println(stderr, "     julia --project=. -e 'using Pkg; Pkg.add([\"GLMakie\", \"FileIO\", \"ColorSchemes\", \"LaTeXStrings\"])'")
+    println(stderr, "  2. Restart Julia to recompile HyQMOM with visualization support")
+    println(stderr, "  3. Or run: julia --project=. -e 'using Pkg; Pkg.build(\"HyQMOM\")'")
+    println(stderr, "")
+    println(stderr, "Original error: $e")
+    println(stderr, "="^70)
+    exit(1)
+end
+
 function show_help()
     println("""
     HyQMOM JLD2 Visualization Tool
