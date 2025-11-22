@@ -376,7 +376,7 @@ function run_mpi_tests()
             
             if rank == 0 && test_result !== nothing
                 save_reference(test_result.M, test_result.final_time, 
-                             test_result.time_steps, test_result.Np, 
+                             test_result.time_steps, test_result.Nx, 
                              nprocs, config_name)
                 
                 println("\n" * "="^70)
