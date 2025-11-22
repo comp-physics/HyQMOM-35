@@ -105,8 +105,8 @@ If you have Git installed:
 
 ```bash
 cd ~  # or wherever you want to put the code
-git clone https://github.com/comp-physics/HyQMOM-35.git
-cd HyQMOM-35
+git clone https://github.com/comp-physics/HyQMOM.jl.git
+cd HyQMOM.jl
 ```
 
 If you don't have Git:
