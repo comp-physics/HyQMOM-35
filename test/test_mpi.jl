@@ -308,7 +308,7 @@ function compare_results(ref_result, test_result, test_nprocs; verbose=true)
             max_loc = Tuple(max_idx)
             println("\n  Location of max diff: $(max_loc)")
             @printf("    1 rank:  %.10e\n", M_ref[max_idx])
-            @printf("    $(test_nprocs) ranks: %.10e\n", M_test[max_idx])
+            println("    $(test_nprocs) ranks: ", @sprintf("%.10e", M_test[max_idx]))
             @printf("    Diff:    %.10e\n", diff[max_idx])
         end
         println("="^70)
