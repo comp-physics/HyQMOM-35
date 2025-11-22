@@ -77,7 +77,7 @@ create_goldenfiles('local')
 create_goldenfiles('all')
 ```
 
-Golden files are saved to `../goldenfiles/` (root level) with naming convention:
+Golden files are saved to `../../goldenfiles/` (repository root) with naming convention:
 - `goldenfile_mpi_1ranks_Np20_tmax100.mat`
 - `goldenfile_mpi_2ranks_Np20_tmax100.mat`
 - etc.
@@ -154,9 +154,9 @@ BGK collision operator in `src/collision35.m`:
 
 ## Relationship to Julia Implementation
 
-This MATLAB code serves as the reference implementation for the Julia port in `HyQMOM.jl/`. The two implementations:
+This MATLAB code serves as the reference implementation for the Julia port (now at repository root). The two implementations:
 
-- **Share golden files**: Both use `../goldenfiles/*.mat` for cross-validation
+- **Share golden files**: Both use `../../goldenfiles/*.mat` for cross-validation
 - **Use identical algorithms**: Julia port is a direct translation
 - **Maintain numerical agreement**: Typically to machine precision (~1e-15)
 

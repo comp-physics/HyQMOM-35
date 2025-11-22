@@ -51,8 +51,8 @@ function create_goldenfiles(mode)
         error('Parallel Computing Toolbox is required for MPI golden file creation');
     end
     
-    % Create goldenfiles directory if needed
-    goldenfiles_dir = 'goldenfiles';
+    % Create goldenfiles directory if needed (at repository root)
+    goldenfiles_dir = '../../goldenfiles';
     if ~exist(goldenfiles_dir, 'dir')
         mkdir(goldenfiles_dir);
         fprintf('Created directory: %s\n\n', goldenfiles_dir);
