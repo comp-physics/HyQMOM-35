@@ -6,11 +6,18 @@ Complete documentation for all public functions, types, and modules in HyQMOM.jl
 DocTestSetup = :(using HyQMOM)
 ```
 
+## Module
+
+```@docs
+HyQMOM
+```
+
 ## Simulation Entry Points
 
 Main functions for running simulations.
 
 ```@docs
+run_simulation
 simulation_runner
 run_simulation_with_snapshots
 ```
