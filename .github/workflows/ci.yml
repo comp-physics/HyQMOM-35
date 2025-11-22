@@ -85,3 +85,44 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  mpi-test:
+    name: MPI tests (Julia 1.10, 2 ranks)
+    runs-on: ubuntu-latest
+    env:
+      HYQMOM_SKIP_PLOTTING: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+          arch: x64
+
+      - name: Install MPI (MPICH)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mpich libmpich-dev
+
+      - name: Instantiate project
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run MPI tests with coverage (1 and 2 ranks)
+        run: |
+          mpiexec -n 1 julia --project=. --code-coverage=user test/test_mpi.jl
+          mpiexec -n 2 julia --project=. --code-coverage=user test/test_mpi.jl
+
+      - name: Process MPI coverage
+        uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: src
+
+      - name: Upload MPI coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          flags: mpi
+          name: codecov-mpi
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
