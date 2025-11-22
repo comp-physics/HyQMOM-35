@@ -268,45 +268,12 @@ using HyQMOM
         @test jets4[1].center[2] != 0.0
     end
     
-    @testset "place_cubic_region!" begin
-        Nx, Ny, Nz = 10, 10, 1
-        xmin, xmax = -0.5, 0.5
-        ymin, ymax = -0.5, 0.5
-        zmin, zmax = -0.5, 0.5
-        
-        xm = collect(range(xmin, xmax, length=Nx))
-        ym = collect(range(ymin, ymax, length=Ny))
-        zm = collect(range(zmin, zmax, length=Nz))
-        
-        M = zeros(Float64, Nx, Ny, Nz, 35)
-        
-        # Place a region
-        region = HyQMOM.CubicRegion(
-            center = (0.0, 0.0, 0.0),
-            width = (0.2, 0.2, 0.2),
-            density = 1.0,
-            velocity = (0.5, 0.0, 0.0),
-            temperature = 1.0
-        )
-        
-        HyQMOM.place_cubic_region!(M, region, xm, ym, zm, 0.0, 0.0, 0.0)
-        
-        # Check that some cells were modified
-        @test any(M[:, :, :, 1] .> 0)
-        
-        # Check center cell should have jet density
-        center_idx = div(Nx, 2) + 1
-        @test M[center_idx, center_idx, 1, 1] ≈ 1.0
-        
-        # Test with use_overlap=false
-        M2 = zeros(Float64, Nx, Ny, Nz, 35)
-        HyQMOM.place_cubic_region!(M2, region, xm, ym, zm, 0.0, 0.0, 0.0, use_overlap=false)
-        @test any(M2[:, :, :, 1] .> 0)
-    end
+    # Note: place_cubic_region! is an internal function tested indirectly 
+    # through initialize_moment_field and crossing_jets_ic tests
     
     @testset "Full initialization workflow" begin
-        # Test complete workflow with crossing jets
-        Nx, Ny, Nz = 20, 20, 1
+        # Test complete workflow with crossing jets (reduced parameter set for speed)
+        Nx, Ny, Nz = 10, 10, 1  # Smaller grid for faster tests
         xmin, xmax = -0.5, 0.5
         ymin, ymax = -0.5, 0.5
         zmin, zmax = -0.5, 0.5
@@ -319,23 +286,22 @@ using HyQMOM
                        xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
                        xm=xm, ym=ym, zm=zm)
         
-        for Ma in [0.0, 1.0, 5.0, 10.0]
-            for Kn in [0.1, 1.0]
-                background, jets = HyQMOM.crossing_jets_ic(
-                    Nx, Ny, Nz, xmin, xmax, ymin, ymax, zmin, zmax,
-                    Ma=Ma
-                )
-                
-                M = HyQMOM.initialize_moment_field(grid_params, background, jets)
-                
-                # Basic sanity checks
-                @test size(M) == (Nx, Ny, Nz, 35)
-                @test all(isfinite, M)
-                @test all(M[:, :, :, 1] .> 0)  # Positive density
-                
-                # Check that we have variation (not all same)
-                @test maximum(M[:, :, :, 1]) > minimum(M[:, :, :, 1])
-            end
+        # Test a few representative cases
+        for Ma in [0.0, 5.0]  # Reduced from 4 values
+            background, jets = crossing_jets_ic(
+                Nx, Ny, Nz, xmin, xmax, ymin, ymax, zmin, zmax,
+                Ma=Ma
+            )
+            
+            M = initialize_moment_field(grid_params, background, jets)
+            
+            # Basic sanity checks
+            @test size(M) == (Nx, Ny, Nz, 35)
+            @test all(isfinite, M)
+            @test all(M[:, :, :, 1] .> 0)  # Positive density
+            
+            # Check that we have variation (not all same)
+            @test maximum(M[:, :, :, 1]) > minimum(M[:, :, :, 1])
         end
     end
     

@@ -258,15 +258,23 @@ const TOL = 1e-10
     @testset "Realizability bounds checking" begin
         # Test S220 bounds
         S110 = 0.5
-        S220 = 2.0  # Out of bounds
         A220 = 1.5
         
-        S220r = realizability(:S220, S110, S220, A220)
+        # Test value that's too high (should be clamped to s220max = 1 + A220 = 2.5)
+        S220_high = 3.0
+        S220r_high = realizability(:S220, S110, S220_high, A220)
+        s220max = 1.0 + A220
+        @test S220r_high <= s220max + TOL
+        @test S220r_high ≈ s220max atol=TOL
         
-        @test abs(S220r) <= A220 + TOL
-        @test S220r >= S110^2 - TOL
+        # Test value that's too low (should be clamped to s220min = max(S110^2, 1-A220))
+        S220_low = -1.0
+        S220r_low = realizability(:S220, S110, S220_low, A220)
+        s220min = max(S110^2, 1.0 - A220)
+        @test S220r_low >= s220min - TOL
+        @test S220r_low ≈ s220min atol=TOL
         
-        # Test with S220 within bounds
+        # Test with S220 within bounds (should remain unchanged)
         S220_ok = 1.0
         S220r_ok = realizability(:S220, S110, S220_ok, A220)
         @test S220r_ok ≈ S220_ok atol=TOL
