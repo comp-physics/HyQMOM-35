@@ -2,14 +2,14 @@ name: Julia Golden File Tests
 
 on:
   push:
-    branches: [main, master, julia, develop]
+    branches: [master, julia, develop]
     paths:
       - 'src/**'
       - 'test/**'
       - 'goldenfiles/**'
       - '.github/workflows/julia-golden-test.yml'
   pull_request:
-    branches: [main, master, julia, develop]
+    branches: [master, julia, develop]
     paths:
       - 'src/**'
       - 'test/**'
