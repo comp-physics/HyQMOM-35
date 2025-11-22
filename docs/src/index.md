@@ -58,4 +58,10 @@ For a comprehensive overview of all features and capabilities, see the User Guid
 
 ## License
 
-See the [license file](https://github.com/comp-physics/HyQMOM.jl/blob/main/license.md) for licensing information.
+MIT license.
+
+See the [license file](https://github.com/comp-physics/HyQMOM.jl/blob/master/license.md) for the full text.
+
+## Copyright
+
+Copyright 2025 Spencer Bryngelson and Rodney Fox
