@@ -56,19 +56,6 @@ For a comprehensive overview of all features and capabilities, see the User Guid
 - Predefined initial condition configurations
 - Easy customization for new physical scenarios
 
-## Citation
-
-If you use HyQMOM.jl in your research, please cite:
-
-```bibtex
-@software{hyqmom_jl,
-  title = {HyQMOM.jl: 3D Hyperbolic Quadrature Method of Moments},
-  author = {Spencer H. Bryngelson and contributors},
-  year = {2024},
-  url = {https://github.com/comp-physics/HyQMOM.jl}
-}
-```
-
 ## License
 
 See the [license file](https://github.com/comp-physics/HyQMOM.jl/blob/main/license.md) for licensing information.

@@ -19,6 +19,28 @@ const TOL = 1e-10
         @test all(isfinite.(result))
     end
     
+    @testset "flux_HLL one-sided waves" begin
+        N = 4
+        Nmom = 2
+        Wstar = ones(N, Nmom)
+        W = ones(N, Nmom) .* 0.9
+        F = zeros(N, Nmom)
+        
+        # Supersonic right-going: both wave speeds positive
+        l1 = 0.5 .* ones(N)
+        l2 = 1.0 .* ones(N)
+        Fr = flux_HLL(Wstar, W, l1, l2, F, N)
+        @test size(Fr) == (N-1, Nmom)
+        @test all(isfinite.(Fr))
+        
+        # Supersonic left-going: both wave speeds negative
+        l1 = -1.0 .* ones(N)
+        l2 = -0.5 .* ones(N)
+        Fl = flux_HLL(Wstar, W, l1, l2, F, N)
+        @test size(Fl) == (N-1, Nmom)
+        @test all(isfinite.(Fl))
+    end
+    
     @testset "pas_HLL basic" begin
         Nx = 10
         Nmom = 5

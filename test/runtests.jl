@@ -26,6 +26,8 @@ const TOL = 1e-10
         include("test_autogen.jl")
         include("test_moment_conversions.jl")
         include("test_initialization.jl")
+        include("test_initial_conditions.jl")
+        include("test_simulation_runner.jl")
         include("test_realizability.jl")
         include("test_closures.jl")
         include("test_numerical_schemes.jl")

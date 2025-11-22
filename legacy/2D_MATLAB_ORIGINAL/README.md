@@ -191,19 +191,6 @@ The "mess" here is a natural part of research code evolution!
 - **HyQMOM.jl** - Julia port with modern software practices
 - **HyQMOM_2D_archive** - Archived Julia port of 2D code
 
-## Citation
-
-If referencing the original implementation:
-
-```bibtex
-@software{hyqmom_original,
-  title = {HyQMOM: Original 2D Implementation},
-  author = {Spencer H. Bryngelson and contributors},
-  year = {2024},
-  note = {Archived research code}
-}
-```
-
 ## Contact
 
 For questions about:

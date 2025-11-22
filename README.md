@@ -1,5 +1,12 @@
 # HyQMOM.jl
 
+[![CI](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/ci.yml)
+[![Documentation Status](https://readthedocs.org/projects/hyqmomjl/badge/?version=latest)](https://hyqmomjl.readthedocs.io/en/latest/)
+[![codecov](https://codecov.io/gh/comp-physics/HyQMOM.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/comp-physics/HyQMOM.jl)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17682195.svg)](https://doi.org/10.5281/zenodo.17682195)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Julia Version](https://img.shields.io/badge/julia-v1.9+-blue.svg)](https://julialang.org/downloads/)
+
 3D Hyperbolic Quadrature Method of Moments (HyQMOM) solver for the Boltzmann equation with BGK collision operator, featuring MPI parallelization and interactive visualization.
 
 ## Quick Start
@@ -380,19 +387,6 @@ julia ... --Np 60 --Nz 30
 - `Flux_closure35_and_realizable_3D`, `flux_HLL`, `collision35` - Numerics
 
 See `src/HyQMOM.jl` for complete list of exports.
-
-## Citation
-
-If you use this code in your research, please cite:
-
-```bibtex
-@software{hyqmom_jl,
-  title = {HyQMOM.jl: 3D Hyperbolic Quadrature Method of Moments},
-  author = {Spencer H. Bryngelson and contributors},
-  year = {2024},
-  url = {https://github.com/comp-physics/HyQMOM.jl}
-}
-```
 
 ## License
 
