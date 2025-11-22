@@ -381,19 +381,6 @@ julia ... --Np 60 --Nz 30
 
 See `src/HyQMOM.jl` for complete list of exports.
 
-## Citation
-
-If you use this code in your research, please cite:
-
-```bibtex
-@software{hyqmom_jl,
-  title = {HyQMOM.jl: 3D Hyperbolic Quadrature Method of Moments},
-  author = {Spencer H. Bryngelson and contributors},
-  year = {2024},
-  url = {https://github.com/comp-physics/HyQMOM.jl}
-}
-```
-
 ## License
 
 See `license.md` for licensing information.

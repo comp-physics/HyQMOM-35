@@ -251,24 +251,6 @@ As archived code:
 | Learning Julia port | Yes | Yes |
 | Algorithm verification | Yes | Yes |
 | Historical reference | Yes | No |
-| Paper citations | Check date | Yes (current) |
-
-## Citation
-
-If referencing this archived implementation:
-
-```bibtex
-@software{hyqmom_2d_julia_archive,
-  title = {HyQMOM 2D: Archived Julia Implementation},
-  author = {Spencer H. Bryngelson and contributors},
-  year = {2024},
-  note = {Archived - see HyQMOM.jl for current version},
-  url = {https://github.com/[repo]/HyQMOM_2D_archive}
-}
-```
-
-For current work, cite `HyQMOM.jl` instead.
-
 ## Further Reading
 
 - **Current Julia implementation**: See `../HyQMOM.jl/README.md`

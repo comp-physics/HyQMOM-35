@@ -211,19 +211,6 @@ mex -setup C
 - Check MATLAB version compatibility
 - Verify MEX files are properly compiled
 
-## Citation
-
-If you use this code in research, please cite:
-
-```bibtex
-@software{hyqmom_matlab,
-  title = {HyQMOM: 3D Hyperbolic Quadrature Method of Moments},
-  author = {Spencer H. Bryngelson and contributors},
-  year = {2024},
-  note = {MATLAB Implementation}
-}
-```
-
 ## Contact
 
 For questions or issues:
