@@ -29,6 +29,7 @@ Usage:
 using Test
 using MPI
 using Printf
+using HyQMOM
 
 # Configuration
 const MPI_TOL_ABS = 1e-10  # Very tight tolerance for deterministic results
@@ -148,10 +149,6 @@ function run_simulation(config_name)
     Ny = config.Ny
     tmax = config.tmax
     
-    # Load HyQMOM
-    push!(LOAD_PATH, joinpath(@__DIR__, ".."))
-    using HyQMOM
-    
     # Get MPI info
     comm = MPI.COMM_WORLD
     rank = MPI.Comm_rank(comm)
@@ -163,7 +160,7 @@ function run_simulation(config_name)
     end
     
     # Run simulation
-    results = run_simulation(
+    results = HyQMOM.run_simulation(
         Nx = Nx,
         Ny = Ny,
         tmax = tmax,
