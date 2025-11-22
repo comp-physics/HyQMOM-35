@@ -214,11 +214,5 @@ using HyQMOM
         @test jets4[1].center[1] != 0.0
         @test jets4[1].center[2] != 0.0
     end
-    
-    # Note: place_cubic_region! is an internal function tested indirectly 
-    # through initialize_moment_field and crossing_jets_ic tests
-    
-    # Note: Full initialization is tested through the existing simulation tests
-    
 end
 
