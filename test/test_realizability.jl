@@ -80,13 +80,13 @@ const TOL = 1e-10
             0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 3.0)
         @test all(isfinite.([S210r2, S120r2, S310r2, S220r2, S130r2]))
         
-        # Test realizable_2D directly (10 parameters, no H200/H020)
+        # Test realizable_2D directly (takes 10 parameters, returns 5: S21, S12, S31, S22, S13)
         result = HyQMOM.realizable_2D(
             S300, S400, S110, S210, S310, S120, S220,
             S030, S130, S040
         )
         
-        @test length(result) == 10
+        @test length(result) == 5
         @test all(isfinite, result)
     end
     
@@ -145,7 +145,8 @@ const TOL = 1e-10
             S211, S021, S121, S031, S012, S112, S013, S022
         )
         
-        @test length(result) == 22
+        # Returns 29 values: all 28 standardized moments + flag220
+        @test length(result) == 29
         @test all(isfinite, result)
         
         # Test with some correlations
@@ -158,7 +159,7 @@ const TOL = 1e-10
             S211, S021, S121, S031, S012, S112, S013, S022
         )
         
-        @test length(result2) == 22
+        @test length(result2) == 29
         @test all(isfinite, result2)
     end
     
