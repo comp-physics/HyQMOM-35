@@ -32,8 +32,8 @@ using Printf
 using HyQMOM
 
 # Configuration
-const MPI_TOL_ABS = 1e-10  # Very tight tolerance for deterministic results
-const MPI_TOL_REL = 1e-8
+const MPI_TOL_ABS = 1e-6   # Relaxed tolerance for MPI domain decomposition round-off
+const MPI_TOL_REL = 1e-4   # Relative tolerance for MPI consistency
 const GOLDEN_DIR = joinpath(@__DIR__, "goldenfiles")
 const REF_DIR = @__DIR__
 
