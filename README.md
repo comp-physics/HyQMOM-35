@@ -1,7 +1,7 @@
 # HyQMOM.jl
 
 [![CI](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/ci.yml)
-[![Documentation](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/docs.yml/badge.svg)](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/docs.yml)
+[![Documentation Status](https://readthedocs.org/projects/hyqmomjl/badge/?version=latest)](https://hyqmomjl.readthedocs.io/en/latest/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Julia Version](https://img.shields.io/badge/julia-v1.9+-blue.svg)](https://julialang.org/downloads/)
 
