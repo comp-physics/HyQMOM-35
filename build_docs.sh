@@ -9,14 +9,11 @@ echo "🔧 Building HyQMOM.jl Documentation..."
 echo "======================================"
 
 # Check if we're in the right directory
-if [ ! -f "HyQMOM.jl/Project.toml" ]; then
+if [ ! -f "Project.toml" ]; then
     echo "❌ Error: Please run this script from the repository root directory"
-    echo "   Expected to find HyQMOM.jl/Project.toml"
+    echo "   Expected to find Project.toml"
     exit 1
 fi
-
-# Navigate to HyQMOM.jl directory
-cd HyQMOM.jl
 
 echo "📦 Setting up documentation environment..."
 
@@ -41,7 +38,7 @@ if [ $? -eq 0 ]; then
     echo "   Local file: $(pwd)/docs/build/html/index.html"
     echo ""
     echo "🌐 To serve locally (requires Python):"
-    echo "   cd HyQMOM.jl/docs/build/html && python3 -m http.server 4000"
+    echo "   cd docs/build/html && python3 -m http.server 4000"
     echo "   Or use the convenience script: ./serve_docs.sh"
     echo "   Then open: http://localhost:4000"
     echo ""

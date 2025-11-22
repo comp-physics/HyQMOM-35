@@ -4,13 +4,15 @@ on:
   push:
     branches: [main, master, julia, develop]
     paths:
-      - 'HyQMOM.jl/**'
+      - 'src/**'
+      - 'test/**'
       - 'goldenfiles/**'
       - '.github/workflows/julia-golden-test.yml'
   pull_request:
     branches: [main, master, julia, develop]
     paths:
-      - 'HyQMOM.jl/**'
+      - 'src/**'
+      - 'test/**'
       - 'goldenfiles/**'
       - '.github/workflows/julia-golden-test.yml'
   workflow_dispatch:
@@ -74,7 +76,6 @@ jobs:
           mpiexec --version
       
       - name: Remove GLMakie (headless CI environment)
-        working-directory: HyQMOM.jl
         env:
           HYQMOM_SKIP_PLOTTING: "true"
         run: |
@@ -104,7 +105,6 @@ jobs:
           echo "Ready to install without GLMakie"
       
       - name: Install Julia dependencies
-        working-directory: HyQMOM.jl
         env:
           HYQMOM_SKIP_PLOTTING: "true"
         run: |
@@ -148,7 +148,6 @@ jobs:
           '
       
       - name: Build MPI.jl
-        working-directory: HyQMOM.jl
         run: |
           julia --project -e '
             using Pkg
@@ -165,7 +164,6 @@ jobs:
           '
       
       - name: Run unit tests
-        working-directory: HyQMOM.jl
         run: |
           julia --project --color=yes -e '
             using Pkg
@@ -173,7 +171,6 @@ jobs:
           '
       
       - name: Run golden file test (1 rank)
-        working-directory: HyQMOM.jl
         run: |
           echo "=================================================================="
           echo "Testing Julia against MATLAB golden file (1 MPI rank)"
@@ -181,7 +178,6 @@ jobs:
           julia --project test/test_golden_files.jl
       
       - name: Test MPI execution (1 rank)
-        working-directory: HyQMOM.jl
         run: |
           echo "=================================================================="
           echo "Testing with MPI (1 rank)"
@@ -190,7 +186,6 @@ jobs:
       
       - name: Generate test report
         if: always()
-        working-directory: HyQMOM.jl
         run: |
           julia --project -e '
             println("="^70)
@@ -212,7 +207,6 @@ jobs:
       
       - name: Process coverage
         if: matrix.julia-version == '1' && matrix.os == 'ubuntu-latest'
-        working-directory: HyQMOM.jl
         run: |
           julia --project -e '
             using Pkg

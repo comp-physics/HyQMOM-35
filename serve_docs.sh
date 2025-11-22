@@ -9,7 +9,7 @@ echo "🌐 Starting HyQMOM.jl Documentation Server..."
 echo "============================================="
 
 # Check if documentation exists
-if [ ! -f "HyQMOM.jl/docs/build/html/index.html" ]; then
+if [ ! -f "docs/build/html/index.html" ]; then
     echo "❌ Error: Documentation not found!"
     echo "   Please build the documentation first:"
     echo "   ./build_docs.sh"
@@ -17,7 +17,7 @@ if [ ! -f "HyQMOM.jl/docs/build/html/index.html" ]; then
 fi
 
 # Navigate to documentation directory
-cd HyQMOM.jl/docs/build/html
+cd docs/build/html
 
 echo "📖 Documentation server starting..."
 echo "   URL: http://localhost:8000"

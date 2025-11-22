@@ -5,9 +5,8 @@ Ultra-condensed guide for running HyQMOM on headless HPC clusters.
 ## One-Time Setup (5 minutes)
 
 ```bash
-# 1. Clone and checkout
-git clone https://github.com/comp-physics/HyQMOM-35.git
-cd HyQMOM-35
+# 1. Clone repository
+git clone https://github.com/comp-physics/HyQMOM.jl.git
 cd HyQMOM.jl
 
 # 2. Edit slurm/setup_hyqmom.sbatch for your cluster
@@ -212,6 +211,6 @@ After running `setup_headless.jl`, your **local** `Project.toml` will show:
 ## Support
 
 - Full guide: `HyQMOM.jl/docs/src/mpi.md` and repo README
-- Issues: https://github.com/comp-physics/HyQMOM-35/issues
+- Issues: https://github.com/comp-physics/HyQMOM.jl/issues
 - Slurm scripts: `HyQMOM.jl/slurm/`
 
