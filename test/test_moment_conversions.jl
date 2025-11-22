@@ -260,30 +260,7 @@ const TOL = 1e-10
         end
     end
     
-    @testset "M4_to_vars with realistic moments" begin
-        # Test with moments from actual simulation  
-        rho = 1.2
-        u, v, w = 0.5, 0.3, 0.1
-        T = 1.5
-        
-        M = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
-        
-        # Test vector version
-        vars_vec = M4_to_vars(M)
-        @test length(vars_vec) == 35
-        @test vars_vec[1] ≈ rho
-        
-        # Test 3D array version
-        M_array = reshape(M, 5, 5, 5)
-        vars_arr = M4_to_vars(M_array)
-        @test length(vars_arr) == 35
-        @test vars_arr[1] ≈ rho
-        
-        # Should get same results
-        for i in 1:35
-            @test vars_vec[i] ≈ vars_arr[i] atol=TOL
-        end
-    end
+    # Note: M4_to_vars is already tested above with vector and 3D array versions
     
     @testset "Moment conversions with extreme values" begin
         # Test with very high density

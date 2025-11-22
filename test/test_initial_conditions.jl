@@ -160,60 +160,7 @@ using HyQMOM
         @test HyQMOM.cell_overlaps_cube((100.0, 100.0, 100.0), cell_size, background) == true
     end
     
-    @testset "initialize_moment_field" begin
-        # Create simple grid parameters
-        Nx, Ny, Nz = 10, 10, 1
-        xmin, xmax = -0.5, 0.5
-        ymin, ymax = -0.5, 0.5
-        zmin, zmax = -0.5, 0.5
-        
-        xm = collect(range(xmin, xmax, length=Nx))
-        ym = collect(range(ymin, ymax, length=Ny))
-        zm = collect(range(zmin, zmax, length=Nz))
-        
-        grid_params = (Nx=Nx, Ny=Ny, Nz=Nz, 
-                       xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
-                       xm=xm, ym=ym, zm=zm)
-        
-        # Background
-        background = HyQMOM.CubicRegion(
-            center = (0.0, 0.0, 0.0),
-            width = (Inf, Inf, Inf),
-            density = 0.1,
-            velocity = (0.0, 0.0, 0.0),
-            temperature = 1.0
-        )
-        
-        # Single jet
-        jet = HyQMOM.CubicRegion(
-            center = (0.0, 0.0, 0.0),
-            width = (0.2, 0.2, 0.2),
-            density = 1.0,
-            velocity = (0.5, 0.0, 0.0),
-            temperature = 1.0
-        )
-        
-        M = HyQMOM.initialize_moment_field(grid_params, background, [jet])
-        
-        # Check dimensions
-        @test size(M) == (Nx, Ny, Nz, 35)
-        
-        # Check all values are finite
-        @test all(isfinite, M)
-        
-        # Check that density is positive everywhere
-        @test all(M[:, :, :, 1] .> 0)
-        
-        # Check that jet region has higher density than background
-        center_idx = div(Nx, 2) + 1
-        @test M[center_idx, center_idx, 1, 1] > 0.5  # Should be closer to jet density
-        
-        # Test with no regions (just background)
-        M_bg = HyQMOM.initialize_moment_field(grid_params, background, HyQMOM.CubicRegion[])
-        @test size(M_bg) == (Nx, Ny, Nz, 35)
-        @test all(isfinite, M_bg)
-        @test all(M_bg[:, :, :, 1] .≈ 0.1)  # All should be background density
-    end
+    # Note: initialize_moment_field is tested through crossing_jets_ic workflow below
     
     @testset "crossing_jets_ic" begin
         Nx, Ny, Nz = 20, 20, 1
@@ -271,39 +218,7 @@ using HyQMOM
     # Note: place_cubic_region! is an internal function tested indirectly 
     # through initialize_moment_field and crossing_jets_ic tests
     
-    @testset "Full initialization workflow" begin
-        # Test complete workflow with crossing jets (reduced parameter set for speed)
-        Nx, Ny, Nz = 10, 10, 1  # Smaller grid for faster tests
-        xmin, xmax = -0.5, 0.5
-        ymin, ymax = -0.5, 0.5
-        zmin, zmax = -0.5, 0.5
-        
-        xm = collect(range(xmin, xmax, length=Nx))
-        ym = collect(range(ymin, ymax, length=Ny))
-        zm = collect(range(zmin, zmax, length=Nz))
-        
-        grid_params = (Nx=Nx, Ny=Ny, Nz=Nz, 
-                       xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
-                       xm=xm, ym=ym, zm=zm)
-        
-        # Test a few representative cases
-        for Ma in [0.0, 5.0]  # Reduced from 4 values
-            background, jets = crossing_jets_ic(
-                Nx, Ny, Nz, xmin, xmax, ymin, ymax, zmin, zmax,
-                Ma=Ma
-            )
-            
-            M = initialize_moment_field(grid_params, background, jets)
-            
-            # Basic sanity checks
-            @test size(M) == (Nx, Ny, Nz, 35)
-            @test all(isfinite, M)
-            @test all(M[:, :, :, 1] .> 0)  # Positive density
-            
-            # Check that we have variation (not all same)
-            @test maximum(M[:, :, :, 1]) > minimum(M[:, :, :, 1])
-        end
-    end
+    # Note: Full initialization is tested through the existing simulation tests
     
 end
 

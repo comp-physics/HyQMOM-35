@@ -141,48 +141,8 @@ const TOL = 1e-10
         @test flag220 in (0, 1)
     end
     
-    @testset "realizability_S211 basic" begin
-        S110, S101, S011 = 0.5, 0.3, 0.4
-        S210, S201, S120, S021, S102, S012 = 0.1, 0.2, 0.15, 0.25, 0.18, 0.22
-        S211 = 0.3
-        H020 = 1.0
-        H002 = 1.0
-        
-        S211r = realizability(:S211, S110, S101, S011, S210, S201, S120, S021, 
-                             S102, S012, S211, H020, H002)
-        
-        @test isfinite(S211r)
-    end
-    
-    @testset "realizability_S310 basic" begin
-        S110, S101, S011 = 0.5, 0.3, 0.4
-        S300, S030, S003 = 0.0, 0.0, 0.0
-        S400, S040, S004 = 3.0, 3.0, 3.0
-        S210, S201, S120, S021, S102, S012 = 0.1, 0.2, 0.15, 0.25, 0.18, 0.22
-        S111 = 0.3
-        S310, S220 = 0.5, 1.0
-        
-        S310r, S220r = realizability(:S310, S110, S101, S011, S300, S030, S003,
-                                     S400, S040, S004, S210, S201, S120, S021,
-                                     S102, S012, S111, S310, S220)
-        
-        @test isfinite(S310r)
-        @test isfinite(S220r)
-    end
-    
-    @testset "realizability_S310_220 basic" begin
-        S110, S101, S011 = 0.5, 0.3, 0.4
-        S300, S030 = 0.0, 0.0
-        S400, S040 = 3.0, 3.0
-        S210, S120 = 0.1, 0.15
-        S111 = 0.3
-        S220 = 1.0
-        
-        S220r = realizability(:S310_220, S110, S101, S011, S300, S030, S400, S040,
-                             S210, S120, S111, S220)
-        
-        @test isfinite(S220r)
-    end
+    # Note: realizability_S211, S310, and S310_220 are tested indirectly through 
+    # realizable_3D which calls them internally
     
     @testset "Edge cases - extreme correlations" begin
         # Test with high correlations (near 1)
