@@ -9,16 +9,16 @@ build:
       # Install Julia (adjust version as needed)
       - curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.5-linux-x86_64.tar.gz | tar -xz
       - export PATH="$PWD/julia-1.10.5/bin:$PATH"
+      - export HYQMOM_SKIP_PLOTTING="true"
+      - export JULIA_NUM_THREADS="2"
       # Prepare the docs environment and develop the package
       - julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
     post_build:
       # Build Documenter docs; HTML must go into $READTHEDOCS_OUTPUT/html
       - export PATH="$PWD/julia-1.10.5/bin:$PATH"
+      - export HYQMOM_SKIP_PLOTTING="true"
+      - export JULIA_NUM_THREADS="2"
       - julia --project=docs docs/make.jl
-  environment:
-    # Avoid heavy plotting deps during docs build
-    HYQMOM_SKIP_PLOTTING: "true"
-    JULIA_NUM_THREADS: "2"
 
 # Tell RTD where the docs are built (dummy sphinx config to satisfy RTD)
 # This is required even if you're not using Sphinx
