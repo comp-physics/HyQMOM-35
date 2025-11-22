@@ -11,7 +11,7 @@ build:
       - export PATH="$PWD/julia-1.10.5/bin:$PATH"
       # Prepare the docs environment and develop the package
       - julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
-    build:
+    post_build:
       # Build Documenter docs; HTML must go into $READTHEDOCS_OUTPUT/html
       - export PATH="$PWD/julia-1.10.5/bin:$PATH"
       - julia --project=docs docs/make.jl
