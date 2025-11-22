@@ -9,10 +9,10 @@ build:
       # Install Julia
       - curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.5-linux-x86_64.tar.gz | tar -xz
       # Prepare the docs environment (chain commands to preserve environment)
-      - 'export PATH="$PWD/julia-1.10.5/bin:$PATH" && export HYQMOM_SKIP_PLOTTING="true" && export JULIA_NUM_THREADS="2" && julia --project=docs -e ''using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'''
+      - export PATH="$PWD/julia-1.10.5/bin:$PATH" && export HYQMOM_SKIP_PLOTTING="true" && export JULIA_NUM_THREADS="2" && julia --project=docs -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.instantiate()"
     post_build:
       # Build Documenter docs (chain commands to preserve environment)
-      - 'export PATH="$PWD/julia-1.10.5/bin:$PATH" && export HYQMOM_SKIP_PLOTTING="true" && export JULIA_NUM_THREADS="2" && julia --project=docs docs/make.jl'
+      - export PATH="$PWD/julia-1.10.5/bin:$PATH" && export HYQMOM_SKIP_PLOTTING="true" && export JULIA_NUM_THREADS="2" && julia --project=docs docs/make.jl
 
 # Tell RTD where the docs are built (dummy sphinx config to satisfy RTD)
 # This is required even if you're not using Sphinx
