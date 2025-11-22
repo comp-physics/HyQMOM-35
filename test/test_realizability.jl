@@ -11,6 +11,27 @@ const TOL = 1e-10
         @test abs(S101r) <= 1.0 + TOL
         @test abs(S011r) <= 1.0 + TOL
         @test S2r >= 0.0
+        
+        # Test with zero correlations
+        S110r2, S101r2, S011r2, S2r2 = realizability(:S2, 0.0, 0.0, 0.0)
+        @test S110r2 == 0.0
+        @test S101r2 == 0.0
+        @test S011r2 == 0.0
+        @test S2r2 == 0.0
+        
+        # Test with extreme values that need clamping
+        S110r3, S101r3, S011r3, S2r3 = realizability(:S2, 1.5, 1.5, 1.5)
+        @test abs(S110r3) <= 1.0 + TOL
+        @test abs(S101r3) <= 1.0 + TOL
+        @test abs(S011r3) <= 1.0 + TOL
+        @test all(isfinite.([S110r3, S101r3, S011r3, S2r3]))
+        
+        # Test with negative correlations
+        S110r4, S101r4, S011r4, S2r4 = realizability(:S2, -0.8, -0.6, -0.7)
+        @test abs(S110r4) <= 1.0 + TOL
+        @test abs(S101r4) <= 1.0 + TOL
+        @test abs(S011r4) <= 1.0 + TOL
+        @test S2r4 >= 0.0
     end
     
     @testset "realizability_S111 basic" begin
@@ -58,6 +79,23 @@ const TOL = 1e-10
             S300, S400, S110, S210, S310, S120, S220, S030, S130, S040)
         
         @test all(isfinite.([S210r, S120r, S310r, S220r, S130r]))
+        
+        # Test with zero correlations
+        S210r2, S120r2, S310r2, S220r2, S130r2 = realizability(Symbol("2D"),
+            0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 3.0)
+        @test all(isfinite.([S210r2, S120r2, S310r2, S220r2, S130r2]))
+        
+        # Test realizable_2D directly with H200, H020
+        H200 = max(eps(), S400 - S300^2 - 1)
+        H020 = max(eps(), S040 - S030^2 - 1)
+        
+        result = HyQMOM.realizable_2D(
+            S300, S400, S110, S210, S310, S120, S220,
+            S030, S130, S040, H200, H020
+        )
+        
+        @test length(result) == 10
+        @test all(isfinite, result)
     end
     
     @testset "Gaussian moments remain realizable" begin
@@ -92,6 +130,40 @@ const TOL = 1e-10
         @test abs(S011r) <= 1.0 + TOL
     end
 
+    @testset "realizable_3D direct call" begin
+        # Test the core realizable_3D function directly with valid inputs
+        S300, S400 = 0.0, 3.0
+        S110, S210, S310 = 0.0, 0.0, 0.0
+        S120, S220 = 0.0, 1.5
+        S030, S130, S040 = 0.0, 0.0, 3.0
+        S101, S201, S102 = 0.0, 0.0, 0.0
+        S011, S021, S012 = 0.0, 0.0, 0.0
+        S003, S103, S004 = 0.0, 0.0, 3.0
+        H200, H020, H002 = 1.0, 1.0, 1.0
+        
+        result = HyQMOM.realizable_3D(
+            S300, S400, S110, S210, S310, S120, S220, S030, S130, S040,
+            S101, S201, S102, S011, S021, S012, S003, S103, S004,
+            H200, H020, H002
+        )
+        
+        @test length(result) == 22
+        @test all(isfinite, result)
+        
+        # Test with some correlations
+        S110, S101, S011 = 0.3, 0.2, 0.1
+        S210, S201, S120, S021, S102, S012 = 0.1, 0.1, 0.1, 0.1, 0.1, 0.1
+        
+        result2 = HyQMOM.realizable_3D(
+            S300, S400, S110, S210, S310, S120, S220, S030, S130, S040,
+            S101, S201, S102, S011, S021, S012, S003, S103, S004,
+            H200, H020, H002
+        )
+        
+        @test length(result2) == 22
+        @test all(isfinite, result2)
+    end
+    
     @testset "realizability_3D basic" begin
         # Start from an isotropic Gaussian-like state: third-order and cross moments
         # are zero and kurtosis is ~3 in each direction.

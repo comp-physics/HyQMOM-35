@@ -31,4 +31,5 @@ ignore:
   - "scripts/**/*"
   - "src/autogen/**/*"
   - "src/visualization/**/*"
+  - "src/mpi/**/*"
 
