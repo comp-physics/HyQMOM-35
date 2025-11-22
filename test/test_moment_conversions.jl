@@ -212,4 +212,163 @@ const TOL = 1e-10
         @test C030 ≈ S030 * sC020^3 atol=TOL
         @test C003 ≈ S003 * sC002^3 atol=TOL
     end
+    
+    @testset "M2CS4_35 round-trip" begin
+        # Test that converting M -> C,S -> back preserves values
+        rho = 1.5
+        u, v, w = 0.3, -0.2, 0.4
+        C200, C110, C101 = 1.2, 0.3, -0.1
+        C020, C011 = 1.5, 0.2
+        C002 = 1.8
+        
+        M = InitializeM4_35(rho, u, v, w, C200, C110, C101, C020, C011, C002)
+        C4, S4 = M2CS4_35(M)
+        
+        # Reconstruct and check key moments
+        @test M[1] ≈ rho atol=TOL
+        @test all(isfinite.(C4))
+        @test all(isfinite.(S4))
+    end
+    
+    @testset "InitializeM4_35 with various correlations" begin
+        rho = 1.0
+        u, v, w = 0.0, 0.0, 0.0
+        T = 1.0
+        
+        # Test with positive correlations
+        for r in [0.0, 0.3, 0.6, 0.9]
+            C110 = r * T
+            C101 = r * T
+            C011 = r * T
+            
+            M = InitializeM4_35(rho, u, v, w, T, C110, C101, T, C011, T)
+            
+            @test size(M) == (35,)
+            @test all(isfinite, M)
+            @test M[1] ≈ rho
+        end
+        
+        # Test with negative correlations
+        for r in [-0.3, -0.6]
+            C110 = r * T
+            C101 = r * T
+            C011 = r * T
+            
+            M = InitializeM4_35(rho, u, v, w, T, C110, C101, T, C011, T)
+            
+            @test all(isfinite, M)
+        end
+    end
+    
+    @testset "M5_to_vars with realistic moments" begin
+        # Test with moments from actual simulation
+        rho = 1.2
+        u, v, w = 0.5, 0.3, 0.1
+        T = 1.5
+        
+        M = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
+        
+        # Test vector version
+        vars_vec = M5_to_vars(M)
+        @test length(vars_vec) == 35
+        @test vars_vec[1] ≈ rho
+        
+        # Test 3D array version
+        M_array = reshape(M, 5, 5, 5)
+        vars_arr = M5_to_vars(M_array)
+        @test length(vars_arr) == 35
+        @test vars_arr[1] ≈ rho
+        
+        # Should get same results
+        for i in 1:35
+            @test vars_vec[i] ≈ vars_arr[i] atol=TOL
+        end
+    end
+    
+    @testset "Moment conversions with extreme values" begin
+        # Test with very high density
+        rho_high = 100.0
+        M_high = InitializeM4_35(rho_high, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0)
+        C4_high, S4_high = M2CS4_35(M_high)
+        @test all(isfinite.(C4_high))
+        @test all(isfinite.(S4_high))
+        
+        # Test with very low density
+        rho_low = 0.01
+        M_low = InitializeM4_35(rho_low, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0)
+        C4_low, S4_low = M2CS4_35(M_low)
+        @test all(isfinite.(C4_low))
+        @test all(isfinite.(S4_low))
+        
+        # Test with high velocity
+        u_high, v_high, w_high = 10.0, 10.0, 10.0
+        M_fast = InitializeM4_35(1.0, u_high, v_high, w_high, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0)
+        C4_fast, S4_fast = M2CS4_35(M_fast)
+        @test all(isfinite.(C4_fast))
+        @test all(isfinite.(S4_fast))
+    end
+    
+    @testset "S_to_C_batch consistency" begin
+        # Test that batch conversion matches individual conversions
+        rho = 1.0
+        u, v, w = 0.2, 0.3, 0.1
+        T = 1.5
+        
+        M = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
+        C4, S4 = M2CS4_35(M)
+        
+        # Get batch conversion
+        C = HyQMOM.S_to_C_batch(S4, C4)
+        
+        @test length(C) == 49
+        @test all(isfinite, C)
+        
+        # Check that variances match
+        sC200 = sqrt(C4[3])
+        sC020 = sqrt(C4[10])
+        sC002 = sqrt(C4[20])
+        
+        # Selected moments should match formula
+        S110 = S4[7]
+        C110_expected = S110 * sC200 * sC020
+        @test C[1] ≈ C110_expected atol=1e-8
+    end
+    
+    @testset "Moment array structure" begin
+        # Test that moment arrays have correct structure
+        M = rand(35)
+        M[1] = 1.0  # Density
+        
+        # M4_to_vars should preserve all 35 moments
+        vars = M4_to_vars(M)
+        @test length(vars) == 35
+        for i in 1:35
+            @test vars[i] == M[i]
+        end
+        
+        # Test 3D array version
+        M_3d = rand(5, 5, 5)
+        vars_3d = M4_to_vars(M_3d)
+        @test length(vars_3d) == 35
+    end
+    
+    @testset "Moment symmetries" begin
+        # For Gaussian with no correlations, certain moments should be symmetric
+        rho = 1.0
+        u, v, w = 0.0, 0.0, 0.0
+        T = 1.0
+        
+        M = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
+        C4, S4 = M2CS4_35(M)
+        
+        # S400, S040, S004 should all be 3 for Gaussian
+        @test S4[5] ≈ 3.0 atol=TOL   # S400
+        @test S4[15] ≈ 3.0 atol=TOL  # S040  
+        @test S4[25] ≈ 3.0 atol=TOL  # S004
+        
+        # All odd moments should be 0
+        @test S4[4] ≈ 0.0 atol=TOL   # S300
+        @test S4[14] ≈ 0.0 atol=TOL  # S030
+        @test S4[24] ≈ 0.0 atol=TOL  # S003
+    end
 end

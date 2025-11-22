@@ -140,4 +140,135 @@ const TOL = 1e-10
         @test all(isfinite.(vals))
         @test flag220 in (0, 1)
     end
+    
+    @testset "realizability_S211 basic" begin
+        S110, S101, S011 = 0.5, 0.3, 0.4
+        S210, S201, S120, S021, S102, S012 = 0.1, 0.2, 0.15, 0.25, 0.18, 0.22
+        S211 = 0.3
+        H020 = 1.0
+        H002 = 1.0
+        
+        S211r = realizability(:S211, S110, S101, S011, S210, S201, S120, S021, 
+                             S102, S012, S211, H020, H002)
+        
+        @test isfinite(S211r)
+    end
+    
+    @testset "realizability_S310 basic" begin
+        S110, S101, S011 = 0.5, 0.3, 0.4
+        S300, S030, S003 = 0.0, 0.0, 0.0
+        S400, S040, S004 = 3.0, 3.0, 3.0
+        S210, S201, S120, S021, S102, S012 = 0.1, 0.2, 0.15, 0.25, 0.18, 0.22
+        S111 = 0.3
+        S310, S220 = 0.5, 1.0
+        
+        S310r, S220r = realizability(:S310, S110, S101, S011, S300, S030, S003,
+                                     S400, S040, S004, S210, S201, S120, S021,
+                                     S102, S012, S111, S310, S220)
+        
+        @test isfinite(S310r)
+        @test isfinite(S220r)
+    end
+    
+    @testset "realizability_S310_220 basic" begin
+        S110, S101, S011 = 0.5, 0.3, 0.4
+        S300, S030 = 0.0, 0.0
+        S400, S040 = 3.0, 3.0
+        S210, S120 = 0.1, 0.15
+        S111 = 0.3
+        S220 = 1.0
+        
+        S220r = realizability(:S310_220, S110, S101, S011, S300, S030, S400, S040,
+                             S210, S120, S111, S220)
+        
+        @test isfinite(S220r)
+    end
+    
+    @testset "Edge cases - extreme correlations" begin
+        # Test with high correlations (near 1)
+        S110, S101, S011 = 0.99, 0.98, 0.97
+        S110r, S101r, S011r, S2r = realizability(:S2, S110, S101, S011)
+        
+        @test abs(S110r) <= 1.0 + TOL
+        @test abs(S101r) <= 1.0 + TOL
+        @test abs(S011r) <= 1.0 + TOL
+        @test S2r >= 0.0
+        
+        # Test with negative correlations
+        S110, S101, S011 = -0.5, -0.3, -0.4
+        S110r, S101r, S011r, S2r = realizability(:S2, S110, S101, S011)
+        
+        @test all(isfinite.([S110r, S101r, S011r, S2r]))
+    end
+    
+    @testset "Realizability with varying temperatures" begin
+        # Test that realizability works with different temperature values
+        for T in [0.5, 1.0, 2.0, 5.0]
+            rho = 1.0
+            u, v, w = 0.5, 0.3, 0.0
+            
+            M = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
+            C4, S4 = M2CS4_35(M)
+            
+            # Extract and apply S2 realizability
+            S110, S101, S011 = S4[7], S4[17], S4[26]
+            S110r, S101r, S011r, S2r = realizability(:S2, S110, S101, S011)
+            
+            @test all(isfinite.([S110r, S101r, S011r, S2r]))
+        end
+    end
+    
+    @testset "Realizability with varying velocities" begin
+        rho = 1.0
+        T = 1.0
+        
+        # Test with different velocity magnitudes
+        for vel_mag in [0.0, 0.5, 1.0, 2.0, 5.0]
+            u = vel_mag / sqrt(3.0)
+            v = vel_mag / sqrt(3.0)
+            w = vel_mag / sqrt(3.0)
+            
+            M = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
+            C4, S4 = M2CS4_35(M)
+            
+            S110, S101, S011 = S4[7], S4[17], S4[26]
+            S110r, S101r, S011r, S2r = realizability(:S2, S110, S101, S011)
+            
+            @test all(isfinite.([S110r, S101r, S011r, S2r]))
+        end
+    end
+    
+    @testset "2D realizability with various inputs" begin
+        # Test with different moment sets
+        test_cases = [
+            # (S30, S40, S11, S21, S31, S12, S22, S03, S13, S04)
+            (0.0, 3.0, 0.5, 0.1, 0.2, 0.15, 1.0, 0.0, 0.25, 3.0),
+            (0.1, 3.5, 0.3, 0.05, 0.1, 0.08, 0.8, 0.05, 0.12, 3.2),
+            (0.0, 4.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 4.0),  # Uncorrelated
+        ]
+        
+        for (S30, S40, S11, S21, S31, S12, S22, S03, S13, S04) in test_cases
+            S21r, S12r, S31r, S22r, S13r = realizability(Symbol("2D"),
+                S30, S40, S11, S21, S31, S12, S22, S03, S13, S04)
+            
+            @test all(isfinite.([S21r, S12r, S31r, S22r, S13r]))
+        end
+    end
+    
+    @testset "Realizability bounds checking" begin
+        # Test S220 bounds
+        S110 = 0.5
+        S220 = 2.0  # Out of bounds
+        A220 = 1.5
+        
+        S220r = realizability(:S220, S110, S220, A220)
+        
+        @test abs(S220r) <= A220 + TOL
+        @test S220r >= S110^2 - TOL
+        
+        # Test with S220 within bounds
+        S220_ok = 1.0
+        S220r_ok = realizability(:S220, S110, S220_ok, A220)
+        @test S220r_ok ≈ S220_ok atol=TOL
+    end
 end

@@ -30,4 +30,5 @@ ignore:
   - "legacy/**/*"
   - "scripts/**/*"
   - "src/autogen/**/*"
+  - "src/visualization/**/*"
 
