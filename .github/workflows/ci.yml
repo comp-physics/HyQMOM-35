@@ -73,10 +73,15 @@ jobs:
           project: .
       
       - uses: julia-actions/julia-processcoverage@v1
+        if: matrix.version == '1.11' && matrix.os == 'ubuntu-latest'
         with:
           directories: src
       
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
+        if: matrix.version == '1.11' && matrix.os == 'ubuntu-latest'
         with:
           files: lcov.info
-          flags: HyQMOM.jl
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
