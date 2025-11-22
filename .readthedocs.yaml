@@ -6,25 +6,21 @@ build:
     python: "3.11"
   jobs:
     pre_build:
-      # Install Julia (adjust version as needed)
+      # Install Julia
       - curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.5-linux-x86_64.tar.gz | tar -xz
-      - export PATH="$PWD/julia-1.10.5/bin:$PATH"
-      # Prepare the docs environment and develop the package
-      - julia --project=HyQMOM.jl/docs -e 'using Pkg; Pkg.develop(PackageSpec(path="HyQMOM.jl")); Pkg.instantiate()'
-    build:
-      # Build Documenter docs; HTML must go into $READTHEDOCS_OUTPUT/html
-      - export PATH="$PWD/julia-1.10.5/bin:$PATH"
-      - julia --project=HyQMOM.jl/docs HyQMOM.jl/docs/make.jl
-  environment:
-    # Avoid heavy plotting deps during docs build
-    HYQMOM_SKIP_PLOTTING: "true"
-    JULIA_NUM_THREADS: "2"
+      # Prepare the docs environment (chain commands to preserve environment)
+      - export PATH="$PWD/julia-1.10.5/bin:$PATH" && export HYQMOM_SKIP_PLOTTING="true" && export JULIA_NUM_THREADS="2" && julia --project=docs -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.instantiate()"
+    post_build:
+      # Build Documenter docs (chain commands to preserve environment)
+      - export PATH="$PWD/julia-1.10.5/bin:$PATH" && export HYQMOM_SKIP_PLOTTING="true" && export JULIA_NUM_THREADS="2" && julia --project=docs docs/make.jl
+  # Prevent automatic Sphinx/MkDocs build by using explicit commands
+  commands: []
 
-# Tell RTD where the docs are built (dummy sphinx config to satisfy RTD)
-# This is required even if you're not using Sphinx
+# Sphinx configuration (required by ReadTheDocs but not used)
+# Actual docs are built by Documenter.jl in post_build
 sphinx:
   configuration: docs/conf.py
+  fail_on_warning: false
 
-# Output format
-formats:
-  - html
+# No additional formats needed - Documenter.jl builds HTML directly
+# formats: [] can be added if you want downloadable versions (htmlzip, pdf, epub)
