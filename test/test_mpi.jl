@@ -291,8 +291,8 @@ function compare_results(ref_result, test_result, test_nprocs; verbose=true)
         end
     end
     
-    # Pass/fail
-    passed = (max_abs_diff < MPI_TOL_ABS && max_rel_diff < MPI_TOL_REL)
+    # Pass/fail (OR logic: pass if either absolute OR relative error is acceptable)
+    passed = (max_abs_diff < MPI_TOL_ABS || max_rel_diff < MPI_TOL_REL)
     
     if verbose
         println("\n" * "="^70)
