@@ -1,5 +1,10 @@
 # HyQMOM.jl
 
+[![CI](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/ci.yml)
+[![Documentation](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/docs.yml/badge.svg)](https://github.com/comp-physics/HyQMOM.jl/actions/workflows/docs.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Julia Version](https://img.shields.io/badge/julia-v1.9+-blue.svg)](https://julialang.org/downloads/)
+
 3D Hyperbolic Quadrature Method of Moments (HyQMOM) solver for the Boltzmann equation with BGK collision operator, featuring MPI parallelization and interactive visualization.
 
 ## Quick Start
