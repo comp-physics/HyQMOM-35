@@ -273,7 +273,7 @@ function compare_results(ref_result, test_result, test_nprocs; verbose=true)
         
         println("\n5. Per-Moment Analysis:")
         for k in 1:35
-            moment_abs = maximum(abs_diff[:, :, k])
+            moment_abs = maximum(abs_diff[:, :, :, k])
             if moment_abs > max_moment_diff
                 max_moment_diff = moment_abs
                 worst_moment = k
