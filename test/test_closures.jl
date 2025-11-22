@@ -73,4 +73,44 @@ const TOL = 1e-10
         @test isfinite(vpmax)
         @test vpmin <= vpmax
     end
+
+    @testset "eigenvalues6_hyperbolic_3D axes and 2D flag" begin
+        rho = 1.0
+        u, v, w = 0.2, -0.1, 0.05
+        T = 0.8
+        
+        M4 = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
+        Ma = 1.5
+        
+        for axis in 1:3
+            for flag2D in (0, 1)
+                vpmin, vpmax = eigenvalues6_hyperbolic_3D(M4, axis, flag2D, Ma)
+                @test isfinite(vpmin)
+                @test isfinite(vpmax)
+                @test vpmin <= vpmax
+            end
+        end
+    end
+
+    @testset "Flux_closure35_and_realizable_3D 2D mode" begin
+        rho = 0.8
+        u, v, w = 0.0, 0.1, 0.0
+        T = 1.2
+        
+        M4 = InitializeM4_35(rho, u, v, w, T, 0.0, 0.0, T, 0.0, T)
+        
+        flag2D = 1  # 2D mode
+        Ma = 0.5
+        
+        Fx, Fy, Fz, M4r = Flux_closure35_and_realizable_3D(M4, flag2D, Ma)
+        
+        @test length(Fx) == 35
+        @test length(Fy) == 35
+        @test length(Fz) == 35
+        @test length(M4r) == 35
+        @test all(isfinite.(Fx))
+        @test all(isfinite.(Fy))
+        @test all(isfinite.(Fz))
+        @test all(isfinite.(M4r))
+    end
 end

@@ -91,4 +91,53 @@ const TOL = 1e-10
         @test abs(S101r) <= 1.0 + TOL
         @test abs(S011r) <= 1.0 + TOL
     end
+
+    @testset "realizability_3D basic" begin
+        # Start from an isotropic Gaussian-like state: third-order and cross moments
+        # are zero and kurtosis is ~3 in each direction.
+        S300 = 0.0
+        S400 = 3.0
+        S030 = 0.0
+        S040 = 3.0
+        S003 = 0.0
+        S004 = 3.0
+
+        S110 = 0.0
+        S101 = 0.0
+        S011 = 0.0
+
+        S210 = 0.0
+        S310 = 0.0
+        S120 = 0.0
+        S220 = 0.0
+        S130 = 0.0
+
+        S201 = 0.0
+        S301 = 0.0
+        S102 = 0.0
+        S103 = 0.0
+        S202 = 0.0
+
+        S111 = 0.0
+        S211 = 0.0
+        S021 = 0.0
+        S121 = 0.0
+        S031 = 0.0
+        S012 = 0.0
+        S112 = 0.0
+        S013 = 0.0
+        S022 = 0.0
+
+        result = realizability(Symbol("3D"),
+                               S300, S400, S110, S210, S310, S120, S220, S030, S130, S040,
+                               S101, S201, S301, S102, S202, S003, S103, S004, S011, S111,
+                               S211, S021, S121, S031, S012, S112, S013, S022)
+
+        @test length(result) == 29
+
+        vals = result[1:28]
+        flag220 = result[29]
+        @test all(isfinite.(vals))
+        @test flag220 in (0, 1)
+    end
 end
