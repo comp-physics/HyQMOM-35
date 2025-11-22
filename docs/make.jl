@@ -37,6 +37,7 @@ makedocs(;
     format = Documenter.HTML(; prettyurls = get(ENV, "CI", "false") == "true"),
     clean = true,
     build = html_out,
+    checkdocs = :exports,  # Only require docs for exported functions, not internals
     pages = [
         "Home" => "index.md",
         "Quickstart" => "quickstart.md",
