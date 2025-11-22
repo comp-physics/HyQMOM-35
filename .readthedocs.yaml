@@ -16,5 +16,11 @@ build:
   # Prevent automatic Sphinx/MkDocs build by using explicit commands
   commands: []
 
+# Sphinx configuration (required by ReadTheDocs but not used)
+# Actual docs are built by Documenter.jl in post_build
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: false
+
 # No additional formats needed - Documenter.jl builds HTML directly
 # formats: [] can be added if you want downloadable versions (htmlzip, pdf, epub)
