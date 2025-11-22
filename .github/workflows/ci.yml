@@ -37,7 +37,6 @@ jobs:
 
       # Remove GLMakie from Project.toml for CI (headless environment)
       - name: Remove GLMakie dependency for CI
-        working-directory: HyQMOM.jl
         env:
           HYQMOM_SKIP_PLOTTING: "true"
         run: |
@@ -67,15 +66,15 @@ jobs:
       
       - uses: julia-actions/julia-buildpkg@v1
         with:
-          project: HyQMOM.jl
+          project: .
       
       - uses: julia-actions/julia-runtest@v1
         with:
-          project: HyQMOM.jl
+          project: .
       
       - uses: julia-actions/julia-processcoverage@v1
         with:
-          directories: HyQMOM.jl/src
+          directories: src
       
       - uses: codecov/codecov-action@v3
         with:

@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main, docs ]
     paths:
-      - 'HyQMOM.jl/docs/**'
-      - 'HyQMOM.jl/src/**'
+      - 'docs/**'
+      - 'src/**'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
-      - 'HyQMOM.jl/docs/**'
-      - 'HyQMOM.jl/src/**'
+      - 'docs/**'
+      - 'src/**'
       - '.github/workflows/docs.yml'
 
 jobs:
@@ -36,20 +36,20 @@ jobs:
         env:
           HYQMOM_SKIP_PLOTTING: 'true'
         run: |
-          julia --project=HyQMOM.jl/docs -e 'using Pkg; Pkg.develop(PackageSpec(path="HyQMOM.jl")); Pkg.instantiate()'
+          julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
 
       - name: Build documentation
         env:
           HYQMOM_SKIP_PLOTTING: 'true'
           CI: 'true'
         run: |
-          julia --project=HyQMOM.jl/docs HyQMOM.jl/docs/make.jl
+          julia --project=docs docs/make.jl
 
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v4
         with:
           name: documentation
-          path: HyQMOM.jl/docs/build/html/
+          path: docs/build/html/
           retention-days: 7
 
       - name: Check for broken links (optional)

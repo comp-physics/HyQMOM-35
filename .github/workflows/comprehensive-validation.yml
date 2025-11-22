@@ -38,7 +38,7 @@ jobs:
         uses: matlab-actions/run-command@v2
         with:
           command: |
-            cd 3D_MATLAB/tests
+            cd legacy/3D_MATLAB/tests
             exit_code = run_all_tests();
             if exit_code ~= 0
               error('MATLAB tests failed');
@@ -118,7 +118,7 @@ jobs:
           mpiexec --version
       
       - name: Remove GLMakie (headless CI environment)
-        working-directory: HyQMOM.jl
+        # Package now at root
         env:
           HYQMOM_SKIP_PLOTTING: "true"
         run: |
@@ -148,7 +148,7 @@ jobs:
           echo "Ready to install without GLMakie"
       
       - name: Install dependencies
-        working-directory: HyQMOM.jl
+        # Package now at root
         env:
           HYQMOM_SKIP_PLOTTING: "true"
         run: |
@@ -198,13 +198,13 @@ jobs:
       
       - name: Run unit tests
         if: matrix.test-type == 'unit'
-        working-directory: HyQMOM.jl
+        # Package now at root
         run: |
           julia --project --color=yes -e 'using Pkg; Pkg.test()'
       
       - name: Run golden file test
         if: matrix.test-type == 'golden'
-        working-directory: HyQMOM.jl
+        # Package now at root
         run: |
           echo "=================================================================="
           echo "GOLDEN FILE TEST: Julia vs MATLAB"
@@ -221,7 +221,7 @@ jobs:
       
       - name: Run MPI golden file test
         if: matrix.test-type == 'mpi'
-        working-directory: HyQMOM.jl
+        # Package now at root
         run: |
           echo "=================================================================="
           echo "MPI GOLDEN FILE TEST: Julia vs MATLAB (1 rank)"
@@ -238,7 +238,7 @@ jobs:
       
       - name: Generate comparison report
         if: always() && matrix.test-type == 'golden'
-        working-directory: HyQMOM.jl
+        # Package now at root
         run: |
           julia --project -e '
             println("="^70)

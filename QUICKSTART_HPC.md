@@ -5,7 +5,7 @@ Ultra-condensed guide for running HyQMOM on headless HPC clusters.
 ## One-Time Setup (5 minutes)
 
 ```bash
-# 1. Clone and checkout
+# 1. Clone repository
 git clone https://github.com/comp-physics/HyQMOM.jl.git
 cd HyQMOM.jl
 

@@ -116,13 +116,9 @@ If you don't have Git:
 4. Extract the ZIP file
 5. Open a terminal in the extracted folder
 
-### Step 2: Navigate to the Julia Package
+### Step 2: You're Ready!
 
-```bash
-cd HyQMOM.jl
-```
-
-This directory contains all the Julia code.
+The repository root is the Julia package directory, containing all the source code, tests, examples, and documentation.
 
 ---
 
@@ -131,7 +127,7 @@ This directory contains all the Julia code.
 ### Step 1: Install Package Dependencies
 
 This is a **one-time setup**.
-In the terminal, from the `HyQMOM.jl` directory, run:
+In the terminal, from the repository root directory, run:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
@@ -652,8 +648,8 @@ println("Max density: ", maximum(density))
 ```bash
 # 1. Install Julia from julialang.org
 # 2. Clone repository
-git clone https://github.com/YOUR_USERNAME/rodney-hqmom.git
-cd rodney-hqmom/HyQMOM.jl
+git clone https://github.com/comp-physics/HyQMOM.jl.git
+cd HyQMOM.jl
 
 # 3. Install packages (takes 10-15 min)
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
@@ -662,7 +658,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ### Every Time You Run
 
 ```bash
-# Navigate to HyQMOM.jl directory
+# Navigate to repository root
 cd path/to/HyQMOM.jl
 
 # Run simulation
