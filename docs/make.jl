@@ -40,6 +40,7 @@ makedocs(;
     pages = [
         "Home" => "index.md",
         "Quickstart" => "quickstart.md",
+        "HPC Quickstart" => "hpc_quickstart.md",
         "User Guide" => "user_guide.md",
         "Mathematical Foundations" => "mathematical_foundations.md",
         "MPI & Parallelization" => "mpi.md",

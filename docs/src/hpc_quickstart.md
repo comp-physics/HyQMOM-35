@@ -23,11 +23,11 @@ cat slurm-<jobid>.out  # Check for "✓ SETUP COMPLETE!"
 ```
 
 **What the setup script does:**
-- ✅ Removes GLMakie, FileIO, ColorSchemes, LaTeXStrings (OpenGL/X11)
-- ✅ Removes MAT, HDF5 (cause MPI JLL conflicts)
-- ✅ Keeps JLD2 (snapshot I/O)
-- ✅ Adds MPIPreferences and configures system MPI
-- ✅ Tests that HyQMOM loads successfully
+- Removes GLMakie, FileIO, ColorSchemes, LaTeXStrings (OpenGL/X11)
+- Removes MAT, HDF5 (cause MPI JLL conflicts)
+- Keeps JLD2 (snapshot I/O)
+- Adds MPIPreferences and configures system MPI
+- Tests that HyQMOM loads successfully
 
 **Result:** Your `Project.toml` will have only core deps (no visualization).
 
