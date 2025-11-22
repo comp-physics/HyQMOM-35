@@ -63,7 +63,7 @@ function parse_args()
     return (mode=mode, config=config)
 end
 
-function save_reference(M, final_time, time_steps, Np, nprocs, config_name)
+function save_reference(M, final_time, time_steps, Nx, Ny, Nz, nprocs, config_name)
     """Save simulation results as reference data."""
     ref_file = joinpath(REF_DIR, "mpi_reference_$(config_name)_$(nprocs)ranks.bin")
     
@@ -71,7 +71,9 @@ function save_reference(M, final_time, time_steps, Np, nprocs, config_name)
     
     open(ref_file, "w") do io
         write(io, Int64(nprocs))
-        write(io, Int64(Np))
+        write(io, Int64(Nx))
+        write(io, Int64(Ny))
+        write(io, Int64(Nz))
         write(io, Float64(final_time))
         write(io, Int64(time_steps))
         write(io, M)
@@ -91,19 +93,21 @@ function load_reference(config_name, ref_nprocs=1)
     
     println("[LOAD] Loading $(ref_nprocs)-rank reference: $(ref_file)")
     
-    nprocs, Np, final_time, time_steps, M = open(ref_file, "r") do io
+    nprocs, Nx, Ny, Nz, final_time, time_steps, M = open(ref_file, "r") do io
         nprocs = read(io, Int64)
-        Np = read(io, Int64)
+        Nx = read(io, Int64)
+        Ny = read(io, Int64)
+        Nz = read(io, Int64)
         final_time = read(io, Float64)
         time_steps = read(io, Int64)
-        M = Array{Float64}(undef, Np, Np, 35)
+        M = Array{Float64}(undef, Nx, Ny, Nz, 35)
         read!(io, M)
-        (nprocs, Np, final_time, time_steps, M)
+        (nprocs, Nx, Ny, Nz, final_time, time_steps, M)
     end
     
-    println("  [OK] Loaded: Np=$(Np), t=$(final_time), steps=$(time_steps)")
+    println("  [OK] Loaded: Nx=$(Nx), Ny=$(Ny), Nz=$(Nz), t=$(final_time), steps=$(time_steps)")
     
-    return (nprocs=nprocs, Np=Np, final_time=final_time, 
+    return (nprocs=nprocs, Nx=Nx, Ny=Ny, Nz=Nz, final_time=final_time, 
             time_steps=time_steps, M=M)
 end
 
@@ -176,12 +180,13 @@ function run_simulation(config_name)
         M = results[:M]
         final_time = results[:final_time]
         time_steps = results[:time_steps]
+        Nz = results[:Nz]
         
         println("  [OK] Simulation complete")
         println("    Final time: $(final_time)")
         println("    Time steps: $(time_steps)")
         
-        return (M=M, final_time=final_time, time_steps=time_steps, Nx=Nx, Ny=Ny)
+        return (M=M, final_time=final_time, time_steps=time_steps, Nx=Nx, Ny=Ny, Nz=Nz)
     else
         return nothing
     end
@@ -377,6 +382,7 @@ function run_mpi_tests()
             if rank == 0 && test_result !== nothing
                 save_reference(test_result.M, test_result.final_time, 
                              test_result.time_steps, test_result.Nx, 
+                             test_result.Ny, test_result.Nz,
                              nprocs, config_name)
                 
                 println("\n" * "="^70)
