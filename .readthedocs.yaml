@@ -13,11 +13,8 @@ build:
     post_build:
       # Build Documenter docs (chain commands to preserve environment)
       - export PATH="$PWD/julia-1.10.5/bin:$PATH" && export HYQMOM_SKIP_PLOTTING="true" && export JULIA_NUM_THREADS="2" && julia --project=docs docs/make.jl
-
-# Tell RTD where the docs are built (dummy sphinx config to satisfy RTD)
-# This is required even if you're not using Sphinx
-sphinx:
-  configuration: docs/conf.py
+  # Prevent automatic Sphinx/MkDocs build by using explicit commands
+  commands: []
 
 # No additional formats needed - Documenter.jl builds HTML directly
 # formats: [] can be added if you want downloadable versions (htmlzip, pdf, epub)
