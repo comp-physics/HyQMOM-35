@@ -7,233 +7,139 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Julia Version](https://img.shields.io/badge/julia-v1.9+-blue.svg)](https://julialang.org/downloads/)
 
-3D Hyperbolic Quadrature Method of Moments (HyQMOM) solver for the Boltzmann equation with BGK collision operator, featuring MPI parallelization and interactive visualization.
+3D Hyperbolic Quadrature Method of Moments (HyQMOM) solver for the Boltzmann–BGK equation with MPI and optional interactive 3D visualization.
 
-## Quick Start
+**Docs:** https://hyqmomjl.readthedocs.io/en/latest/
 
-### Installation
+---
+
+## 1. TL;DR – run a 3D jets demo
 
 ```bash
-# Clone repository (if not already done)
 git clone https://github.com/comp-physics/HyQMOM.jl.git
 cd HyQMOM.jl
-
-# Install dependencies
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
-```
 
-### Run Your First Simulation
-
-```bash
-# Interactive 3D visualization (recommended)
+# Serial, interactive 3D viewer (desktop)
 julia --project=. examples/run_3d_jets_timeseries.jl
 
-# With MPI parallelization
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 60
+# MPI (4 ranks)
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 80 --Ny 80
 ```
 
-## Features
-
-- **3D moment-based kinetic solver** for Boltzmann-BGK equation
-- **MPI parallelization** with domain decomposition
-- **Interactive 3D visualization** with GLMakie (time-series animation)
-- **Flexible parameter control** via command-line arguments
-- **Serial or parallel** execution (automatic detection)
-- **Snapshot collection** for time evolution analysis
-
-## Usage
-
-### Basic Examples
+To visualize `.jld2` snapshots (from examples or HPC runs):
 
 ```bash
-# Quick low-resolution test
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 20 --tmax 0.01
-
-# Production run with 4 MPI ranks
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100 --tmax 0.5
-
-# Custom domain and physics
-julia --project=. examples/run_3d_jets_timeseries.jl \
-  --Np 60 --tmax 0.1 --Ma 1.5 --Kn 0.5 --CFL 0.6
-```
-
-### Common Parameters
-
-```bash
---Np N             # Grid resolution x,y (default: 40)
---Nz N             # Grid resolution z (default: 40)
---tmax T           # Maximum simulation time (default: 0.2)
---Ma M             # Mach number (default: 1.0)
---Kn K             # Knudsen number (default: 1.0)
---CFL C            # CFL number (default: 0.7)
---snapshot-interval N  # Save every N steps for visualization
---help             # Show all available options
-```
-
-See `examples/README.md` for complete parameter documentation.
-
-## Examples
-
-### Visualization 
-
-**`examples/run_3d_jets_timeseries.jl`** - Interactive 3D time-series viewer
-
-```bash
-julia --project=. examples/run_3d_jets_timeseries.jl
-```
-
-Features:
-- Real-time 3D isosurface visualization
-- Time slider with play/pause animation  
-- Multiple quantities (density, U/V/W velocities, pressure, temperature)
-- Works in both serial and MPI parallel modes
-
-### Custom Initial Conditions 
-
-**`examples/run_3d_custom_jets.jl`** - Flexible jet configurations
-
-```bash
-# Triple jet configuration
-julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
-
-# Four jets converging to center
-julia --project=. examples/run_3d_custom_jets.jl --config quad-jet
-
-# Create your own configurations!
-```
-
-Features:
-- Predefined configurations: crossing, triple-jet, quad-jet, vertical-jet, spiral
-- Fully customizable: specify center, width, velocity for each cubic region
-- Easy to add new configurations
-
-See `examples/CUSTOM_INITIAL_CONDITIONS.md` for detailed documentation.
-
-### Custom Configurations
-
-**`examples/run_3d_custom_jets.jl`** - Flexible jet configurations
-
-```bash
-julia --project=. examples/run_3d_custom_jets.jl --config crossing
-julia --project=. examples/run_3d_custom_jets.jl --config triple-jet
-```
-
-Choose from multiple predefined configurations or create your own.
-
-## Visualization
-
-### Quick Visualization of Results
-
-After running simulations with `examples/run_3d_custom_jets.jl`, you'll get `.jld2` snapshot files. Use the provided script to quickly visualize them:
-
-```bash
-# Auto-detect and visualize .jld2 files
-julia visualize_jld2.jl
-
-# Or specify a file directly
-julia visualize_jld2.jl snapshots_crossing_Ma1.0_t0.3_N30.jld2
-```
-
-The script will:
-- **Auto-install** GLMakie if needed
-- **Auto-find** `.jld2` files in the current directory
-- **Launch** interactive 3D time-series viewer
-- **Show** both physical space (density/velocity isosurfaces) and moment space (if available)
-
-### Interactive 3D Visualization
-
-HyQMOM includes interactive 3D visualization using GLMakie. GLMakie is included as a dependency and works out of the box.
-
-**Controls:**
-- Time slider: Step through simulation snapshots
-- Play/Pause/Reset: Animate the time evolution
-- Quantity buttons: Switch between density, velocities, etc.
-- Isosurface sliders: Adjust visualization levels
-- Mouse: Drag to rotate, scroll to zoom
-
-**Manual Usage:**
-```julia
-using HyQMOM, JLD2, GLMakie
-@load "snapshots_file.jld2" snapshots grid params params_with_ic
-
-# Interactive time-series viewer (streams from file)
-# The middle panel shows standardized moment space (S110, S101, S011) if available
-interactive_3d_timeseries_streaming("snapshots_file.jld2", grid, params_with_ic)
-```
-
-### Headless Systems (HPC/Clusters)
-
-**For running on systems without display/X11** (compute clusters, HPC, remote servers):
-
-```bash
-# Use the --no-viz flag to skip visualization but still save .jld2 files
-julia --project=. examples/run_3d_custom_jets.jl --no-viz true --snapshot-interval 5
-
-# Or for run_3d_jets_timeseries.jl
-julia --project=. examples/run_3d_jets_timeseries.jl --no-viz true
-
-# View results later on a system with display:
 julia visualize_jld2.jl
 ```
 
-**See [HEADLESS_USAGE.md](HEADLESS_USAGE.md) for complete workflow examples, MPI batch jobs, and parameter sweeps.**
+---
 
-**For CI pipelines or when installing the package** (skip loading GLMakie entirely):
+## 2. What this repo gives you
 
-```bash
-export HYQMOM_SKIP_PLOTTING=true
-# or
-export CI=true  # Automatically detected
-```
+- 3D moment-based kinetic solver for the Boltzmann–BGK equation
+- MPI domain decomposition in x–y (z replicated on all ranks)
+- Streaming snapshots to `.jld2` for post‑processing
+- Optional GLMakie-based interactive 3D viewer (density / velocity / moments)
 
-This skips loading GLMakie (~100 packages), making the package lightweight for testing and headless systems.
+Use `examples/run_3d_jets_timeseries.jl` for standard crossing jets,  
+and `examples/run_3d_custom_jets.jl` for custom jet configurations.
 
-**Example CI configuration (GitHub Actions):**
+---
 
-```yaml
-name: Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    env:
-      HYQMOM_SKIP_PLOTTING: "true"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v1
-      - uses: julia-actions/cache@v1
-      # Remove GLMakie to avoid X11/display errors in CI
-      - run: julia --project=. -e 'using Pkg; Pkg.rm("GLMakie")'
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
-```
+## 3. CLI parameters (most important)
 
-See `.github/workflows/ci.yml` for the complete CI configuration.
-
-## MPI Parallelization
-
-All examples automatically support MPI parallelization:
+All examples share the same parser (`examples/parse_params.jl`):
 
 ```bash
-# Serial (1 process)
-julia --project=. examples/run_3d_jets_timeseries.jl --Np 40
-
-# Parallel (4 processes)
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100
-
-# Parallel (8 processes, high resolution)
-mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl --Np 120 --Nz 60
+--Nx N               # Grid points in x (default: 40)
+--Ny N               # Grid points in y (default: 40)
+--Nz N               # Grid points in z (default: 20)
+--tmax T             # Final time (default: 0.05)
+--Ma M               # Mach number (default: 0.0)
+--Kn K               # Knudsen number (default: 1.0)
+--CFL C              # CFL number (default: 0.7)
+--snapshot-interval N  # Save snapshots every N steps (0 = off)
+--no-viz             # Disable visualization (clusters / CI)
+--config NAME        # Initial-condition config (crossing, triple-jet, ...)
+--help               # Show all options for the given example
 ```
 
-**Domain Decomposition:**
-- x-y plane divided among MPI ranks
-- z-direction: full data on all ranks (no decomposition)
-- Automatic halo exchange for ghost cells
-- Visualization only on rank 0
+Typical runs:
 
-## API Usage
+```bash
+# Quick low‑resolution sanity check
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 20 --Ny 20 --tmax 0.01
 
-### Direct API
+# Higher resolution + MPI
+mpiexec -n 8 julia --project=. examples/run_3d_jets_timeseries.jl \
+  --Nx 120 --Ny 120 --Nz 60 --snapshot-interval 5
+
+# Custom jets
+julia --project=. examples/run_3d_custom_jets.jl --config triple-jet --snapshot-interval 5
+```
+
+More detail: `examples/README.md`.
+
+---
+
+## 4. Visualization vs headless mode
+
+Desktop / interactive:
+
+```bash
+julia --project=. examples/run_3d_jets_timeseries.jl
+```
+
+Headless (HPC / CI) – run solver only, save snapshots:
+
+```bash
+julia --project=. examples/run_3d_jets_timeseries.jl --no-viz --snapshot-interval 5
+mpiexec -n 4 julia --project=. examples/run_3d_custom_jets.jl --config crossing --no-viz
+```
+
+Then visualize `.jld2` files on a machine with a display:
+
+```bash
+julia visualize_jld2.jl snapshots_*.jld2
+```
+
+To completely skip plotting deps (CI / lightweight installs):
+
+```bash
+export HYQMOM_SKIP_PLOTTING=true   # or: export CI=true
+```
+
+More: `docs/src/tutorials/interactive_visualization.md`.
+
+---
+
+## 5. MPI & HPC
+
+All examples support MPI:
+
+```bash
+# Serial
+julia --project=. examples/run_3d_jets_timeseries.jl --Nx 40 --Ny 40
+
+# 4‑rank MPI
+mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Nx 100 --Ny 100
+```
+
+Domain decomposition:
+
+- x–y plane split across ranks
+- z direction replicated on all ranks
+
+For Slurm / clusters and sweeps:
+
+- `slurm/README.md`
+- `docs/src/hpc_quickstart.md`
+- `docs/src/mpi.md`
+
+---
+
+## 6. Minimal API example
 
 ```julia
 using HyQMOM
@@ -241,175 +147,67 @@ using MPI
 
 MPI.Init()
 
-# Set up parameters
 params = (
-    Np = 40,
+    Nx = 40,
+    Ny = 40,
     Nz = 40,
     tmax = 0.1,
     Ma = 0.0,
     Kn = 1.0,
     CFL = 0.7,
-    # ... see examples/parse_params.jl for all options
 )
 
-# Run simulation with snapshot collection
-snapshots, grid = run_simulation_with_snapshots(params; snapshot_interval=2)
+# With snapshots: returns (snapshot_filename, grid)
+snapshot_filename, grid = simulation_runner(params)
 
-# Or run without snapshots (just final result)
-M_final, final_time, time_steps, grid = simulation_runner(params)
+# If you set snapshot_interval = 0 you instead get:
+# M_final, final_time, time_steps, grid = simulation_runner(params)
 
 MPI.Finalize()
 ```
 
-### With Visualization
+Key exported entry points (see `src/HyQMOM.jl` for full list):
 
-```julia
-using HyQMOM
-import GLMakie
-
-# Run simulation
-snapshots, grid = run_simulation_with_snapshots(params; snapshot_interval=2)
-
-# Launch interactive viewer (rank 0 only)
-# Note: Save snapshots to file first, then use interactive_3d_timeseries_streaming
-if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-    @info "Save snapshots to file, then use: interactive_3d_timeseries_streaming(filename, grid, params)"
-end
-```
-
-## Testing
-
-```bash
-# Run all tests
-julia --project=. -e 'using Pkg; Pkg.test()'
-
-# Run with MPI tests
-cd test && bash run_mpi_tests.sh
-
-# CI mode (skip visualization)
-HYQMOM_SKIP_PLOTTING=true julia --project=. -e 'using Pkg; Pkg.test()'
-```
-
-## Performance Tips
-
-### For Quick Tests
-```bash
-julia ... --Np 20 --Nz 10 --tmax 0.01 --snapshot-interval 10
-```
-
-### For Production
-```bash
-mpiexec -n 8 julia ... --Np 100 --Nz 50 --snapshot-interval 0
-```
-
-### Memory Optimization
-- Reduce resolution: `--Np 30`
-- Increase snapshot interval: `--snapshot-interval 10`
-- Disable snapshots: `--snapshot-interval 0`
-
-### Numerical Stability
-- Reduce CFL: `--CFL 0.5`
-- Reduce Mach number: `--Ma 0.7`
-- Increase resolution: `--Np 60`
-
-## Troubleshooting
-
-### GLMakie viewer doesn't open
-```bash
-# Check GLMakie is installed
-julia --project=. -e 'using GLMakie'
-
-# On remote systems, enable X11 forwarding
-ssh -Y user@host
-
-# Or use custom jet configurations
-julia --project=. examples/run_3d_custom_jets.jl --config crossing
-```
-
-### MPI errors
-```bash
-# Ensure MPI is properly configured
-mpiexec --version
-
-# Try fewer ranks
-mpiexec -n 2 julia ...
-
-# Check MPI.jl configuration
-julia --project=. -e 'using MPI; println(MPI.versioninfo())'
-```
-
-### Out of memory
-```bash
-# Reduce resolution
-julia ... --Np 30 --Nz 15
-
-# Increase snapshot interval or disable
-julia ... --snapshot-interval 10
-julia ... --snapshot-interval 0
-
-# Use more MPI ranks to distribute memory
-mpiexec -n 8 julia ...
-```
-
-### NaN values / simulation crashes
-```bash
-# Reduce CFL number
-julia ... --CFL 0.5
-
-# Reduce Mach number
-julia ... --Ma 0.7
-
-# Increase resolution
-julia ... --Np 60 --Nz 30
-```
-
-## Development
-
-### Adding New Features
-
-1. Core functionality goes in `src/`
-2. Visualization in `src/visualization/`
-3. Examples in `examples/`
-4. Tests in `test/`
-
-### Exported Functions
-
-**Main simulation:**
-- `simulation_runner(params)` - Run simulation, return final state
-- `run_simulation_with_snapshots(params; snapshot_interval)` - Collect time snapshots
-
-**Visualization:**
-- `interactive_3d_timeseries_streaming(filename, grid, params)` - Streaming time-series viewer
-
-**Core algorithms:**
-- `hyqmom_3D`, `InitializeM4_35`, `Moments5_3D` - Moment operations
-- `realizability`, `realizable_2D`, `realizable_3D` - Realizability checks
-- `Flux_closure35_and_realizable_3D`, `flux_HLL`, `collision35` - Numerics
-
-See `src/HyQMOM.jl` for complete list of exports.
-
-## License
-
-See `license.md` for licensing information.
+- `simulation_runner(params)`
+- `run_simulation_with_snapshots(params; snapshot_interval)`
+- `interactive_3d_timeseries_streaming(filename, grid, params)`
 
 ---
 
-**Quick Reference:**
+## 7. Tests and common issues
 
 ```bash
-# Basic usage
-julia --project=. examples/run_3d_jets_timeseries.jl
-
-# MPI parallel
-mpiexec -n 4 julia --project=. examples/run_3d_jets_timeseries.jl --Np 100
-
-# Visualize results
-julia visualize_jld2.jl
-
-# Get help
-julia --project=. examples/run_3d_jets_timeseries.jl --help
-
-# Run tests
+# All tests
 julia --project=. -e 'using Pkg; Pkg.test()'
+
+# Include MPI tests
+cd test && bash run_mpi_tests.sh
 ```
+
+If something goes wrong:
+
+- **NaNs / instability** – lower `--CFL`, lower `--Ma`, or increase `--Nx`, `--Ny`, `--Nz`
+- **Out of memory** – reduce resolution or increase / disable `--snapshot-interval`
+- **MPI problems** – check `mpiexec --version`, reduce ranks, verify MPI.jl config
+- **GLMakie on clusters** – use `--no-viz` and/or `HYQMOM_SKIP_PLOTTING=true`
+
+---
+
+## 8. Docs & layout
+
+- Online docs: https://hyqmomjl.readthedocs.io/en/latest/
+- Local docs: `docs/src/quickstart.md`, `docs/src/user_guide.md`,
+  `docs/src/hpc_quickstart.md`, `docs/src/mpi.md`
+
+Code structure:
+
+- Core solver: `src/`
+- Examples / CLIs: `examples/`
+- Tests: `test/`
+- Visualization helpers: `src/visualization/`
+
+## License
+
+MIT – see `license.md`.
+
 
